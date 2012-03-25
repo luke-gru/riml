@@ -4,13 +4,29 @@ module Visitable
   def accept(visitor)
     visitor.visit(self)
   end
+
+  attr_accessor :parent_node
+  attr_writer :compiled_output
+  def compiled_output
+    @compiled_output ||= ''
+  end
+
 end
 
 class Nodes < Struct.new(:nodes)
   include Visitable
+  include Enumerable
   def <<(node)
     nodes << node
     self
+  end
+
+  def pop
+    nodes.pop
+  end
+
+  def each(&block)
+    nodes.each &block
   end
 end
 
@@ -18,11 +34,6 @@ end
 # true, false, nil, etc.
 class LiteralNode < Struct.new(:value)
   include Visitable
-  class << self
-    def abstract?
-      self.equal? LiteralNode
-    end
-  end
 end
 
 class NumberNode < LiteralNode; end
@@ -46,6 +57,18 @@ class NilNode < LiteralNode
   end
 end
 
+class NewlineNode < LiteralNode
+  def initialize
+    super("\n")
+  end
+end
+
+class ScopeModifierNode < LiteralNode
+  def initialize(modifier)
+    super
+  end
+end
+
 # Node of a method call or local variable access, can take any of these forms:
 #
 #   method # this form can also be a local variable
@@ -66,17 +89,21 @@ class SetConstantNode < Struct.new(:name, :value)
 end
 
 # Setting the value of a local variable.
-class SetLocalNode < Struct.new(:name, :value)
+class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
 end
 
 # Method definition.
-class DefNode < Struct.new(:name, :params, :body)
+class DefNode < Struct.new(:scope_modifier, :name, :params, :body, :indent)
   include Visitable
+  include Enumerable
+  def each(&block)
+    body.each &block
+  end
 end
 
 # "if" control structure. Look at this node if you want to implement other control
 # structures like while, for, loop, etc.
-class IfNode < Struct.new(:condition, :body)
+class IfNode < Struct.new(:condition, :body, :indent)
   include Visitable
 end

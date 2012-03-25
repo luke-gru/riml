@@ -1,25 +1,33 @@
 module Riml
   class Lexer
-    KEYWORDS = %w(def end if true false nil)
+    KEYWORDS = %w(def end if else elsif true false nil)
 
     def tokenize(code)
       code.chomp!
       i = 0
       tokens = []
       current_indent = 0
+      indent_pending = false
+      dedent_pending = false
 
       while i < code.size
         chunk = code[i..-1]
 
-        if identifier = chunk[/\A([a-z]\w*)/]
+        if scope_modifier = chunk[/\A(s|b):/]
+          tokens << [:SCOPE_MODIFIER, scope_modifier]
+          i += 2
+        elsif identifier = chunk[/\A([a-z]\w*)/]
           # keyword identifiers
           if KEYWORDS.include?(identifier)
             tokens << [identifier.upcase.intern, identifier]
             case identifier
             when "def", "if"
               current_indent += 2
+              indent_pending = true
             when "end"
               current_indent -= 2
+              dedent_pending = true
+            else
             end
           # method and variable names
           else
@@ -38,6 +46,16 @@ module Riml
         elsif newlines = chunk[/\A(\n+)/, 1]
           # just push 1 newline
           tokens << [:NEWLINE, "\n"]
+
+          # pending indents/dedents
+          if indent_pending
+            tokens << [:INDENT, current_indent]
+            indent_pending = false
+          elsif dedent_pending
+            tokens << [:DEDENT, current_indent]
+            dedent_pending = false
+          end
+
           i += newlines.size
         # operators of more than 1 char
         elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=)}, 1]

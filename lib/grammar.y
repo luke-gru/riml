@@ -1,13 +1,15 @@
 class Riml::Parser
 
-token IF ELSE END
+token IF ELSE ELSIF END
 token DEF
+token INDENT DEDENT
 token NEWLINE
 token NUMBER
 token STRING
 token TRUE FALSE NIL
 token IDENTIFIER
 token CONSTANT
+token SCOPE_MODIFIER
 
 prechigh
   right '!'
@@ -98,14 +100,18 @@ rule
 
   # Assignment to a variable
   Assign:
-    IDENTIFIER '=' Expression             { result = SetLocalNode.new(val[0], val[2]) }
-  | CONSTANT '=' Expression               { result = SetConstantNode.new(val[0], val[2]) }
+    IDENTIFIER '=' Expression                   { result = SetVariableNode.new(nil, val[0], val[2]) }
+  | SCOPE_MODIFIER IDENTIFIER '=' Expression    { result = SetVariableNode.new(val[0], val[1], val[3]) }
+  | CONSTANT '=' Expression                     { result = SetConstantNode.new(val[0], val[2]) }
   ;
 
   # Method definition
+  # [scope_modifier, name, args, expressions, indent]
   Def:
-    DEF IDENTIFIER Block                      { result = DefNode.new(val[1], [], val[2]) }
-  | DEF IDENTIFIER "(" ParamList ")" Block    { result = DefNode.new(val[1], val[3], val[5]) }
+    DEF IDENTIFIER Block END                                   { indent = val[2].pop; result = DefNode.new(nil,    val[1], [],     val[2], indent) }
+  | DEF IDENTIFIER "(" ParamList ")" Block END                 { indent = val[5].pop; result = DefNode.new(nil,    val[1], val[3], val[5], indent) }
+  | DEF SCOPE_MODIFIER IDENTIFIER Block END                    { indent = val[3].pop; result = DefNode.new(val[1], val[2], [],     val[3], indent) }
+  | DEF SCOPE_MODIFIER IDENTIFIER "(" ParamList ")" Block END  { indent = val[6].pop; result = DefNode.new(val[1], val[2], val[4], val[6], indent) }
   ;
 
   ParamList:
@@ -114,13 +120,15 @@ rule
   | ParamList ',' IDENTIFIER              { result = val[0] << val[2] }
   ;
 
-  # if block
+  # [expression, expressions, indent]
   If:
-    IF Expression Block                   { result = IfNode.new(val[1], val[2]) }
+    IF Expression Block END                   { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
+  | IF Expression Block ELSE Block END        { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
   ;
 
+  # [expressions, indent]
   Block:
-    NEWLINE Expressions END                       { result = val[1] }
+    NEWLINE INDENT Expressions            { result = val[2] << val[1].to_i }
   ;
 end
 
