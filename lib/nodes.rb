@@ -25,6 +25,10 @@ class Nodes < Struct.new(:nodes)
     nodes.pop
   end
 
+  def last
+    nodes.last
+  end
+
   def each(&block)
     nodes.each &block
   end
@@ -34,6 +38,7 @@ end
 # true, false, nil, etc.
 class LiteralNode < Struct.new(:value)
   include Visitable
+  attr_accessor :explicit_return
 end
 
 class NumberNode < LiteralNode; end
@@ -60,6 +65,14 @@ end
 class NewlineNode < LiteralNode
   def initialize
     super("\n")
+  end
+end
+
+# to prepend next to a node that
+# needs explicit returning
+class ReturnNode < LiteralNode
+  def initialize
+    super("return")
   end
 end
 
@@ -106,4 +119,29 @@ end
 # structures like while, for, loop, etc.
 class IfNode < Struct.new(:condition, :body, :indent)
   include Visitable
+  include Enumerable
+  def each(&block)
+    body.each &block
+  end
+end
+
+class ElseNode < Struct.new(:expressions)
+  include Visitable
+  include Enumerable
+  def each(&block)
+    expressions.each &block
+  end
+
+  def <<(expr)
+    expressions << expr
+    self
+  end
+
+  def pop
+    expressions.pop
+  end
+
+  def last
+    expressions.last
+  end
 end

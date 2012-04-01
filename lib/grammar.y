@@ -32,7 +32,7 @@ rule
 
   # any list of expressions
   Expressions:
-    Expression                            { result = Nodes.new(val) }
+    Expression                            { result = Nodes.new([ val[0] ]) }
   | Expressions Terminator Expression     { result = val[0] << val[2] }
   | Expressions Terminator                { result = val[0] }
   | Terminator                            { result = Nodes.new([]) }
@@ -108,10 +108,15 @@ rule
   # Method definition
   # [scope_modifier, name, args, expressions, indent]
   Def:
-    DEF IDENTIFIER Block END                                   { indent = val[2].pop; result = DefNode.new(nil,    val[1], [],     val[2], indent) }
-  | DEF IDENTIFIER "(" ParamList ")" Block END                 { indent = val[5].pop; result = DefNode.new(nil,    val[1], val[3], val[5], indent) }
-  | DEF SCOPE_MODIFIER IDENTIFIER Block END                    { indent = val[3].pop; result = DefNode.new(val[1], val[2], [],     val[3], indent) }
-  | DEF SCOPE_MODIFIER IDENTIFIER "(" ParamList ")" Block END  { indent = val[6].pop; result = DefNode.new(val[1], val[2], val[4], val[6], indent) }
+    DEF IDENTIFIER Block End                                   { indent = val[2].pop; result = DefNode.new(nil,    val[1], [],     val[2], indent) }
+  | DEF IDENTIFIER "(" ParamList ")" Block End                 { indent = val[5].pop; result = DefNode.new(nil,    val[1], val[3], val[5], indent) }
+  | DEF SCOPE_MODIFIER IDENTIFIER Block End                    { indent = val[3].pop; result = DefNode.new(val[1], val[2], [],     val[3], indent) }
+  | DEF SCOPE_MODIFIER IDENTIFIER "(" ParamList ")" Block End  { indent = val[6].pop; result = DefNode.new(val[1], val[2], val[4], val[6], indent) }
+  ;
+
+  End:
+    END NEWLINE DEDENT
+  | END
   ;
 
   ParamList:
@@ -122,13 +127,14 @@ rule
 
   # [expression, expressions, indent]
   If:
-    IF Expression Block END                   { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
-  | IF Expression Block ELSE Block END        { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
+    IF Expression Block End     { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
   ;
 
   # [expressions, indent]
+  # expressions list could contain an ElseNode, which contains expressions
   Block:
-    NEWLINE INDENT Expressions            { result = val[2] << val[1].to_i }
+    NEWLINE INDENT Expressions ELSE NEWLINE Expressions { result = val[2] << ElseNode.new(val[5]) << val[1] }
+  | NEWLINE INDENT Expressions                          { result = val[2] << val[1] }
   ;
 end
 

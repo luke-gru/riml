@@ -3,7 +3,7 @@
 * The following won't raise a compilation error unless there are multiple *count*
 variables in scope with different access modifiers.
 
-s:count = 1                   let s:count = 1
+count = 1                     let s:count = 1
 while count < 5               while s:count < 5
   source other.vim              source other.vim
   count += 1                    let s:count += 1
@@ -13,7 +13,11 @@ end                           endwhile
   global namespace. Within a function, variables without scope modifiers are plain
   old local variables.
 
-a = 3                         s:a = 3
+* globally
+a = 3                         let s:a = 3
+
+* locally
+a = 3                         let a = 3
 
 * Freeing memory
 
@@ -21,17 +25,17 @@ a = nil                       unlet! a
 
 * Checking for existence
 
-if s:callcount.nil?                    if !exists("s:callcount")
-  callcount = 0                          let s:callcount = 0
-end                                     endif
+if !s:callcount?                       if !exists("s:callcount")
+  callcount = 0                         let s:callcount = 0
+end                                    endif
 callcount += 1                         let s:callcount = s:callcount + 1
 puts "called #{callcount} times"       echo "called" s:callcount "times"
 
 
-if b:didftplugin.present?             if exists("b:didftplugin")
+if b:didftplugin?                     if exists("b:didftplugin")
   finish                                finish
 end                                   endif
-didftplugin = 1                       let b:didftplugin = 1
+didftplugin = true                    let b:didftplugin = 1
 
 command? -nargs=1 Correct :call s:Add(<q-args>, 0)      if !exists(":Correct")
                                                           command -nargs=1 Correct :call s:Add(<q-args>, 0)

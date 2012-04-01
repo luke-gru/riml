@@ -22,9 +22,9 @@ class BasicParserTest < Riml::TestCase
   end
 
   test "parsing method with if block" do
-    code = <<Riml
+    code = <<Riml.strip
 def b:another_method(a, b)
-  if (hello)
+  if hello
     true
   else
     false
@@ -33,8 +33,13 @@ end
 Riml
     nodes = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
-        [IfNode.new( CallNode.new("hello", []), Nodes.new([FalseNode.new, TrueNode.new]) )]
-      ))
+        [IfNode.new(CallNode.new("hello", []),
+                      Nodes.new([TrueNode.new,
+                                 ElseNode.new(
+                                 Nodes.new([FalseNode.new])
+                                )]),
+                   4)]#indent
+      ), 2)#indent
     ])
     assert_equal nodes, parse(code)
   end

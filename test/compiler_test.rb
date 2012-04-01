@@ -14,7 +14,7 @@ class BasicCompilerTest < Riml::TestCase
 =end
     nodes = Nodes.new([
       DefNode.new(nil, "a_method", ['a', 'b'],
-        Nodes.new([TrueNode.new])
+        Nodes.new([TrueNode.new]), 2
       )
     ])
     expect = <<Riml
@@ -27,7 +27,7 @@ Riml
 
   test "branching function compiles and returns on all branches" do
 =begin
-    def b:another_method(a, b)
+    def another_method(a, b)
       if (hello)
         false
       else
@@ -37,17 +37,21 @@ Riml
 =end
     nodes = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
-        [IfNode.new( CallNode.new("hello", []), Nodes.new([FalseNode.new, TrueNode.new]) )]
-      ))
+        [IfNode.new(CallNode.new("hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]), 4)]
+      ),2)
     ])
     expect = <<Riml
 function b:another_method(a, b)
-  if (hello)
+  if (hello())
     return 0
   else
     return 1
+  endif
 endfunction
 Riml
     assert_equal expect, compile(nodes)
+  end
+
+  test "" do
   end
 end

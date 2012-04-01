@@ -1,84 +1,129 @@
 require File.expand_path('../nodes', __FILE__)
 
 # visits AST nodes and translates them into VimL
-#
 module Riml
   class Compiler
 
     # abstract
     class Visitor
+      attr_reader :propagate_up_tree
+      attr_reader :value
+
+      def initialize(options={})
+        @propagate_up_tree = true unless options[:propagate_up_tree] == false
+      end
+
       def visit(node)
-        raise "have to provide a visit method for #{self.class}"
+        raise "#{self.class.name} must provide a visit method"
+      end
+
+      def propagate_up_tree(node, output)
+        node.parent_node.compiled_output << output.to_s unless @propagate_up_tree == false || node.parent_node.nil?
+      end
+
+      def visitor_for_node(node)
+        Compiler.const_get("#{node.class.name}Visitor").new
       end
     end
 
-    class BranchVisitor < Visitor
-      def visit(nodes)
-        _set_explicit_returns_on_rightmost_terminals!(nodes)
+    class IfNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
       end
 
       private
-      def _set_explicit_returns_on_rightmost_terminals!(nodes)
-        rightmost_terminals = nodes.accept(NodesDrillDownRight.new)
-        rightmost_terminals.each do |t|
-          value = t.accept LiteralNodeVisitor.new(:propogate => false)
-          nodes.compiled_output.gsub!(/(#{value})/, 'return \1' + "\n")
+      def _compile(node)
+        indent  = " " * node.indent
+        outdent = " " * (node.indent - 2)
+        condition_visitor = visitor_for_node(node.condition)
+        node.condition.parent_node = node
+        node.body.parent_node = node
+        node.compiled_output = "if ("
+        node.condition.accept(condition_visitor)
+        node.compiled_output << ")\n"
+        pre_body = node.compiled_output; node.compiled_output = ''
+        node.body.accept(NodesVisitor.new)
+        node.compiled_output.each_line do |line|
+          line =~ /else\n\Z/ ? pre_body << line : pre_body << outdent + line
         end
+        node.compiled_output = pre_body
+        node.compiled_output << "endif\n"
+        @value = node.compiled_output
       end
     end
 
-    class NodesDrillDownRight
-      def visit(nodes)
-        terminals = []
-        nodes.each do |node|
-          case node
-          when Nodes
-            visit(node.nodes)
-          when Array
-            node.each {|n| visit(n)}
-          when LiteralNode
-            terminals << node
-          when DefNode
-            visit(node.body)
-          end
-        end
-        terminals
+    class ElseNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        #require 'pp'
+        #pp node
+        node.compiled_output = "else\n"
+        expressions_visitor = NodesVisitor.new
+        node.expressions.parent_node = node
+        node.expressions.accept(expressions_visitor)
+        @value = node.compiled_output
       end
     end
 
     class NodesVisitor < Visitor
       def visit(nodes)
-        nodes.each do |node|
-          visitor = Compiler.const_get("#{node.class.name}Visitor").new
+        _compile(nodes)
+        propagate_up_tree(nodes, @value)
+      end
+
+      private
+      def _compile(nodes)
+        nodes.each_with_index do |node, i|
+          visitor = visitor_for_node(node)
+          next_node = nodes.nodes[i+1]
+          if visitor.class.name =~ /LiteralNode/ && ( node == nodes.last || visitor_for_node(next_node).class.name =~ /ElseNode/ )
+            node.explicit_return = true
+          end
           node.parent_node = nodes
           node.accept(visitor)
         end
+        @value = nodes.compiled_output
       end
+
     end
+
 
     class LiteralNodeVisitor < Visitor
 
-      attr_reader :options
-      def initialize(options={})
-        @options = {:propogate => true}.merge(options)
-      end
-      # value
       def visit(node)
         _compile(node)
+        propagate_up_tree(node, @value)
       end
 
       private
       def _compile(node)
-        compiled = case node.value
+        value = case node.value
         when TrueClass
           1
         when NilClass, FalseClass
           0
         when String
+          if StringNode === node then _escape(node.value) else node.value end
+        when Number
           node.value
         end.to_s
-        node.parent_node.compiled_output << compiled if @options[:propogate]
-        compiled
+        @value = node.compiled_output = if node.explicit_return
+          "return #{value}\n"
+        else
+          value
+        end
+      end
+
+      private
+      def _escape(string)
+        #TODO: implement
+        string
       end
     end
 
@@ -87,11 +132,13 @@ module Riml
     NilNodeVisitor    = LiteralNodeVisitor
     StringNodeVisitor = LiteralNodeVisitor
     NumberNodeVisitor = LiteralNodeVisitor
+    ReturnNodeVisitor = LiteralNodeVisitor
 
     class DefNodeVisitor < Visitor
       # name, params, body
       def visit(node)
         _compile(node)
+        propagate_up_tree(node, @value)
       end
 
       private
@@ -100,27 +147,40 @@ module Riml
         declaration = <<Viml.chomp
 function #{modifier}#{node.name}(#{node.params.join(', ')})\n
 Viml
-        node.body.accept(NodesVisitor.new)
-        # make sure all branches of execution return their values
-        node.body.accept(BranchVisitor.new)
-        # no nesting functions
+        node.body.parent_node = node
+        node.body.accept NodesVisitor.new(:propagate_up_tree => false)
+        # make sure all branches of execution explicitly 'return' their values
+        #node.body.accept BranchVisitor.new
         indent = " " * 2
         body = ""
-        # have to get node.body.compiled_output manually because NodesVisitors
         # don't propogate their subject's compiled output up the tree.
         node.body.compiled_output.each_line do |line|
           body << indent << line
         end
-        method = declaration << body << "endfunction\n"
-        node.parent_node.compiled_output << method
+        node.compiled_output = declaration << body << "endfunction\n"
+        @value = node.compiled_output
       end
     end
 
-    def compile(ast)
-      ast.parent_node = nil #root node
+    class CallNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        @value = node.compiled_output = <<Viml.chomp
+#{node.method}(#{node.arguments.join(', ')})
+Viml
+      end
+    end
+
+    def compile(root_node)
+      root_node.parent_node = nil #root node
       root_visitor = NodesVisitor.new
-      ast.accept(root_visitor)
-      ast.compiled_output
+      root_node.accept(root_visitor)
+      root_node.compiled_output
     end
 
   end
