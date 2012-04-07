@@ -16,10 +16,3 @@ end
 task :output_test_count do
   STDOUT.puts (TEST_LIST.count + SPEC_LIST.count).to_s + " test files to run."
 end
-
-namespace :test do
-  desc 'Run test suite (suite.rb)'
-  Rake::TestTask.new(:suite) do |t|
-    t.test_files = FileList['test/suite.rb'].to_a
-  end
-end

@@ -52,6 +52,9 @@ Riml
     assert_equal expect, compile(nodes)
   end
 
-  test "" do
+  test "ruby-like if this then that else that2 end expression" do
+=begin
+    if "hello" then  s:a = true end
+=end
   end
 end

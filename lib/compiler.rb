@@ -61,8 +61,6 @@ module Riml
 
       private
       def _compile(node)
-        #require 'pp'
-        #pp node
         node.compiled_output = "else\n"
         expressions_visitor = NodesVisitor.new
         node.expressions.parent_node = node
@@ -149,11 +147,8 @@ function #{modifier}#{node.name}(#{node.params.join(', ')})\n
 Viml
         node.body.parent_node = node
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
-        # make sure all branches of execution explicitly 'return' their values
-        #node.body.accept BranchVisitor.new
         indent = " " * 2
         body = ""
-        # don't propogate their subject's compiled output up the tree.
         node.body.compiled_output.each_line do |line|
           body << indent << line
         end
@@ -177,7 +172,7 @@ Viml
     end
 
     def compile(root_node)
-      root_node.parent_node = nil #root node
+      root_node.parent_node = nil
       root_visitor = NodesVisitor.new
       root_node.accept(root_visitor)
       root_node.compiled_output

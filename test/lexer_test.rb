@@ -30,6 +30,25 @@ class BasicLexerTest < Riml::TestCase
     assert_equal tokens, @tokens
   end
 
-  test "" do
+  test "lexing a ruby-like if this then that else that2 end expression" do
+    code = <<-Riml
+    if b = 1 then a = 2 else a = 1 end
+    Riml
+    lex(code)
+    tokens =
+      [[:IF, "if"],
+      [:IDENTIFIER, "b"],
+      ["=", "="],
+      [:NUMBER, 1],
+      [:THEN, "then"],
+      [:IDENTIFIER, "a"],
+      ["=", "="],
+      [:NUMBER, 2],
+      [:ELSE, "else"],
+      [:IDENTIFIER, "a"],
+      ["=", "="],
+      [:NUMBER, 1],
+      [:END, "end"]]
+    assert_equal tokens, @tokens
   end
 end

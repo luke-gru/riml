@@ -43,4 +43,12 @@ Riml
     ])
     assert_equal nodes, parse(code)
   end
+
+  test "parsing a ruby-like 'if this then that end' expression" do
+    code = <<-Riml.strip
+    if method(1,2) then b:a = 2 end
+    Riml
+    nodes = []
+    assert_equal nodes, parse(code)
+  end
 end

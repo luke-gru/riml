@@ -1,6 +1,6 @@
 class Riml::Parser
 
-token IF ELSE ELSIF END
+token IF THEN ELSE ELSIF END
 token DEF
 token INDENT DEDENT
 token NEWLINE
@@ -127,7 +127,7 @@ rule
 
   # [expression, expressions, indent]
   If:
-    IF Expression Block End     { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
+    IF Expression Block End             { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
   ;
 
   # [expressions, indent]

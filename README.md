@@ -1,7 +1,7 @@
 ### Riml, a relaxed version of Vimscript
 
 * The following won't raise a compilation error unless there are multiple *count*
-variables in scope with different access modifiers.
+variables in scope with different scope modifiers.
 
 count = 1                     let s:count = 1
 while count < 5               while s:count < 5
@@ -25,7 +25,7 @@ a = nil                       unlet! a
 
 * Checking for existence
 
-if !s:callcount?                       if !exists("s:callcount")
+unless s:callcount?                    if !exists("s:callcount")
   callcount = 0                         let s:callcount = 0
 end                                    endif
 callcount += 1                         let s:callcount = s:callcount + 1
