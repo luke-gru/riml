@@ -28,7 +28,7 @@ class BasicLexerTest < Riml::TestCase
 
   test "lexing a ruby-like if this then that end expression" do
     code = <<-Riml
-    if b then a = 2 end
+    if b then a = 2 end\n
     Riml
     @tokens = lex(code)
     expected =
@@ -38,7 +38,9 @@ class BasicLexerTest < Riml::TestCase
       [:IDENTIFIER, "a"],
       ["=", "="],
       [:NUMBER, 2],
-      [:END, "end"]]
+      [:END, "end"],
+      [:NEWLINE, "\n"]
+    ]
     assert_equal expected, @tokens
   end
 end

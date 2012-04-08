@@ -117,7 +117,7 @@ end
 
 # "if" control structure. Look at this node if you want to implement other control
 # structures like while, for, loop, etc.
-class IfNode < Struct.new(:condition, :body, :indent)
+class IfNode < Struct.new(:condition, :body)
   include Visitable
   include Enumerable
   def each(&block)

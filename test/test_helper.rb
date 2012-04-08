@@ -57,7 +57,7 @@ module Riml
     private
     # is an array of arrays and first five inner arrays are all doubles
     def tokens?(object)
-      Array === object and object[0..5].all? {|e| e.respond_to?(:size) and e.size == 2}
+      Array === object and object[0..4].all? {|e| e.respond_to?(:size) and e.size == 2}
     end
 
     def code?(object)

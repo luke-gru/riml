@@ -16,8 +16,7 @@ module Riml
 module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 148)
   # This code will be put as-is in the parser class
 
-  # input: tokens or code
-  # output: nodes
+  # parses tokens or code into output nodes
   def parse(object, show_tokens=false)
     @tokens = if tokens?(object)
       object
@@ -35,7 +34,7 @@ module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 148)
   private
   # is an array of arrays and first five inner arrays are all doubles
   def tokens?(object)
-    Array === object and object[0..5].all? {|e| e.respond_to?(:size) and e.size == 2}
+    Array === object and object[0..4].all? {|e| e.respond_to?(:size) and e.size == 2}
   end
 
   def code?(object)
@@ -55,7 +54,7 @@ racc_action_table = [
     21,    22,    29,    30,    79,    66,    93,    69,    95,    70,
     77,    24,    77,    37,    38,    12,    23,    14,    99,    13,
     15,    16,    17,    18,    19,    20,    21,    22,    29,    30,
-    69,    25,    77,    80,   nil,    24,   nil,   nil,    92,   nil,
+    69,    25,    77,    80,   nil,    24,   nil,   nil,    77,   nil,
     23,    12,   nil,    14,    15,    16,    17,    18,    19,    20,
     21,    22,    37,    38,    35,    36,    31,    32,    33,    34,
     28,    27,   nil,   nil,    24,    12,   nil,    29,    30,    23,
@@ -240,7 +239,7 @@ racc_goto_table = [
     52,    53,    54,    55,    56,    57,    58,    59,    60,    91,
     63,    64,    65,    81,    76,   nil,   nil,   nil,    83,   nil,
    nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,    90,   nil,
-    94,   nil,   nil,   nil,   nil,   nil,    75,   nil,   nil,   nil,
+    94,    92,   nil,   nil,   nil,   nil,    75,   nil,   nil,   nil,
    100,    98,    84,   nil,    85,   nil,   nil,   102,   nil,   nil,
    nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
    nil,    89,   nil,   nil,   nil,   nil,   nil,    26,   nil,   nil,
@@ -253,7 +252,7 @@ racc_goto_check = [
      3,     3,     3,     3,     3,     3,     3,     3,     3,    15,
      3,     3,     3,    13,    14,   nil,   nil,   nil,    14,   nil,
    nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,    14,   nil,
-    13,   nil,   nil,   nil,   nil,   nil,     3,   nil,   nil,   nil,
+    13,    14,   nil,   nil,   nil,   nil,     3,   nil,   nil,   nil,
     13,    14,     3,   nil,     3,   nil,   nil,    14,   nil,   nil,
    nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
    nil,     2,   nil,   nil,   nil,   nil,   nil,     4,   nil,   nil,
@@ -754,14 +753,14 @@ module_eval(<<'.,.,', 'grammar.y', 124)
 
 module_eval(<<'.,.,', 'grammar.y', 129)
   def _reduce_52(val, _values, result)
-     indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) 
+     indent = val[2].pop; result = IfNode.new(val[1], val[2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 130)
   def _reduce_53(val, _values, result)
-     result = IfNode.new(val[1], val[3], nil)
+     result = IfNode.new( val[1], Nodes.new([val[3]]) ) 
     result
   end
 .,.,

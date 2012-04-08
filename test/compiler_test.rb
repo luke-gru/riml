@@ -1,4 +1,4 @@
-require_relative 'test_helper'
+require File.expand_path('../test_helper', __FILE__)
 
 class BasicCompilerTest < Riml::TestCase
 
@@ -31,11 +31,13 @@ Viml
       end
     end
 =end
+
     nodes = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
-        [IfNode.new(CallNode.new("hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]), 4)]
+        [IfNode.new(CallNode.new("hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]))]
       ),2)
     ])
+
     expected = <<Viml
 function b:another_method(a, b)
   if (hello())
@@ -48,17 +50,15 @@ Viml
     assert_equal expected, compile(nodes)
   end
 
-  # no explicit returns on one-line 'if-then' statements
   test "ruby-like if this then that end expression" do
 
-    riml = "if b then a = 2 end"
+    riml = "if b then a = 2 end\n"
     nodes = Nodes.new([
       IfNode.new(
         CallNode.new('b', []),
         Nodes.new(
           [SetVariableNode.new(nil, 'a', NumberNode.new(2))]
-        ),
-        2 #indent
+        )
       )
     ])
 
@@ -68,5 +68,15 @@ if (b())
 endif
 Viml
     assert_equal expected, compile(nodes)
+    assert_equal expected, compile(riml)
+  end
+
+  test "setting variable to nil frees its memory" do
+    riml = "b:a = nil\n"
+    expected = <<Viml
+unlet! b:a
+Viml
+
+    assert_equal expected, compile(riml)
   end
 end

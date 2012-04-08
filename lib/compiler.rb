@@ -6,7 +6,7 @@ module Riml
 
     # abstract
     class Visitor
-      attr_reader :propagate_up_tree
+      attr_accessor :propagate_up_tree
       attr_reader :value
 
       def initialize(options={})
@@ -34,12 +34,8 @@ module Riml
 
       private
       def _compile(node)
-        if node.indent.nil?
-          indent = outdent = ''
-        else
-          indent  = " " * node.indent
-          outdent = " " * (node.indent - 2)
-        end
+        indent  = " " * 2
+        outdent = ""
         condition_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
@@ -49,10 +45,10 @@ module Riml
         pre_body = node.compiled_output; node.compiled_output = ''
         node.body.accept(NodesVisitor.new)
         node.compiled_output.each_line do |line|
-          line =~ /else\n\Z/ ? pre_body << line : pre_body << outdent + line
+          line =~ /else\n\Z/ ? pre_body << outdent << line : pre_body << indent << line
         end
         node.compiled_output = pre_body
-        node.compiled_output << "endif\n"
+        node.compiled_output << outdent << "endif\n"
         @value = node.compiled_output
       end
     end
@@ -117,8 +113,10 @@ module Riml
         value = case node.value
         when TrueClass
           1
-        when NilClass, FalseClass
+        when FalseClass
           0
+        when NilClass
+          'nil'
         when String
           if StringNode === node then _escape(node.value) else node.value end
         when Numeric
@@ -153,12 +151,23 @@ module Riml
 
       private
       def _compile(node)
-        modifier = node.scope_modifier || 's:'
-        node.compiled_output = "#{modifier}#{node.name} = "
-        node.value.parent_node = node
         value_visitor = visitor_for_node(node.value)
+        value_visitor.propagate_up_tree = false
         node.value.accept(value_visitor)
-        @value = node.compiled_output
+
+        modifier = node.scope_modifier || 's:'
+
+        if node.value.compiled_output == 'nil'
+          @value = node.compiled_output = "unlet! #{modifier}#{node.name}" << "\n"
+          return
+        end
+        value_visitor.propagate_up_tree = true
+
+        node.compiled_output = "#{modifier}#{node.name} = "
+        node.value.compiled_output.clear
+        node.value.parent_node = node
+        node.value.accept(value_visitor)
+        @value = node.compiled_output << "\n"
       end
     end
 

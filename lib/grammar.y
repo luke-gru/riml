@@ -127,8 +127,8 @@ rule
 
   # [expression, expressions, indent]
   If:
-    IF Expression Block End             { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
-  | IF Expression THEN Expression END   { result = IfNode.new(val[1], val[3], nil)}
+    IF Expression Block End             { indent = val[2].pop; result = IfNode.new(val[1], val[2]) }
+  | IF Expression THEN Expression End   { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
   # [expressions, indent]
@@ -165,7 +165,7 @@ end
   private
   # is an array of arrays and first five inner arrays are all doubles
   def tokens?(object)
-    Array === object and object[0..5].all? {|e| e.respond_to?(:size) and e.size == 2}
+    Array === object and object[0..4].all? {|e| e.respond_to?(:size) and e.size == 2}
   end
 
   def code?(object)

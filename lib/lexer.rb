@@ -9,7 +9,7 @@ module Riml
       current_indent = 0
       indent_pending = false
       dedent_pending = false
-      one_line_if_expression_END_pending = false
+      one_line_if_statement_END_pending = false
 
       while i < code.size
         chunk = code[i..-1]
@@ -27,13 +27,13 @@ module Riml
               indent_pending = true
             when "if"
               if one_line_if_statement?(chunk)
-                one_line_if_expression_END_pending = true
+                one_line_if_statement_END_pending = true
               else
                 current_indent += 2
                 indent_pending = true
               end
             when "end"
-              unless one_line_if_expression_END_pending
+              unless one_line_if_statement_END_pending
                 current_indent -= 2
                 dedent_pending = true
               end
@@ -64,6 +64,8 @@ module Riml
           elsif dedent_pending
             tokens << [:DEDENT, current_indent]
             dedent_pending = false
+          elsif one_line_if_statement_END_pending
+            one_line_if_statement_END_pending = false
           end
 
           i += newlines.size
