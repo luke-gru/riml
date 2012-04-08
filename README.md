@@ -1,58 +1,70 @@
-### Riml, a relaxed version of Vimscript
+Riml, a relaxed version of Vimscript
+====================================
 
-* The following won't raise a compilation error unless there are multiple *count*
+Variables
+---------
+
+The following won't raise a compilation error unless there are multiple count
 variables in scope with different scope modifiers.
 
-count = 1                     let s:count = 1
-while count < 5               while s:count < 5
-  source other.vim              source other.vim
-  count += 1                    let s:count += 1
-end                           endwhile
+    count = 1                     let s:count = 1
+    while count < 5               while s:count < 5
+      source other.vim              source other.vim
+      count += 1                    let s:count += 1
+    end                           endwhile
 
-* If you don't specify a scope modifier, it's script local by default in the
-  global namespace. Within a function, variables without scope modifiers are plain
-  old local variables.
+If you don't specify a scope modifier, it's script local by default in the
+global namespace. Within a function, variables without scope modifiers are plain
+old local variables.
 
-* globally
-a = 3                         let s:a = 3
+###globally
 
-* locally
-a = 3                         let a = 3
+    a = 3                         let s:a = 3
 
-* Freeing memory
+###locally
 
-a = nil                       unlet! a
+    a = 3                         let a = 3
 
-* Checking for existence
+###Freeing memory
 
-unless s:callcount?                    if !exists("s:callcount")
-  callcount = 0                         let s:callcount = 0
-end                                    endif
-callcount += 1                         let s:callcount = s:callcount + 1
-puts "called #{callcount} times"       echo "called" s:callcount "times"
+    a = nil                       unlet! a
+
+Checking for existence
+----------------------
+
+###Variables
+
+    unless s:callcount?                    if !exists("s:callcount")
+      callcount = 0                         let s:callcount = 0
+    end                                    endif
+    callcount += 1                         let s:callcount = s:callcount + 1
+    puts "called #{callcount} times"       echo "called" s:callcount "times"
 
 
-if b:didftplugin?                     if exists("b:didftplugin")
-  finish                                finish
-end                                   endif
-didftplugin = true                    let b:didftplugin = 1
+    if b:didftplugin?                      if exists("b:didftplugin")
+      finish                                 finish
+    end                                    endif
+    didftplugin = true                     let b:didftplugin = 1
 
-command? -nargs=1 Correct :call s:Add(<q-args>, 0)      if !exists(":Correct")
-                                                          command -nargs=1 Correct :call s:Add(<q-args>, 0)
-                                                        end
-* String and truthiness
+###Commands
 
-if "true"                               if 1
-if "6elves"                             if 6
-if "0people"                            if 0
-if ""                                   if 1
-if " dinosaurs\t"                       if 1
+    command? -nargs=1 Correct :call s:Add(<q-args>, 0)          if !exists(":Correct")
+                                                                  command -nargs=1 Correct :call s:Add(<q-args>, 0)
+                                                                end
 
-* Options and Registers
-saveic = &ic
-set noic
-/The Start/, $delete
-&ic = saveic
+String and truthiness
+---------------------
 
-* Functions
-see usr_41, 1021G
+    if "true"                               if 1
+    if "6elves"                             if 6
+    if "0people"                            if 0
+    if ""                                   if 1
+    if " dinosaurs\t"                       if 1
+
+Options and Registers
+---------------------
+
+    saveic = &ic
+    set noic
+    /The Start/, $delete
+    &ic = saveic
