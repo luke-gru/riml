@@ -128,6 +128,7 @@ rule
   # [expression, expressions, indent]
   If:
     IF Expression Block End             { indent = val[2].pop; result = IfNode.new(val[1], val[2], indent) }
+  | IF Expression THEN Expression END   { result = IfNode.new(val[1], val[3], nil)}
   ;
 
   # [expressions, indent]
@@ -146,12 +147,27 @@ end
 ---- inner
   # This code will be put as-is in the parser class
 
-  def parse(code, show_tokens=false)
-    @tokens = Riml::Lexer.new.tokenize(code)
+  # parses tokens or code into output nodes
+  def parse(object, show_tokens=false)
+    @tokens = if tokens?(object)
+      object
+    elsif code?(object)
+      Riml::Lexer.new.tokenize(object)
+    end
     pp(@tokens) if show_tokens
     do_parse
   end
 
   def next_token
     @tokens.shift
+  end
+
+  private
+  # is an array of arrays and first five inner arrays are all doubles
+  def tokens?(object)
+    Array === object and object[0..5].all? {|e| e.respond_to?(:size) and e.size == 2}
+  end
+
+  def code?(object)
+    String === object
   end

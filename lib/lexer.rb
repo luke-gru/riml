@@ -9,6 +9,7 @@ module Riml
       current_indent = 0
       indent_pending = false
       dedent_pending = false
+      one_line_if_expression_END_pending = false
 
       while i < code.size
         chunk = code[i..-1]
@@ -21,12 +22,21 @@ module Riml
           if KEYWORDS.include?(identifier)
             tokens << [identifier.upcase.intern, identifier]
             case identifier
-            when "def", "if"
+            when "def"
               current_indent += 2
               indent_pending = true
+            when "if"
+              if one_line_if_statement?(chunk)
+                one_line_if_expression_END_pending = true
+              else
+                current_indent += 2
+                indent_pending = true
+              end
             when "end"
-              current_indent -= 2
-              dedent_pending = true
+              unless one_line_if_expression_END_pending
+                current_indent -= 2
+                dedent_pending = true
+              end
             else
             end
           # method and variable names
@@ -73,5 +83,12 @@ module Riml
 
       tokens
     end
+
+    private
+
+    def one_line_if_statement?(chunk)
+      chunk[/^if.*?(else)?.*?end$/]
+    end
+
   end
 end

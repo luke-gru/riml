@@ -34,8 +34,12 @@ module Riml
 
       private
       def _compile(node)
-        indent  = " " * node.indent
-        outdent = " " * (node.indent - 2)
+        if node.indent.nil?
+          indent = outdent = ''
+        else
+          indent  = " " * node.indent
+          outdent = " " * (node.indent - 2)
+        end
         condition_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
@@ -78,15 +82,24 @@ module Riml
       private
       def _compile(nodes)
         nodes.each_with_index do |node, i|
-          visitor = visitor_for_node(node)
-          next_node = nodes.nodes[i+1]
-          if visitor.class.name =~ /LiteralNode/ && ( node == nodes.last || visitor_for_node(next_node).class.name =~ /ElseNode/ )
-            node.explicit_return = true
+          begin
+            visitor = visitor_for_node(node)
+            next_node = next_node(nodes, i)
+            if visitor.class.name =~ /LiteralNode/ && ( node == nodes.last || visitor_for_node(next_node).class.name =~ /ElseNode/ )
+              node.explicit_return = true
+            end
+            node.parent_node = nodes
+            node.accept(visitor)
+          rescue
+            p "Bad Node: #{node.inspect}"
+            raise
           end
-          node.parent_node = nodes
-          node.accept(visitor)
         end
         @value = nodes.compiled_output
+      end
+
+      def next_node(nodes, i)
+        nodes.nodes[i+1]
       end
 
     end
@@ -108,7 +121,7 @@ module Riml
           0
         when String
           if StringNode === node then _escape(node.value) else node.value end
-        when Number
+        when Numeric
           node.value
         end.to_s
         @value = node.compiled_output = if node.explicit_return
@@ -131,6 +144,23 @@ module Riml
     StringNodeVisitor = LiteralNodeVisitor
     NumberNodeVisitor = LiteralNodeVisitor
     ReturnNodeVisitor = LiteralNodeVisitor
+
+    class SetVariableNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        modifier = node.scope_modifier || 's:'
+        node.compiled_output = "#{modifier}#{node.name} = "
+        node.value.parent_node = node
+        value_visitor = visitor_for_node(node.value)
+        node.value.accept(value_visitor)
+        @value = node.compiled_output
+      end
+    end
 
     class DefNodeVisitor < Visitor
       # name, params, body
@@ -171,6 +201,7 @@ Viml
       end
     end
 
+    # compiles nodes into output code
     def compile(root_node)
       root_node.parent_node = nil
       root_visitor = NodesVisitor.new

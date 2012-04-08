@@ -1,11 +1,6 @@
 require_relative 'test_helper'
-require 'parser'
-require 'compiler'
 
 class BasicParserTest < Riml::TestCase
-  def setup
-    @parser = Riml::Parser.new
-  end
 
   test "parsing basic method" do
     code = <<-Riml
@@ -13,12 +8,12 @@ class BasicParserTest < Riml::TestCase
       true
     end
     Riml
-    nodes = Nodes.new([
+    expected = Nodes.new([
       DefNode.new(nil, "a_method", ['a', 'b'],
         Nodes.new([TrueNode.new]), 2
       )
     ])
-    assert_equal nodes, parse(code)
+    assert_equal expected, parse(code)
   end
 
   test "parsing method with if block" do
@@ -31,7 +26,7 @@ def b:another_method(a, b)
   end
 end
 Riml
-    nodes = Nodes.new([
+    expected = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
         [IfNode.new(CallNode.new("hello", []),
                       Nodes.new([TrueNode.new,
@@ -41,14 +36,18 @@ Riml
                    4)]#indent
       ), 2)#indent
     ])
-    assert_equal nodes, parse(code)
+    assert_equal expected, parse(code)
   end
 
   test "parsing a ruby-like 'if this then that end' expression" do
     code = <<-Riml.strip
-    if method(1,2) then b:a = 2 end
+    if b then a = 2 end
     Riml
-    nodes = []
-    assert_equal nodes, parse(code)
+    expected = Nodes.new([
+      IfNode.new(CallNode.new('b', []), SetVariableNode.new(nil, 'a', NumberNode.new(2)),
+        nil #indent
+      )
+    ])
+    assert_equal expected, parse(code)
   end
 end

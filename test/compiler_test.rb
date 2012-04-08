@@ -1,10 +1,6 @@
 require_relative 'test_helper'
-require 'compiler'
 
 class BasicCompilerTest < Riml::TestCase
-  def setup
-    @compiler = Riml::Compiler.new
-  end
 
   test "basic function compiles" do
 =begin
@@ -17,12 +13,12 @@ class BasicCompilerTest < Riml::TestCase
         Nodes.new([TrueNode.new]), 2
       )
     ])
-    expect = <<Riml
+    expected = <<Viml
 function s:a_method(a, b)
   return 1
 endfunction
-Riml
-    assert_equal expect, compile(nodes)
+Viml
+    assert_equal expected, compile(nodes)
   end
 
   test "branching function compiles and returns on all branches" do
@@ -40,7 +36,7 @@ Riml
         [IfNode.new(CallNode.new("hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]), 4)]
       ),2)
     ])
-    expect = <<Riml
+    expected = <<Viml
 function b:another_method(a, b)
   if (hello())
     return 0
@@ -48,13 +44,29 @@ function b:another_method(a, b)
     return 1
   endif
 endfunction
-Riml
-    assert_equal expect, compile(nodes)
+Viml
+    assert_equal expected, compile(nodes)
   end
 
-  test "ruby-like if this then that else that2 end expression" do
-=begin
-    if "hello" then  s:a = true end
-=end
+  # no explicit returns on one-line 'if-then' statements
+  test "ruby-like if this then that end expression" do
+
+    riml = "if b then a = 2 end"
+    nodes = Nodes.new([
+      IfNode.new(
+        CallNode.new('b', []),
+        Nodes.new(
+          [SetVariableNode.new(nil, 'a', NumberNode.new(2))]
+        ),
+        2 #indent
+      )
+    ])
+
+  expected = <<Viml
+if (b())
+  s:a = 2
+endif
+Viml
+    assert_equal expected, compile(nodes)
   end
 end
