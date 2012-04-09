@@ -19,7 +19,7 @@ class BasicParserTest < Riml::TestCase
   test "parsing method with if block" do
     code = <<Viml
 def b:another_method(a, b)
-  if hello
+  if hello()
     true
   else
     false
@@ -28,7 +28,7 @@ end
 Viml
     expected = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
-        [IfNode.new(CallNode.new("hello", []),
+        [IfNode.new(CallNode.new(nil, "hello", []),
                       Nodes.new([TrueNode.new,
                                  ElseNode.new(
                                  Nodes.new([FalseNode.new])
@@ -41,11 +41,11 @@ Viml
 
   test "parsing a ruby-like 'if this then that end' expression" do
     code = <<-Riml
-    if b then a = 2 end
+    if b() then a = 2 end
     Riml
     expected = Nodes.new([
       IfNode.new(
-        CallNode.new('b', []),
+        CallNode.new(nil, 'b', []),
         Nodes.new(
           [SetVariableNode.new(nil, 'a', NumberNode.new(2))]
         )
@@ -57,15 +57,15 @@ Viml
   # TODO: fix scope_modifier and parens in if expressions
   test "parsing an unless expression" do
     riml = <<Riml
-unless (salutation)
+unless (shy())
   echo("hi");
 end
 Riml
     expected = Nodes.new([
       UnlessNode.new(
-        CallNode.new('salutation', []),
+        CallNode.new(nil, 'shy', []),
         Nodes.new(
-          [ CallNode.new('echo', [StringNode.new('hi')]) ]
+          [ CallNode.new(nil, 'echo', [StringNode.new('hi')]) ]
         )
       )
     ])

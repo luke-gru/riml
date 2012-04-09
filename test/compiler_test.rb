@@ -2,6 +2,10 @@ require File.expand_path('../test_helper', __FILE__)
 
 class BasicCompilerTest < Riml::TestCase
 
+  def setup
+    global_variables.clear
+  end
+
   test "basic function compiles" do
 =begin
     def a_method(a, b)
@@ -23,7 +27,7 @@ Viml
 
   test "branching function compiles and returns on all branches" do
 =begin
-    def another_method(a, b)
+    def b:another_method(a, b)
       if (hello)
         false
       else
@@ -34,10 +38,11 @@ Viml
 
     nodes = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
-        [IfNode.new(CallNode.new("hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]))]
+        [IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]))]
       ),2)
     ])
 
+    # NOTE: change below so 'hello' doesn't take parens
     expected = <<Viml
 function b:another_method(a, b)
   if (hello())
@@ -52,10 +57,10 @@ Viml
 
   test "ruby-like if this then that end expression" do
 
-    riml = "if b then a = 2 end\n"
+    riml = "if b() then a = 2 end\n"
     nodes = Nodes.new([
       IfNode.new(
-        CallNode.new('b', []),
+        CallNode.new(nil, 'b', []),
         Nodes.new(
           [SetVariableNode.new(nil, 'a', NumberNode.new(2))]
         )
@@ -78,21 +83,43 @@ unlet! b:a
 Viml
 
     assert_equal expected, compile(riml)
+    assert_equal 1, global_variables.count
   end
 
   test "unless expression" do
     riml = <<Riml
-unless (salutation)
+unless shy()
   echo("hi");
 end
 Riml
 
     expected = <<Viml
-if (!salutation())
+if (!shy())
   echo("hi")
 endif
 Viml
 
     assert_equal expected, compile(riml)
+    assert_equal 0, global_variables.count
+  end
+
+  test "variables work as expected in local and global scopes" do
+    riml = <<Riml
+a = "should be script local"
+b:a = "should be buffer local"
+def script_local_function()
+  a = "should be local to function"
+end
+Riml
+
+    expected = <<Viml
+s:a = "should be script local"
+b:a = "should be buffer local"
+function s:script_local_function()
+  a = "should be local to function"
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal 1, global_variables.count
   end
 end

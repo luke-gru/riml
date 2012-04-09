@@ -4,7 +4,7 @@ class BasicLexerTest < Riml::TestCase
 
   test "basic lexing" do
     riml = <<-Riml
-    if 1
+    if 1 #### comment
       print "..."
       if false
         do_something
