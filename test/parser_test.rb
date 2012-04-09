@@ -1,4 +1,4 @@
-require_relative 'test_helper'
+require File.expand_path('../test_helper', __FILE__)
 
 class BasicParserTest < Riml::TestCase
 
@@ -52,5 +52,24 @@ Viml
       )
     ])
     assert_equal expected, parse(code)
+  end
+
+  # TODO: fix scope_modifier and parens in if expressions
+  test "parsing an unless expression" do
+    riml = <<Riml
+unless (salutation)
+  echo("hi");
+end
+Riml
+    expected = Nodes.new([
+      UnlessNode.new(
+        CallNode.new('salutation', []),
+        Nodes.new(
+          [ CallNode.new('echo', [StringNode.new('hi')]) ]
+        )
+      )
+    ])
+
+    assert_equal expected, parse(riml)
   end
 end

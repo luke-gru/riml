@@ -1,6 +1,6 @@
 class Riml::Parser
 
-token IF THEN ELSE ELSIF END
+token IF THEN ELSE ELSIF END UNLESS
 token DEF
 token INDENT DEDENT
 token NEWLINE
@@ -47,6 +47,7 @@ rule
   | Assign
   | Def
   | If
+  | Unless
   | '(' Expression ')'                    { result = val[1] }
   ;
 
@@ -127,8 +128,13 @@ rule
 
   # [expression, expressions, indent]
   If:
-    IF Expression Block End             { indent = val[2].pop; result = IfNode.new(val[1], val[2]) }
-  | IF Expression THEN Expression End   { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
+    IF Expression Block End                 { indent = val[2].pop; result = IfNode.new(val[1], val[2]) }
+  | IF Expression THEN Expression End       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
+  ;
+
+  Unless:
+    UNLESS Expression Block End             { indent = val[2].pop; result = UnlessNode.new(val[1], val[2]) }
+  | UNLESS Expression THEN Expression End   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
   # [expressions, indent]

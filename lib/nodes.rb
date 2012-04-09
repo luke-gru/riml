@@ -110,6 +110,15 @@ end
 class DefNode < Struct.new(:scope_modifier, :name, :params, :body, :indent)
   include Visitable
   include Enumerable
+
+  def scoped_variables
+    @scoped_variables ||= []
+  end
+
+  def scope
+    :local
+  end
+
   def each(&block)
     body.each &block
   end
@@ -118,10 +127,17 @@ end
 # "if" control structure. Look at this node if you want to implement other control
 # structures like while, for, loop, etc.
 class IfNode < Struct.new(:condition, :body)
+
   include Visitable
   include Enumerable
   def each(&block)
     body.each &block
+  end
+end
+
+class UnlessNode < IfNode
+  def unless
+    true
   end
 end
 

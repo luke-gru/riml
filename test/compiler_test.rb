@@ -79,4 +79,20 @@ Viml
 
     assert_equal expected, compile(riml)
   end
+
+  test "unless expression" do
+    riml = <<Riml
+unless (salutation)
+  echo("hi");
+end
+Riml
+
+    expected = <<Viml
+if (!salutation())
+  echo("hi")
+endif
+Viml
+
+    assert_equal expected, compile(riml)
+  end
 end

@@ -1,6 +1,6 @@
 module Riml
   class Lexer
-    KEYWORDS = %w(def end if then else elsif true false nil return)
+    KEYWORDS = %w(def end if then else elsif unless true false nil return)
 
     def tokenize(code)
       code.chomp!
@@ -9,7 +9,7 @@ module Riml
       current_indent = 0
       indent_pending = false
       dedent_pending = false
-      one_line_if_statement_END_pending = false
+      one_line_conditional_END_pending = false
 
       while i < code.size
         chunk = code[i..-1]
@@ -25,19 +25,18 @@ module Riml
             when "def"
               current_indent += 2
               indent_pending = true
-            when "if"
-              if one_line_if_statement?(chunk)
-                one_line_if_statement_END_pending = true
+            when "if", "unless"
+              if one_line_conditional?(chunk)
+                one_line_conditional_END_pending = true
               else
                 current_indent += 2
                 indent_pending = true
               end
             when "end"
-              unless one_line_if_statement_END_pending
+              unless one_line_conditional_END_pending
                 current_indent -= 2
                 dedent_pending = true
               end
-            else
             end
           # method and variable names
           else
@@ -58,14 +57,14 @@ module Riml
           tokens << [:NEWLINE, "\n"]
 
           # pending indents/dedents
-          if indent_pending
+          if one_line_conditional_END_pending
+            one_line_conditional_END_pending = false
+          elsif indent_pending
             tokens << [:INDENT, current_indent]
             indent_pending = false
           elsif dedent_pending
             tokens << [:DEDENT, current_indent]
             dedent_pending = false
-          elsif one_line_if_statement_END_pending
-            one_line_if_statement_END_pending = false
           end
 
           i += newlines.size
@@ -87,9 +86,8 @@ module Riml
     end
 
     private
-
-    def one_line_if_statement?(chunk)
-      chunk[/^if.*?(else)?.*?end$/]
+    def one_line_conditional?(chunk)
+      res = chunk[/^(if|unless).*?(else)?.*?end$/]
     end
 
   end

@@ -40,10 +40,13 @@ module Riml
         node.condition.parent_node = node
         node.body.parent_node = node
         node.compiled_output = "if ("
+        node.compiled_output << "!" if node.respond_to? :unless
+
         node.condition.accept(condition_visitor)
         node.compiled_output << ")\n"
         pre_body = node.compiled_output; node.compiled_output = ''
         node.body.accept(NodesVisitor.new)
+
         node.compiled_output.each_line do |line|
           line =~ /else\n\Z/ ? pre_body << outdent << line : pre_body << indent << line
         end
@@ -52,6 +55,8 @@ module Riml
         @value = node.compiled_output
       end
     end
+
+    UnlessNodeVisitor = IfNodeVisitor
 
     class ElseNodeVisitor < Visitor
       def visit(node)
@@ -132,7 +137,7 @@ module Riml
       private
       def _escape(string)
         #TODO: implement
-        string
+        '"' + string + '"'
       end
     end
 
@@ -204,9 +209,24 @@ Viml
 
       private
       def _compile(node)
-        @value = node.compiled_output = <<Viml.chomp
-#{node.method}(#{node.arguments.join(', ')})
-Viml
+        node.compiled_output = "#{node.method}("
+        node.arguments.each_with_index do |arg, i|
+          arg.parent_node = node
+          arg_visitor = visitor_for_node(arg)
+          arg.accept(arg_visitor)
+          node.compiled_output << ", " if not_last_arg?(node.arguments, i)
+        end
+        node.compiled_output << ")"
+        # TODO: need better heuristics for adding the newline after calling a
+        # function
+        unless IfNode === node.parent_node
+          node.compiled_output << "\n"
+        end
+        @value = node.compiled_output
+      end
+
+      def not_last_arg?(args, i)
+        args[i+1] != nil
       end
     end
 
