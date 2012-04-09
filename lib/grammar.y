@@ -65,12 +65,10 @@ rule
   | NIL                                   { result = NilNode.new }
   ;
 
-  # A method call
+  # A function call
   Call:
-    # method
-    IDENTIFIER                            { result = CallNode.new(val[0], []) }
-    # method(args)
-  | IDENTIFIER "(" ArgList ")"            { result = CallNode.new(val[0], val[2]) }
+    SCOPE_MODIFIER IDENTIFIER "(" ArgList ")"   { result = CallNode.new(val[0], val[1], val[3]) }
+  | IDENTIFIER "(" ArgList ")"                  { result = CallNode.new(nil, val[0], val[2]) }
   ;
 
   ArgList:
@@ -81,18 +79,18 @@ rule
 
   # Binary operators
   Operator:
-    Expression '||' Expression            { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '&&' Expression            { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '==' Expression            { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '!=' Expression            { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '>' Expression             { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '>=' Expression            { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '<' Expression             { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '<=' Expression            { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '+' Expression             { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '-' Expression             { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '*' Expression             { result = CallNode.new(val[0], val[1], val[2]) }
-  | Expression '/' Expression             { result = CallNode.new(val[0], val[1], val[2]) }
+    Expression '||' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '&&' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '==' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '!=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '+' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '-' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '*' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   ;
 
   Constant:

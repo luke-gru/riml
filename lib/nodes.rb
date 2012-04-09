@@ -1,5 +1,9 @@
 # Collection of nodes each one representing an expression.
 
+def global_variables
+  @@global_variables ||= []
+end
+
 module Visitable
   def accept(visitor)
     visitor.visit(self)
@@ -13,9 +17,13 @@ module Visitable
 
 end
 
+
 class Nodes < Struct.new(:nodes)
   include Visitable
   include Enumerable
+
+  attr_accessor :scope
+
   def <<(node)
     nodes << node
     self
@@ -38,6 +46,8 @@ end
 # true, false, nil, etc.
 class LiteralNode < Struct.new(:value)
   include Visitable
+
+  attr_accessor :scope
   attr_accessor :explicit_return
 end
 
@@ -76,47 +86,68 @@ class ReturnNode < LiteralNode
   end
 end
 
-class ScopeModifierNode < LiteralNode
-  def initialize(modifier)
-    super
-  end
-end
-
 # Node of a method call or local variable access, can take any of these forms:
 #
-#   method # this form can also be a local variable
+#   variable
+#   method()
 #   method(argument1, argument2)
 #
-class CallNode < Struct.new(:method, :arguments)
+class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Visitable
+
+  attr_accessor :scope
+end
+
+class OperatorNode < Struct.new(:operator, :expressions)
+  include Visitable
+
+  attr_accessor :scope
+end
+
+class BinaryOperatorNode < OperatorNode
+  def expression1
+    expressions.first
+  end
+
+  def expression2
+    expressions[1]
+  end
 end
 
 # Retrieving the value of a constant.
 class GetConstantNode < Struct.new(:name)
   include Visitable
+
+  attr_accessor :scope
 end
 
 # Setting the value of a constant.
 class SetConstantNode < Struct.new(:name, :value)
   include Visitable
+
+  attr_accessor :scope
 end
 
 # Setting the value of a local variable.
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
+
+  attr_accessor :scope
 end
 
 # Method definition.
-class DefNode < Struct.new(:scope_modifier, :name, :params, :body, :indent)
+class DefNode < Struct.new(:scope_modifier, :name, :parameters, :body, :indent)
   include Visitable
   include Enumerable
 
-  def scoped_variables
-    @scoped_variables ||= []
+  attr_accessor :scope
+
+  def local?
+    true
   end
 
-  def scope
-    :local
+  def scoped_variables
+    @scoped_variables ||= []
   end
 
   def each(&block)
@@ -127,9 +158,11 @@ end
 # "if" control structure. Look at this node if you want to implement other control
 # structures like while, for, loop, etc.
 class IfNode < Struct.new(:condition, :body)
-
   include Visitable
   include Enumerable
+
+  attr_accessor :scope
+
   def each(&block)
     body.each &block
   end
@@ -144,6 +177,9 @@ end
 class ElseNode < Struct.new(:expressions)
   include Visitable
   include Enumerable
+
+  attr_accessor :scope
+
   def each(&block)
     expressions.each &block
   end

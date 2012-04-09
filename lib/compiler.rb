@@ -121,7 +121,7 @@ module Riml
         when FalseClass
           0
         when NilClass
-          'nil'
+          nil.inspect
         when String
           if StringNode === node then _escape(node.value) else node.value end
         when Numeric
@@ -156,12 +156,21 @@ module Riml
 
       private
       def _compile(node)
+        modifier = node.scope_modifier
+        _push_explicitly_scoped_variable_onto_stack("#{modifier}#{node.name}", node) if modifier
+        if modifier.nil?
+          # local scope
+          if node.scope and node.scope.local?
+            modifier = _scope_modifier_for_local_variable_name(node.name, node.scope)
+          # global scope
+          else
+            modifier = _scope_modifier_for_global_variable_name(node.name)
+          end
+        end
+
         value_visitor = visitor_for_node(node.value)
         value_visitor.propagate_up_tree = false
         node.value.accept(value_visitor)
-
-        modifier = node.scope_modifier || 's:'
-
         if node.value.compiled_output == 'nil'
           @value = node.compiled_output = "unlet! #{modifier}#{node.name}" << "\n"
           return
@@ -174,11 +183,37 @@ module Riml
         node.value.accept(value_visitor)
         @value = node.compiled_output << "\n"
       end
+
+      private
+      def _scope_modifier_for_local_variable_name(var_name, scope)
+        scope.scoped_variables.reverse_each do |name|
+          if name[2..-1] == var_name then return name[0...2] end
+        end
+        ''
+      end
+
+      def _scope_modifier_for_global_variable_name(var_name)
+        global_variables.reverse_each do |name|
+          if name[2..-1] == var_name then return name[0...2] end
+        end
+        's:'
+      end
+
+      def _push_explicitly_scoped_variable_onto_stack(var_name, node)
+        if node.scope and node.scope.local?
+          node.scope.scoped_variables << var_name
+          node.scope.scoped_variables.uniq!
+        else
+          global_variables << var_name
+          global_variables.uniq!
+        end
+      end
     end
 
     class DefNodeVisitor < Visitor
-      # name, params, body
+      # scope_modifier, name, parameters, body
       def visit(node)
+        _setup_local_scope_for_descendants(node)
         _compile(node)
         propagate_up_tree(node, @value)
       end
@@ -187,7 +222,7 @@ module Riml
       def _compile(node)
         modifier = node.scope_modifier || 's:'
         declaration = <<Viml.chomp
-function #{modifier}#{node.name}(#{node.params.join(', ')})\n
+function #{modifier}#{node.name}(#{node.parameters.join(', ')})\n
 Viml
         node.body.parent_node = node
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
@@ -199,6 +234,56 @@ Viml
         node.compiled_output = declaration << body << "endfunction\n"
         @value = node.compiled_output
       end
+
+      def _setup_local_scope_for_descendants(node)
+        node.body.accept(DrillDownVisitor.new(:establish_scope => true, :scope => node))
+      end
+    end
+
+    # helper to drill down to all descendants of a certain node and do
+    # something to all or a set of them
+    class DrillDownVisitor < Visitor
+
+      def initialize(options={})
+        if options[:establish_scope]
+          @establish_scope = true
+          @scope = options[:scope]
+          raise ArgumentError, "need to pass scope to new instance in order to establish scope" unless @scope
+        end
+      end
+
+      def visit(node)
+        if @establish_scope
+          _establish_scope(node)
+        else
+        end
+      end
+
+      private
+      def _establish_scope(node)
+        node.scope = @scope
+
+        case node
+        when Nodes
+          node.each do |expr|
+            expr.scope = @scope
+            expr.accept(self)
+          end
+        when IfNode # includes UnlessNode
+          node.condition.scope = @scope
+          node.each do |body_expr|
+            body_expr.scope = @scope
+            body_expr.accept(self)
+          end
+        when ElseNode
+          node.each do |else_expr|
+            else_expr.scope = @scope
+            else_expr.accept(self)
+          end
+        else
+          #p "Node not caught while drilling down: #{node}"
+        end
+      end
     end
 
     class CallNodeVisitor < Visitor
@@ -209,7 +294,7 @@ Viml
 
       private
       def _compile(node)
-        node.compiled_output = "#{node.method}("
+        node.compiled_output = "#{node.scope_modifier}#{node.name}("
         node.arguments.each_with_index do |arg, i|
           arg.parent_node = node
           arg_visitor = visitor_for_node(arg)

@@ -9,13 +9,16 @@ module Riml
       current_indent = 0
       indent_pending = false
       dedent_pending = false
+      expecting_identifier = false
       one_line_conditional_END_pending = false
 
       while i < code.size
         chunk = code[i..-1]
 
         if scope_modifier = chunk[/\A(s|b):/]
+          raise TypeError, "expected identifier after scope modifier" if expecting_identifier
           tokens << [:SCOPE_MODIFIER, scope_modifier]
+          expecting_identifier = true
           i += 2
         elsif identifier = chunk[/\A([a-z]\w*)/]
           # keyword identifiers
@@ -42,7 +45,10 @@ module Riml
           else
             tokens << [:IDENTIFIER, identifier ]
           end
+          expecting_identifier = false
           i += identifier.size
+        elsif expecting_identifier
+          raise TypeError, "expected identifier after scope modifier"
         elsif constant = chunk[/\A([A-Z]\w*)/]
           tokens << [:CONSTANT, constant]
           i += constant.size
@@ -73,6 +79,8 @@ module Riml
           tokens << [operator, operator]
         elsif whitespaces = chunk[/\A +/]
           i += whitespaces.size
+        elsif one_line_comment = chunk[/\s*#.*$/]
+          i += one_line_comment.size
         # operators and tokens of single chars ( ) , . [ ] ! + - = < >
         else
           value = chunk[0, 1]
