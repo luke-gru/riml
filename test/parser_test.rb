@@ -9,7 +9,7 @@ class BasicParserTest < Riml::TestCase
     end
     Viml
     expected = Nodes.new([
-      DefNode.new(nil, "a_method", ['a', 'b'],
+      DefNode.new(nil, "a_method", ['a', 'b'], nil,
         Nodes.new([TrueNode.new]), 2
       )
     ])
@@ -27,7 +27,7 @@ def b:another_method(a, b)
 end
 Viml
     expected = Nodes.new([
-      DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
+      DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new(
         [IfNode.new(CallNode.new(nil, "hello", []),
                       Nodes.new([TrueNode.new,
                                  ElseNode.new(

@@ -15,6 +15,7 @@ prechigh
   right '!'
   left '*' '/'
   left '+' '-'
+  left '.'
   left '>' '>=' '<' '<='
   left '&&'
   left '||'
@@ -40,14 +41,15 @@ rule
 
   # All types of expressions in Riml
   Expression:
-    Literal
-  | Call
-  | Operator
-  | Constant
-  | Assign
-  | Def
-  | If
-  | Unless
+    Operator                              { result = val[0] }
+  | Call                                  { result = val[0] }
+  | Assign                                { result = val[0] }
+  | Def                                   { result = val[0] }
+  | VariableRetrieval                     { result = val[0] }
+  | Literal                               { result = val[0] }
+  | Constant                              { result = val[0] }
+  | If                                    { result = val[0] }
+  | Unless                                { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   ;
 
@@ -66,9 +68,16 @@ rule
   ;
 
   # A function call
+  # some_function()
+  # some_function(a, b)
   Call:
-    SCOPE_MODIFIER IDENTIFIER "(" ArgList ")"   { result = CallNode.new(val[0], val[1], val[3]) }
-  | IDENTIFIER "(" ArgList ")"                  { result = CallNode.new(nil, val[0], val[2]) }
+    Scope IDENTIFIER "(" ArgList ")"        { result = CallNode.new(val[0], val[1], val[3]) }
+  ;
+
+
+  Scope:
+    SCOPE_MODIFIER         { result = val[0] }
+  | /* nothing */          { result = nil }
   ;
 
   ArgList:
@@ -91,6 +100,7 @@ rule
   | Expression '-' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '*' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   ;
 
   Constant:
@@ -99,18 +109,26 @@ rule
 
   # Assignment to a variable
   Assign:
-    IDENTIFIER '=' Expression                   { result = SetVariableNode.new(nil, val[0], val[2]) }
-  | SCOPE_MODIFIER IDENTIFIER '=' Expression    { result = SetVariableNode.new(val[0], val[1], val[3]) }
+    Scope IDENTIFIER '=' Expression             { result = SetVariableNode.new(val[0], val[1], val[3]) }
   | CONSTANT '=' Expression                     { result = SetConstantNode.new(val[0], val[2]) }
   ;
+
+  # retrieving the value of a variable
+  VariableRetrieval:
+    Scope IDENTIFIER                            { result = GetVariableNode.new(val[0], val[1])}
+  ;
+
 
   # Method definition
   # [scope_modifier, name, args, expressions, indent]
   Def:
-    DEF IDENTIFIER Block End                                   { indent = val[2].pop; result = DefNode.new(nil,    val[1], [],     val[2], indent) }
-  | DEF IDENTIFIER "(" ParamList ")" Block End                 { indent = val[5].pop; result = DefNode.new(nil,    val[1], val[3], val[5], indent) }
-  | DEF SCOPE_MODIFIER IDENTIFIER Block End                    { indent = val[3].pop; result = DefNode.new(val[1], val[2], [],     val[3], indent) }
-  | DEF SCOPE_MODIFIER IDENTIFIER "(" ParamList ")" Block End  { indent = val[6].pop; result = DefNode.new(val[1], val[2], val[4], val[6], indent) }
+    DEF Scope IDENTIFIER Keyword Block End                             { indent = val[4].pop; result = DefNode.new(val[1], val[2], [],     val[3], val[4], indent) }
+  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End           { indent = val[7].pop; result = DefNode.new(val[1], val[2], val[4], val[6], val[7], indent) }
+  ;
+
+  Keyword:
+    IDENTIFIER            { result = val[0] }
+  | /* nothing */         { result = nil }
   ;
 
   End:

@@ -13,12 +13,12 @@ class BasicCompilerTest < Riml::TestCase
     end
 =end
     nodes = Nodes.new([
-      DefNode.new(nil, "a_method", ['a', 'b'],
+      DefNode.new(nil, "a_method", ['a', 'b'], nil,
         Nodes.new([TrueNode.new]), 2
       )
     ])
     expected = <<Viml
-function s:a_method(a, b)
+function s:A_method(a, b)
   return 1
 endfunction
 Viml
@@ -37,14 +37,14 @@ Viml
 =end
 
     nodes = Nodes.new([
-      DefNode.new('b:', "another_method", ['a', 'b'], Nodes.new(
+      DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new(
         [IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]))]
       ),2)
     ])
 
     # NOTE: change below so 'hello' doesn't take parens
     expected = <<Viml
-function b:another_method(a, b)
+function b:Another_method(a, b)
   if (hello())
     return 0
   else
@@ -69,7 +69,7 @@ Viml
 
   expected = <<Viml
 if (b())
-  s:a = 2
+  let s:a = 2
 endif
 Viml
     assert_equal expected, compile(nodes)
@@ -78,9 +78,7 @@ Viml
 
   test "setting variable to nil frees its memory" do
     riml = "b:a = nil\n"
-    expected = <<Viml
-unlet! b:a
-Viml
+    expected = 'unlet! b:a' + "\n"
 
     assert_equal expected, compile(riml)
     assert_equal 1, global_variables.count
@@ -107,19 +105,34 @@ Viml
     riml = <<Riml
 a = "should be script local"
 b:a = "should be buffer local"
-def script_local_function()
+def script_local_function
   a = "should be local to function"
 end
 Riml
 
     expected = <<Viml
-s:a = "should be script local"
-b:a = "should be buffer local"
-function s:script_local_function()
-  a = "should be local to function"
+let s:a = "should be script local"
+let b:a = "should be buffer local"
+function s:Script_local_function()
+  let a = "should be local to function"
 endfunction
 Viml
     assert_equal expected, compile(riml)
     assert_equal 1, global_variables.count
+  end
+
+  # TODO: need to test by prefixing everything with echo
+  test "interpolation in double-quoted strings" do
+  riml = '"found #{n} words"'
+  expected = '"found " . s:n . "words"'
+
+  assert_equal expected, compile(riml)
+  end
+
+  test "functions can take expressions" do
+    riml = 'echo("found #{n} words")'
+    expected = 'echo("found " . s:n . "words")' + "\n"
+
+    assert_equal expected, compile(riml)
   end
 end

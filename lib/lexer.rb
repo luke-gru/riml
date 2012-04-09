@@ -15,12 +15,12 @@ module Riml
       while i < code.size
         chunk = code[i..-1]
 
-        if scope_modifier = chunk[/\A(s|b):/]
+        if scope_modifier = chunk[/\A(s|b|w|g|v|a):/]
           raise TypeError, "expected identifier after scope modifier" if expecting_identifier
           tokens << [:SCOPE_MODIFIER, scope_modifier]
           expecting_identifier = true
           i += 2
-        elsif identifier = chunk[/\A([a-z]\w*)/]
+        elsif identifier = chunk[/\A[a-zA-Z_]\w*/]
           # keyword identifiers
           if KEYWORDS.include?(identifier)
             tokens << [identifier.upcase.intern, identifier]
@@ -49,13 +49,27 @@ module Riml
           i += identifier.size
         elsif expecting_identifier
           raise TypeError, "expected identifier after scope modifier"
-        elsif constant = chunk[/\A([A-Z]\w*)/]
+        elsif constant = chunk[/\A[A-Z]\w*/]
           tokens << [:CONSTANT, constant]
           i += constant.size
-        elsif number = chunk[/\A([0-9]+)/]
+        elsif number = chunk[/\A[0-9]+/]
           tokens << [:NUMBER, number.to_i]
           i += number.size
-        elsif string = chunk[/\A"(.*?)"/, 1]
+        elsif interpolation = chunk[/\A"(.*?)(\#{(.*?)})(.*?)"/]
+          # "#{hey} guys" = hey . " guys"
+          if !$1.empty?
+            tokens << [:STRING, $1]
+            tokens << ['.', '.']
+          end
+          tokens << [:IDENTIFIER, $3]
+          if !$4.empty?
+            tokens << ['.', '.']
+            tokens << [ :STRING, $4[1..-1] ]
+          end
+          #s = interpolation.gsub(%r{"}, "'")
+          p "Interpolated string: #{s}" if debug?
+          i += interpolation.size
+        elsif string = chunk[/\A("|')(.*?)("|')/, 2]
           tokens << [:STRING, string]
           i += string.size + 2
         elsif newlines = chunk[/\A(\n+)/, 1]
@@ -77,9 +91,10 @@ module Riml
         # operators of more than 1 char
         elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=)}, 1]
           tokens << [operator, operator]
+          i += operator.size
         elsif whitespaces = chunk[/\A +/]
           i += whitespaces.size
-        elsif one_line_comment = chunk[/\s*#.*$/]
+        elsif one_line_comment = chunk[/\A\s*#.*$/]
           i += one_line_comment.size
         # operators and tokens of single chars ( ) , . [ ] ! + - = < >
         else
@@ -97,6 +112,5 @@ module Riml
     def one_line_conditional?(chunk)
       res = chunk[/^(if|unless).*?(else)?.*?end$/]
     end
-
   end
 end

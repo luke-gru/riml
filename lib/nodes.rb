@@ -1,5 +1,10 @@
 # Collection of nodes each one representing an expression.
 
+# global methods
+def debug?
+  not ENV["DEBUG"].nil?
+end
+
 def global_variables
   @@global_variables ||= []
 end
@@ -98,19 +103,19 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   attr_accessor :scope
 end
 
-class OperatorNode < Struct.new(:operator, :expressions)
+class OperatorNode < Struct.new(:operator, :operands)
   include Visitable
 
   attr_accessor :scope
 end
 
 class BinaryOperatorNode < OperatorNode
-  def expression1
-    expressions.first
+  def operand1
+    operands.first
   end
 
-  def expression2
-    expressions[1]
+  def operand2
+    operands[1]
   end
 end
 
@@ -135,8 +140,14 @@ class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   attr_accessor :scope
 end
 
+class GetVariableNode < Struct.new(:scope_modifier, :name)
+  include Visitable
+
+  attr_accessor :scope
+end
+
 # Method definition.
-class DefNode < Struct.new(:scope_modifier, :name, :parameters, :body, :indent)
+class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body, :indent)
   include Visitable
   include Enumerable
 
@@ -148,6 +159,10 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :body, :indent)
 
   def scoped_variables
     @scoped_variables ||= []
+  end
+
+  def arg_variables
+    @arg_variables ||= parameters
   end
 
   def each(&block)

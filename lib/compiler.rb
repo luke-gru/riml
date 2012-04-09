@@ -148,7 +148,25 @@ module Riml
     NumberNodeVisitor = LiteralNodeVisitor
     ReturnNodeVisitor = LiteralNodeVisitor
 
-    class SetVariableNodeVisitor < Visitor
+    # common visiting methods for SetVariableVisitor and GetVariableVisitor
+    class VariableVisitor < Visitor
+      private
+      def _scope_modifier_for_local_variable_name(var_name, scope)
+        scope.scoped_variables.reverse_each do |name|
+          if name[2..-1] == var_name then return name[0...2] end
+        end
+        ''
+      end
+
+      def _scope_modifier_for_global_variable_name(var_name)
+        global_variables.reverse_each do |name|
+          if name[2..-1] == var_name then return name[0...2] end
+        end
+        's:'
+      end
+    end
+
+    class SetVariableNodeVisitor < VariableVisitor
       def visit(node)
         _compile(node)
         propagate_up_tree(node, @value)
@@ -177,7 +195,7 @@ module Riml
         end
         value_visitor.propagate_up_tree = true
 
-        node.compiled_output = "#{modifier}#{node.name} = "
+        node.compiled_output = "let #{modifier}#{node.name} = "
         node.value.compiled_output.clear
         node.value.parent_node = node
         node.value.accept(value_visitor)
@@ -185,20 +203,6 @@ module Riml
       end
 
       private
-      def _scope_modifier_for_local_variable_name(var_name, scope)
-        scope.scoped_variables.reverse_each do |name|
-          if name[2..-1] == var_name then return name[0...2] end
-        end
-        ''
-      end
-
-      def _scope_modifier_for_global_variable_name(var_name)
-        global_variables.reverse_each do |name|
-          if name[2..-1] == var_name then return name[0...2] end
-        end
-        's:'
-      end
-
       def _push_explicitly_scoped_variable_onto_stack(var_name, node)
         if node.scope and node.scope.local?
           node.scope.scoped_variables << var_name
@@ -210,8 +214,50 @@ module Riml
       end
     end
 
+    # scope_modifier, name
+    class GetVariableNodeVisitor < VariableVisitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        modifier = node.scope_modifier
+        if modifier.nil?
+          # local scope
+          if node.scope and node.scope.local?
+            modifier = _scope_modifier_for_local_variable_name(node.name, node.scope)
+          # global scope
+          else
+            modifier = _scope_modifier_for_global_variable_name(node.name)
+          end
+        end
+        @value = node.compiled_output = "#{modifier}#{node.name}"
+      end
+    end
+
+    # operator, operands
+    class BinaryOperatorNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        operand1_visitor = visitor_for_node(node.operand1)
+        operand2_visitor = visitor_for_node(node.operand2)
+        node.operands.each {|n| n.parent_node = node}
+        node.operand1.accept(operand1_visitor)
+        node.compiled_output << " #{node.operator} "
+        node.operand2.accept(operand2_visitor)
+        @value = node.compiled_output
+      end
+    end
+
+    # scope_modifier, name, parameters, keyword, body, indent
     class DefNodeVisitor < Visitor
-      # scope_modifier, name, parameters, body
       def visit(node)
         _setup_local_scope_for_descendants(node)
         _compile(node)
@@ -222,8 +268,9 @@ module Riml
       def _compile(node)
         modifier = node.scope_modifier || 's:'
         declaration = <<Viml.chomp
-function #{modifier}#{node.name}(#{node.parameters.join(', ')})\n
+function #{modifier}#{node.name.capitalize}(#{node.parameters.join(', ')})
 Viml
+        declaration << (node.keyword ? node.keyword + "\n" : "\n")
         node.body.parent_node = node
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
         indent = " " * 2
@@ -250,6 +297,7 @@ Viml
           @scope = options[:scope]
           raise ArgumentError, "need to pass scope to new instance in order to establish scope" unless @scope
         end
+        super
       end
 
       def visit(node)
@@ -314,6 +362,7 @@ Viml
         args[i+1] != nil
       end
     end
+
 
     # compiles nodes into output code
     def compile(root_node)
