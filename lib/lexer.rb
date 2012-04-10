@@ -64,7 +64,7 @@ module Riml
           tokens << [:IDENTIFIER, $3]
           if !$4.empty?
             tokens << ['.', '.']
-            tokens << [ :STRING, $4[1..-1] ]
+            tokens << [ :STRING, " #{$4[1..-1]}" ]
           end
           #s = interpolation.gsub(%r{"}, "'")
           p "Interpolated string: #{s}" if debug?

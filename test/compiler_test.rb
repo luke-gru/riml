@@ -57,7 +57,7 @@ Viml
 
   test "ruby-like if this then that end expression" do
 
-    riml = "if b() then a = 2 end\n"
+    riml = "if b() then a = 2 end"
     nodes = Nodes.new([
       IfNode.new(
         CallNode.new(nil, 'b', []),
@@ -77,7 +77,7 @@ Viml
   end
 
   test "setting variable to nil frees its memory" do
-    riml = "b:a = nil\n"
+    riml = "b:a = nil"
     expected = 'unlet! b:a' + "\n"
 
     assert_equal expected, compile(riml)
@@ -123,15 +123,26 @@ Viml
 
   # TODO: need to test by prefixing everything with echo
   test "interpolation in double-quoted strings" do
-  riml = '"found #{n} words"'
-  expected = '"found " . s:n . "words"'
+  riml1 = '"found #{n} words"'
+  expected1 = '"found " . s:n . " words"'
 
-  assert_equal expected, compile(riml)
+  riml2 = '"#{n} words were found"'
+  expected2 = 's:n . " words were found"'
+
+  assert_equal expected1, compile(riml1)
+  assert_equal expected2, compile(riml2)
   end
 
   test "functions can take expressions" do
     riml = 'echo("found #{n} words")'
-    expected = 'echo("found " . s:n . "words")' + "\n"
+    expected = 'echo("found " . s:n . " words")' + "\n"
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "chaining method calls" do
+    riml = 'n = n + len(split(getline(lnum)))'
+    expected = 'let s:n = s:n + len(split(getline(s:lnum)))' + "\n"
 
     assert_equal expected, compile(riml)
   end

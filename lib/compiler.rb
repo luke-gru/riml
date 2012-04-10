@@ -199,7 +199,8 @@ module Riml
         node.value.compiled_output.clear
         node.value.parent_node = node
         node.value.accept(value_visitor)
-        @value = node.compiled_output << "\n"
+        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
+        @value = node.compiled_output
       end
 
       private
@@ -352,7 +353,7 @@ Viml
         node.compiled_output << ")"
         # TODO: need better heuristics for adding the newline after calling a
         # function
-        unless IfNode === node.parent_node
+        unless IfNode === node.parent_node || descendant_of_callnode?(node)
           node.compiled_output << "\n"
         end
         @value = node.compiled_output
@@ -360,6 +361,10 @@ Viml
 
       def not_last_arg?(args, i)
         args[i+1] != nil
+      end
+
+      def descendant_of_callnode?(node)
+        CallNode === node.parent_node
       end
     end
 
