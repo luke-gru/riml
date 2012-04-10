@@ -7,34 +7,38 @@ class BasicCompilerTest < Riml::TestCase
   end
 
   test "basic function compiles" do
-=begin
-    def a_method(a, b)
-      true
-    end
-=end
+    riml = <<Riml
+def a_method(a, b)
+  true
+end
+Riml
+
     nodes = Nodes.new([
       DefNode.new(nil, "a_method", ['a', 'b'], nil,
         Nodes.new([TrueNode.new]), 2
       )
     ])
+
     expected = <<Viml
 function s:A_method(a, b)
   return 1
 endfunction
 Viml
+
     assert_equal expected, compile(nodes)
+    assert_equal expected, compile(riml)
   end
 
   test "branching function compiles and returns on all branches" do
-=begin
-    def b:another_method(a, b)
-      if (hello)
-        false
-      else
-        true
-      end
-    end
-=end
+    riml = <<Riml
+def b:another_method(a, b)
+  if (hello())
+    false
+  else
+    true
+  end
+end
+Riml
 
     nodes = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new(
@@ -52,11 +56,12 @@ function b:Another_method(a, b)
   endif
 endfunction
 Viml
+
     assert_equal expected, compile(nodes)
+    assert_equal expected, compile(riml)
   end
 
   test "ruby-like if this then that end expression" do
-
     riml = "if b() then a = 2 end"
     nodes = Nodes.new([
       IfNode.new(
@@ -72,6 +77,7 @@ if (b())
   let s:a = 2
 endif
 Viml
+
     assert_equal expected, compile(nodes)
     assert_equal expected, compile(riml)
   end
@@ -117,6 +123,7 @@ function s:Script_local_function()
   let a = "should be local to function"
 endfunction
 Viml
+
     assert_equal expected, compile(riml)
     assert_equal 1, global_variables.count
   end
@@ -143,6 +150,38 @@ Viml
   test "chaining method calls" do
     riml = 'n = n + len(split(getline(lnum)))'
     expected = 'let s:n = s:n + len(split(getline(s:lnum)))' + "\n"
+
+    assert_equal expected, compile(riml)
+  end
+
+  # TODO: get rid of semicolon annoyance
+  test "function can take range when given parens" do
+    riml = <<Riml
+def My_function(a,b) range
+;
+end
+Riml
+
+    expected = <<Viml
+function s:My_function(a, b) range
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "function declaration parens are optional when not given arguments" do
+    riml = <<Riml
+def short_function
+  echo("martin short")
+end
+Riml
+
+    expected = <<Viml
+function s:Short_function()
+  echo("martin short")
+endfunction
+Viml
 
     assert_equal expected, compile(riml)
   end

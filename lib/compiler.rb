@@ -271,7 +271,7 @@ module Riml
         declaration = <<Viml.chomp
 function #{modifier}#{node.name.capitalize}(#{node.parameters.join(', ')})
 Viml
-        declaration << (node.keyword ? node.keyword + "\n" : "\n")
+        declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
         node.body.parent_node = node
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
         indent = " " * 2

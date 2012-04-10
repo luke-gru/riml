@@ -1,6 +1,6 @@
 module Riml
   class Lexer
-    KEYWORDS = %w(def end if then else elsif unless true false nil return)
+    KEYWORDS = %w(def end if then else elsif unless while true false nil return)
 
     def tokenize(code)
       code.chomp!
