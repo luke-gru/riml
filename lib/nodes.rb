@@ -20,6 +20,19 @@ module Visitable
     @compiled_output ||= ''
   end
 
+  # catches "descendant_of_#{some_node}?" methods
+  # def descendant_of_callnode?
+  #   CallNode === self.parent_node
+  # end
+  def method_missing(method, *args, &blk)
+    if method.to_s =~ /descendant_of_(.*?)\?/
+      parent_node_name = $1.split('_').map(&:capitalize).join
+      parent_node = self.class.const_get parent_node_name
+      parent_node === self.parent_node
+    else
+      super
+    end
+  end
 end
 
 
@@ -144,6 +157,21 @@ class GetVariableNode < Struct.new(:scope_modifier, :name)
   include Visitable
 
   attr_accessor :scope
+
+  alias name_with_question_mark name
+  def name_without_question_mark
+    if question_existence?
+      name_with_question_mark[0...-1]
+    else
+      name_with_question_mark
+    end
+  end
+  alias name name_without_question_mark
+
+  def question_existence?
+    name_with_question_mark[-1] == ??
+  end
+
 end
 
 # Method definition.

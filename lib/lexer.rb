@@ -16,11 +16,11 @@ module Riml
         chunk = code[i..-1]
 
         if scope_modifier = chunk[/\A(s|b|w|g|v|a):/]
-          raise TypeError, "expected identifier after scope modifier" if expecting_identifier
+          raise SyntaxError, "expected identifier after scope modifier" if expecting_identifier
           tokens << [:SCOPE_MODIFIER, scope_modifier]
           expecting_identifier = true
           i += 2
-        elsif identifier = chunk[/\A[a-zA-Z_]\w*/]
+        elsif identifier = chunk[/\A[a-zA-Z_]\w*\??/]
           # keyword identifiers
           if KEYWORDS.include?(identifier)
             tokens << [identifier.upcase.intern, identifier]
@@ -48,7 +48,7 @@ module Riml
           expecting_identifier = false
           i += identifier.size
         elsif expecting_identifier
-          raise TypeError, "expected identifier after scope modifier"
+          raise SyntaxError, "expected identifier after scope modifier"
         elsif constant = chunk[/\A[A-Z]\w*/]
           tokens << [:CONSTANT, constant]
           i += constant.size
@@ -57,12 +57,12 @@ module Riml
           i += number.size
         elsif interpolation = chunk[/\A"(.*?)(\#{(.*?)})(.*?)"/]
           # "#{hey} guys" = hey . " guys"
-          if !$1.empty?
+          unless $1.empty?
             tokens << [:STRING, $1]
             tokens << ['.', '.']
           end
           tokens << [:IDENTIFIER, $3]
-          if !$4.empty?
+          unless $4.empty?
             tokens << ['.', '.']
             tokens << [ :STRING, " #{$4[1..-1]}" ]
           end

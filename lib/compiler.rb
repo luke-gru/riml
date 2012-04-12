@@ -35,7 +35,6 @@ module Riml
       private
       def _compile(node)
         indent  = " " * 2
-        outdent = ""
         condition_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
@@ -44,14 +43,14 @@ module Riml
 
         node.condition.accept(condition_visitor)
         node.compiled_output << ")\n"
-        pre_body = node.compiled_output; node.compiled_output = ''
+        output = node.compiled_output; node.compiled_output = ''
         node.body.accept(NodesVisitor.new)
 
         node.compiled_output.each_line do |line|
-          line =~ /else\n\Z/ ? pre_body << outdent << line : pre_body << indent << line
+          line =~ /else\n\Z/ ? output << line : output << indent << line
         end
-        node.compiled_output = pre_body
-        node.compiled_output << outdent << "endif\n"
+        node.compiled_output = output
+        node.compiled_output << "endif\n"
         @value = node.compiled_output
       end
     end
@@ -189,7 +188,7 @@ module Riml
         value_visitor = visitor_for_node(node.value)
         value_visitor.propagate_up_tree = false
         node.value.accept(value_visitor)
-        if node.value.compiled_output == 'nil'
+        if node.value.compiled_output == nil.inspect
           @value = node.compiled_output = "unlet! #{modifier}#{node.name}" << "\n"
           return
         end
@@ -234,7 +233,12 @@ module Riml
             modifier = _scope_modifier_for_global_variable_name(node.name)
           end
         end
-        @value = node.compiled_output = "#{modifier}#{node.name}"
+        if node.question_existence?
+          node.compiled_output = "exists?(\"#{modifier}#{node.name}\")"
+        else
+          node.compiled_output = "#{modifier}#{node.name}"
+        end
+        @value = node.compiled_output
       end
     end
 
@@ -315,18 +319,15 @@ Viml
         case node
         when Nodes
           node.each do |expr|
-            expr.scope = @scope
             expr.accept(self)
           end
         when IfNode # includes UnlessNode
           node.condition.scope = @scope
           node.each do |body_expr|
-            body_expr.scope = @scope
             body_expr.accept(self)
           end
         when ElseNode
           node.each do |else_expr|
-            else_expr.scope = @scope
             else_expr.accept(self)
           end
         else
@@ -348,23 +349,18 @@ Viml
           arg.parent_node = node
           arg_visitor = visitor_for_node(arg)
           arg.accept(arg_visitor)
-          node.compiled_output << ", " if not_last_arg?(node.arguments, i)
+          node.compiled_output << ", " unless last_arg?(node.arguments, i)
         end
         node.compiled_output << ")"
-        # TODO: need better heuristics for adding the newline after calling a
-        # function
-        unless IfNode === node.parent_node || descendant_of_callnode?(node)
+
+        unless node.descendant_of_if_node? || node.descendant_of_call_node?
           node.compiled_output << "\n"
         end
         @value = node.compiled_output
       end
 
-      def not_last_arg?(args, i)
-        args[i+1] != nil
-      end
-
-      def descendant_of_callnode?(node)
-        CallNode === node.parent_node
+      def last_arg?(args, i)
+        args[i+1].nil?
       end
     end
 

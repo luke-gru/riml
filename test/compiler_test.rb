@@ -32,7 +32,7 @@ Viml
   test "branching function compiles and returns on all branches" do
     riml = <<Riml
 def b:another_method(a, b)
-  if (hello())
+  if hello()
     false
   else
     true
@@ -46,7 +46,6 @@ Riml
       ),2)
     ])
 
-    # NOTE: change below so 'hello' doesn't take parens
     expected = <<Viml
 function b:Another_method(a, b)
   if (hello())
@@ -128,7 +127,6 @@ Viml
     assert_equal 1, global_variables.count
   end
 
-  # TODO: need to test by prefixing everything with echo
   test "interpolation in double-quoted strings" do
   riml1 = '"found #{n} words"'
   expected1 = '"found " . s:n . " words"'
@@ -183,6 +181,21 @@ function s:Short_function()
 endfunction
 Viml
 
+    assert_equal expected, compile(riml)
+  end
+
+  test "query at the end of variable checks for its existence" do
+    riml = <<Riml
+if g:a?
+  true
+end
+Riml
+
+    expected = <<Viml
+if (exists?("g:a"))
+  return 1
+endif
+Viml
     assert_equal expected, compile(riml)
   end
 end
