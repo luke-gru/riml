@@ -1,6 +1,7 @@
 class Riml::Parser
 
-token IF THEN ELSE ELSIF END UNLESS
+token IF ELSE ELSIF THEN UNLESS END
+token WHILE UNTIL
 token DEF
 token INDENT DEDENT
 token NEWLINE
@@ -10,11 +11,12 @@ token TRUE FALSE NIL
 token IDENTIFIER
 token CONSTANT
 token SCOPE_MODIFIER
+token FINISH
 
 prechigh
   right '!'
   left '*' '/'
-  left '+' '-'
+  left '+' '+=' '-' '-='
   left '.'
   left '>' '>=' '<' '<='
   left '&&'
@@ -45,12 +47,15 @@ rule
   | Call                                  { result = val[0] }
   | Assign                                { result = val[0] }
   | Def                                   { result = val[0] }
+  | Command                               { result = val[0] }
   | VariableRetrieval                     { result = val[0] }
   | Literal                               { result = val[0] }
   | Constant                              { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
+  | While                                 { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
+  | EndScript                             { result = val[0] }
   ;
 
   Terminator:
@@ -97,7 +102,9 @@ rule
   | Expression '<' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '<=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '+' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '+=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '-' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '-=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '*' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
@@ -118,7 +125,6 @@ rule
     Scope IDENTIFIER                            { result = GetVariableNode.new(val[0], val[1])}
   ;
 
-
   # Method definition
   # [scope_modifier, name, args, expressions, indent]
   Def:
@@ -126,14 +132,23 @@ rule
   | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End           { indent = val[7].pop; result = DefNode.new(val[1], val[2], val[4], val[6], val[7], indent) }
   ;
 
+  # like 'range' after function definition
   Keyword:
     IDENTIFIER            { result = val[0] }
   | /* nothing */         { result = nil }
   ;
 
+  Command:
+    COMMAND NARGS IDENTIFIER
+  ;
+
   End:
     END NEWLINE DEDENT
   | END
+  ;
+
+  EndScript:
+    FINISH                                      { result = FinishNode.new }
   ;
 
   ParamList:
@@ -142,7 +157,7 @@ rule
   | ParamList ',' IDENTIFIER              { result = val[0] << val[2] }
   ;
 
-  # [expression, expressions, indent]
+  # [expression, expressions]
   If:
     IF Expression Block End                 { indent = val[2].pop; result = IfNode.new(val[1], val[2]) }
   | IF Expression THEN Expression End       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
@@ -151,6 +166,10 @@ rule
   Unless:
     UNLESS Expression Block End             { indent = val[2].pop; result = UnlessNode.new(val[1], val[2]) }
   | UNLESS Expression THEN Expression End   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
+  ;
+
+  While:
+    WHILE Expression Block End              { indent = val[2].pop; result = WhileNode.new(val[1], val[2]) }
   ;
 
   # [expressions, indent]

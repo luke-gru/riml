@@ -34,12 +34,11 @@ module Riml
 
       private
       def _compile(node)
-        indent  = " " * 2
         condition_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
         node.compiled_output = "if ("
-        node.compiled_output << "!" if node.respond_to? :unless
+        node.compiled_output << "!" if node.respond_to? :unless?
 
         node.condition.accept(condition_visitor)
         node.compiled_output << ")\n"
@@ -47,7 +46,7 @@ module Riml
         node.body.accept(NodesVisitor.new)
 
         node.compiled_output.each_line do |line|
-          line =~ /else\n\Z/ ? output << line : output << indent << line
+          line =~ /else\n\Z/ ? output << line : output << node.indent << line
         end
         node.compiled_output = output
         node.compiled_output << "endif\n"
@@ -56,6 +55,33 @@ module Riml
     end
 
     UnlessNodeVisitor = IfNodeVisitor
+
+    class WhileNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        condition_visitor = visitor_for_node(node.condition)
+        node.condition.parent_node = node
+        node.body.parent_node = node
+        node.compiled_output = "while ("
+
+        node.condition.accept(condition_visitor)
+        node.compiled_output << ")\n"
+        output = node.compiled_output; node.compiled_output = ''
+        node.body.accept(NodesVisitor.new)
+
+        node.compiled_output.each_line do |line|
+          output << node.indent << line
+        end
+        node.compiled_output = output + "\n"
+        node.compiled_output << "endwhile\n"
+        @value = node.compiled_output
+      end
+    end
 
     class ElseNodeVisitor < Visitor
       def visit(node)
@@ -85,7 +111,7 @@ module Riml
           begin
             visitor = visitor_for_node(node)
             next_node = next_node(nodes, i)
-            if visitor.class.name =~ /LiteralNode/ && ( node == nodes.last || visitor_for_node(next_node).class.name =~ /ElseNode/ )
+            if LiteralNode === node && ( node == nodes.last || ElseNode === next_node ) && !(FinishNode === node)
               node.explicit_return = true
             end
             node.parent_node = nodes
@@ -122,19 +148,21 @@ module Riml
         when NilClass
           nil.inspect
         when String
-          if StringNode === node then _escape(node.value) else node.value end
+          if StringNode === node then escape(node.value) else node.value end
         when Numeric
           node.value
         end.to_s
-        @value = node.compiled_output = if node.explicit_return
-          "return #{value}\n"
-        else
-          value
+
+        @value = node.compiled_output = begin
+          if node.explicit_return
+            "return #{value}\n"
+          else
+            value
+          end
         end
       end
 
-      private
-      def _escape(string)
+      def escape(string)
         #TODO: implement
         '"' + string + '"'
       end
@@ -146,18 +174,19 @@ module Riml
     StringNodeVisitor = LiteralNodeVisitor
     NumberNodeVisitor = LiteralNodeVisitor
     ReturnNodeVisitor = LiteralNodeVisitor
+    FinishNodeVisitor = LiteralNodeVisitor
 
     # common visiting methods for SetVariableVisitor and GetVariableVisitor
     class VariableVisitor < Visitor
       private
-      def _scope_modifier_for_local_variable_name(var_name, scope)
+      def scope_modifier_for_local_variable_name(var_name, scope)
         scope.scoped_variables.reverse_each do |name|
           if name[2..-1] == var_name then return name[0...2] end
         end
         ''
       end
 
-      def _scope_modifier_for_global_variable_name(var_name)
+      def scope_modifier_for_global_variable_name(var_name)
         global_variables.reverse_each do |name|
           if name[2..-1] == var_name then return name[0...2] end
         end
@@ -174,14 +203,14 @@ module Riml
       private
       def _compile(node)
         modifier = node.scope_modifier
-        _push_explicitly_scoped_variable_onto_stack("#{modifier}#{node.name}", node) if modifier
+        push_explicitly_scoped_variable_onto_stack("#{modifier}#{node.name}", node) if modifier
         if modifier.nil?
           # local scope
           if node.scope and node.scope.local?
-            modifier = _scope_modifier_for_local_variable_name(node.name, node.scope)
+            modifier = scope_modifier_for_local_variable_name(node.name, node.scope)
           # global scope
           else
-            modifier = _scope_modifier_for_global_variable_name(node.name)
+            modifier = scope_modifier_for_global_variable_name(node.name)
           end
         end
 
@@ -203,7 +232,7 @@ module Riml
       end
 
       private
-      def _push_explicitly_scoped_variable_onto_stack(var_name, node)
+      def push_explicitly_scoped_variable_onto_stack(var_name, node)
         if node.scope and node.scope.local?
           node.scope.scoped_variables << var_name
           node.scope.scoped_variables.uniq!
@@ -227,10 +256,10 @@ module Riml
         if modifier.nil?
           # local scope
           if node.scope and node.scope.local?
-            modifier = _scope_modifier_for_local_variable_name(node.name, node.scope)
+            modifier = scope_modifier_for_local_variable_name(node.name, node.scope)
           # global scope
           else
-            modifier = _scope_modifier_for_global_variable_name(node.name)
+            modifier = scope_modifier_for_global_variable_name(node.name)
           end
         end
         if node.question_existence?
@@ -264,7 +293,7 @@ module Riml
     # scope_modifier, name, parameters, keyword, body, indent
     class DefNodeVisitor < Visitor
       def visit(node)
-        _setup_local_scope_for_descendants(node)
+        setup_local_scope_for_descendants(node)
         _compile(node)
         propagate_up_tree(node, @value)
       end
@@ -287,7 +316,7 @@ Viml
         @value = node.compiled_output
       end
 
-      def _setup_local_scope_for_descendants(node)
+      def setup_local_scope_for_descendants(node)
         node.body.accept(DrillDownVisitor.new(:establish_scope => true, :scope => node))
       end
     end
@@ -307,13 +336,13 @@ Viml
 
       def visit(node)
         if @establish_scope
-          _establish_scope(node)
+          establish_scope(node)
         else
         end
       end
 
       private
-      def _establish_scope(node)
+      def establish_scope(node)
         node.scope = @scope
 
         case node
@@ -321,7 +350,7 @@ Viml
           node.each do |expr|
             expr.accept(self)
           end
-        when IfNode # includes UnlessNode
+        when ControlStructure
           node.condition.scope = @scope
           node.each do |body_expr|
             body_expr.accept(self)
@@ -353,7 +382,7 @@ Viml
         end
         node.compiled_output << ")"
 
-        unless node.descendant_of_if_node? || node.descendant_of_call_node?
+        unless node.descendant_of_control_structure? || node.descendant_of_call_node?
           node.compiled_output << "\n"
         end
         @value = node.compiled_output

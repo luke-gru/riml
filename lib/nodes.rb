@@ -104,6 +104,12 @@ class ReturnNode < LiteralNode
   end
 end
 
+class FinishNode < LiteralNode
+  def initialize
+    super("finish\n")
+  end
+end
+
 # Node of a method call or local variable access, can take any of these forms:
 #
 #   variable
@@ -198,11 +204,18 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body,
   end
 end
 
-# "if" control structure. Look at this node if you want to implement other control
-# structures like while, for, loop, etc.
-class IfNode < Struct.new(:condition, :body)
+# command? -nargs=1 Correct :call s:Add(<q-args>, 0)
+class CommandNode < Struct.new(:command, :nargs, :name, :body)
+end
+
+# abstract control structure
+class ControlStructure < Struct.new(:condition, :body)
   include Visitable
   include Enumerable
+
+  def indent
+    @indent ||= " " * 2
+  end
 
   attr_accessor :scope
 
@@ -211,10 +224,17 @@ class IfNode < Struct.new(:condition, :body)
   end
 end
 
-class UnlessNode < IfNode
-  def unless
+class IfNode < ControlStructure
+end
+
+
+class UnlessNode < ControlStructure
+  def unless?
     true
   end
+end
+
+class WhileNode < ControlStructure
 end
 
 class ElseNode < Struct.new(:expressions)

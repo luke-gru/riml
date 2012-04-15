@@ -83,7 +83,7 @@ Viml
 
   test "setting variable to nil frees its memory" do
     riml = "b:a = nil"
-    expected = 'unlet! b:a' + "\n"
+    expected = "unlet! b:a\n"
 
     assert_equal expected, compile(riml)
     assert_equal 1, global_variables.count
@@ -196,6 +196,46 @@ if (exists?("g:a"))
   return 1
 endif
 Viml
+
     assert_equal expected, compile(riml)
+  end
+
+  test "finish keyword compiles correctly" do
+    riml = <<Riml
+if g:myplugin?
+  finish
+end
+Riml
+
+    expected = <<Viml
+if (exists?("g:myplugin"))
+  finish
+endif
+Viml
+
+  assert_equal expected, compile(riml)
+  end
+
+  test "while conditional compiles correctly" do
+    riml = <<Riml
+i = 0
+while (i < 5)
+  echo("hi")
+  i += 1
+end
+Riml
+
+    expected = <<Viml
+let s:i = 0
+while (s:i < 5)
+  echo("hi")
+  s:i += 1
+endwhile
+Viml
+
+  assert_equal expected, compile(riml)
+  end
+
+  test "" do
   end
 end

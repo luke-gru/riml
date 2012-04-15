@@ -1,6 +1,6 @@
 module Riml
   class Lexer
-    KEYWORDS = %w(def end if then else elsif unless while true false nil return)
+    KEYWORDS = %w(def end if then else elsif unless while true false nil return command command? finish)
 
     def tokenize(code)
       code.chomp!
@@ -21,11 +21,15 @@ module Riml
           expecting_identifier = true
           i += 2
         elsif identifier = chunk[/\A[a-zA-Z_]\w*\??/]
+
           # keyword identifiers
           if KEYWORDS.include?(identifier)
-            tokens << [identifier.upcase.intern, identifier]
+
+            token_name = identifier[-1] == ?? ? identifier[0..-2] : identifier
+            tokens << [token_name.upcase.intern, identifier]
+
             case identifier
-            when "def"
+            when "def", "while"
               current_indent += 2
               indent_pending = true
             when "if", "unless"
@@ -45,8 +49,10 @@ module Riml
           else
             tokens << [:IDENTIFIER, identifier ]
           end
+
           expecting_identifier = false
           i += identifier.size
+
         elsif expecting_identifier
           raise SyntaxError, "expected identifier after scope modifier"
         elsif constant = chunk[/\A[A-Z]\w*/]
@@ -89,7 +95,7 @@ module Riml
 
           i += newlines.size
         # operators of more than 1 char
-        elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=)}, 1]
+        elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=)}, 1]
           tokens << [operator, operator]
           i += operator.size
         elsif whitespaces = chunk[/\A +/]
