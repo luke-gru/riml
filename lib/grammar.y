@@ -3,6 +3,7 @@ class Riml::Parser
 token IF ELSE ELSIF THEN UNLESS END
 token WHILE UNTIL
 token DEF
+token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
 token NUMBER
@@ -139,7 +140,7 @@ rule
   ;
 
   Command:
-    COMMAND NARGS IDENTIFIER
+    COMMAND NARGS IDENTIFIER {}
   ;
 
   End:
@@ -177,6 +178,7 @@ rule
   Block:
     NEWLINE INDENT Expressions ELSE NEWLINE Expressions { result = val[2] << ElseNode.new(val[5]) << val[1] }
   | NEWLINE INDENT Expressions                          { result = val[2] << val[1] }
+  | NEWLINE INDENT                                      { result = Nodes.new([]) << val[1] }
   ;
 end
 

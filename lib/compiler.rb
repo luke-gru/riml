@@ -307,10 +307,13 @@ Viml
         declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
         node.body.parent_node = node
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
-        indent = " " * 2
+
         body = ""
-        node.body.compiled_output.each_line do |line|
-          body << indent << line
+        unless node.body.compiled_output.empty?
+          indent = " " * 2
+          node.body.compiled_output.each_line do |line|
+            body << indent << line
+          end
         end
         node.compiled_output = declaration << body << "endfunction\n"
         @value = node.compiled_output

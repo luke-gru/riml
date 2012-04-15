@@ -152,11 +152,9 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  # TODO: get rid of semicolon annoyance
   test "function can take range when given parens" do
     riml = <<Riml
 def My_function(a,b) range
-;
 end
 Riml
 
@@ -237,5 +235,6 @@ Viml
   end
 
   test "" do
+    skip
   end
 end
