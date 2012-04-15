@@ -83,6 +83,8 @@ module Riml
       end
     end
 
+    UntilNodeVisitor = WhileNodeVisitor
+
     class ElseNodeVisitor < Visitor
       def visit(node)
         _compile(node)
@@ -148,7 +150,7 @@ module Riml
         when NilClass
           nil.inspect
         when String
-          if StringNode === node then escape(node.value) else node.value end
+          StringNode === node ? escape(node.value) : node.value.dup
         when Numeric
           node.value
         end.to_s
@@ -171,8 +173,11 @@ module Riml
     TrueNodeVisitor   = LiteralNodeVisitor
     FalseNodeVisitor  = LiteralNodeVisitor
     NilNodeVisitor    = LiteralNodeVisitor
-    StringNodeVisitor = LiteralNodeVisitor
+
     NumberNodeVisitor = LiteralNodeVisitor
+    StringNodeVisitor = LiteralNodeVisitor
+    ListNodeVisitor   = LiteralNodeVisitor
+
     ReturnNodeVisitor = LiteralNodeVisitor
     FinishNodeVisitor = LiteralNodeVisitor
 
@@ -215,13 +220,12 @@ module Riml
         end
 
         value_visitor = visitor_for_node(node.value)
-        value_visitor.propagate_up_tree = false
+        # didn't set parent node on purpose, no propagation
         node.value.accept(value_visitor)
         if node.value.compiled_output == nil.inspect
           @value = node.compiled_output = "unlet! #{modifier}#{node.name}" << "\n"
           return
         end
-        value_visitor.propagate_up_tree = true
 
         node.compiled_output = "let #{modifier}#{node.name} = "
         node.value.compiled_output.clear
@@ -340,7 +344,6 @@ Viml
       def visit(node)
         if @establish_scope
           establish_scope(node)
-        else
         end
       end
 
@@ -349,7 +352,7 @@ Viml
         node.scope = @scope
 
         case node
-        when Nodes
+        when Nodes, ElseNode
           node.each do |expr|
             expr.accept(self)
           end
@@ -357,10 +360,6 @@ Viml
           node.condition.scope = @scope
           node.each do |body_expr|
             body_expr.accept(self)
-          end
-        when ElseNode
-          node.each do |else_expr|
-            else_expr.accept(self)
           end
         else
           #p "Node not caught while drilling down: #{node}"

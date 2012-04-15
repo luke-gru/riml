@@ -6,8 +6,7 @@ token DEF
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
-token NUMBER
-token STRING
+token NUMBER STRING LIST DICT
 token TRUE FALSE NIL
 token IDENTIFIER
 token CONSTANT
@@ -68,6 +67,7 @@ rule
   Literal:
     NUMBER                                { result = NumberNode.new(val[0]) }
   | STRING                                { result = StringNode.new(val[0]) }
+  | LIST                                  { result = ListNode.new(val[0]) }
   | TRUE                                  { result = TrueNode.new }
   | FALSE                                 { result = FalseNode.new }
   | NIL                                   { result = NilNode.new }

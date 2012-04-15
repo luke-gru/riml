@@ -1,3 +1,4 @@
 module Riml
-  VERSION = [0,0,3]
+  # 0.0.4 as of April 14
+  VERSION = [0,0,4]
 end

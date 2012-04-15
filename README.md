@@ -51,20 +51,3 @@ Checking for existence
     command? -nargs=1 Correct :call s:Add(<q-args>, 0)          if !exists(":Correct")
                                                                   command -nargs=1 Correct :call s:Add(<q-args>, 0)
                                                                 end
-
-String and truthiness
----------------------
-
-    if "true"                               if 1
-    if "6elves"                             if 6
-    if "0people"                            if 0
-    if ""                                   if 1
-    if " dinosaurs\t"                       if 1
-
-Options and Registers
----------------------
-
-    saveic = &ic
-    set noic
-    /The Start/, $delete
-    &ic = saveic

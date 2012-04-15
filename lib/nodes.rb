@@ -20,8 +20,8 @@ module Visitable
     @compiled_output ||= ''
   end
 
-  # catches "descendant_of_#{some_node}?" methods
-  # def descendant_of_callnode?
+  # catches "descendant_of_#{some_class}?" methods
+  # def descendant_of_call_node?
   #   CallNode === self.parent_node
   # end
   def method_missing(method, *args, &blk)
@@ -60,7 +60,7 @@ class Nodes < Struct.new(:nodes)
   end
 end
 
-# Literals are static values that have a Ruby representation, eg.: a string, a number,
+# Literals are static values that have a Ruby representation, eg.: a string, number, list,
 # true, false, nil, etc.
 class LiteralNode < Struct.new(:value)
   include Visitable
@@ -71,6 +71,7 @@ end
 
 class NumberNode < LiteralNode; end
 class StringNode < LiteralNode; end
+class ListNode < LiteralNode; end
 
 class TrueNode < LiteralNode
   def initialize
@@ -206,6 +207,12 @@ end
 
 # command? -nargs=1 Correct :call s:Add(<q-args>, 0)
 class CommandNode < Struct.new(:command, :nargs, :name, :body)
+end
+
+class ListNode
+end
+
+class DictionaryNode
 end
 
 # abstract control structure

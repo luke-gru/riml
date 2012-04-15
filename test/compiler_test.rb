@@ -184,7 +184,7 @@ Viml
 
   test "query at the end of variable checks for its existence" do
     riml = <<Riml
-if g:a?
+if (g:a?)
   true
 end
 Riml
@@ -214,10 +214,10 @@ Viml
   assert_equal expected, compile(riml)
   end
 
-  test "while conditional compiles correctly" do
+  test "basic while conditional compiles correctly" do
     riml = <<Riml
 i = 0
-while (i < 5)
+while i < 5
   echo("hi")
   i += 1
 end
@@ -234,7 +234,40 @@ Viml
   assert_equal expected, compile(riml)
   end
 
+  test "basic lists compile correctly" do
+    riml = <<Riml
+alist = ['aap', 'mies', 'noot']
+Riml
+
+    expected = <<Viml
+let s:alist = ['aap', 'mies', 'noot']
+Viml
+
+    riml2 = "emptyList = []"
+    expected2 = "let s:emptyList = []\n"
+
+    # list concatenation
+    riml3 = "echo(alist + ['foo', 'bar'])"
+    expected3 = "echo(s:alist + ['foo', 'bar'])\n"
+
+    #multi-dimensional
+    riml4 = "_2d = ['one', ['two', 'three']]"
+    expected4 = "let s:_2d = ['one', ['two', 'three']]\n"
+
+  assert_equal expected, compile(riml)
+  assert_equal expected2, compile(riml2)
+  assert_equal expected3, compile(riml3)
+  assert_equal expected4, compile(riml4)
+  end
+
   test "" do
     skip
+    riml = <<Riml
+Riml
+
+    expected = <<Viml
+Viml
+
+  #assert_equal expected, compile(riml)
   end
 end
