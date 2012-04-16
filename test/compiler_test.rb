@@ -250,24 +250,23 @@ Viml
     riml3 = "echo(alist + ['foo', 'bar'])"
     expected3 = "echo(s:alist + ['foo', 'bar'])\n"
 
-    #multi-dimensional
-    riml4 = "_2d = ['one', ['two', 'three']]"
-    expected4 = "let s:_2d = ['one', ['two', 'three']]\n"
+  assert_equal expected, compile(riml)
+  assert_equal expected2, compile(riml2)
+  assert_equal expected3, compile(riml3)
+  end
+
+  test "multi dimensional lists compile correctly" do
+    riml = "_2d = ['one', ['two', 'three']]"
+    expected = "let s:_2d = ['one', ['two', 'three']]\n"
+
+    riml2 = "mult_inner_lists = [['one'], 'two', 'three', ['four', 'five']]"
+    expected2 = "let s:mult_inner_lists = [['one'], 'two', 'three', ['four', 'five']]\n"
+
+    riml3 = "three_d = [['one'], 'two', 'three', ['four', 'five', ['six', 'seven']]]"
+    expected3 = "let s:three_d = [['one'], 'two', 'three', ['four', 'five', ['six', 'seven']]]\n"
 
   assert_equal expected, compile(riml)
   assert_equal expected2, compile(riml2)
   assert_equal expected3, compile(riml3)
-  assert_equal expected4, compile(riml4)
-  end
-
-  test "" do
-    skip
-    riml = <<Riml
-Riml
-
-    expected = <<Viml
-Viml
-
-  #assert_equal expected, compile(riml)
   end
 end

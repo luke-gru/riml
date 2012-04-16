@@ -62,8 +62,10 @@ module Riml
         elsif string = chunk[/\A("|')(.*?)("|')/, 2]
           @tokens << [:STRING, string]
           @i += string.size + 2
-        elsif list = chunk[/\A\[.*?\]/]
+        # need to fix this regexp
+        elsif list = chunk[/\A\[.*?\](.*?\])*/]
           @tokens << [:LIST, list]
+          p list
           @i += list.size
         elsif newlines = chunk[/\A(\n+)/, 1]
           # just push 1 newline
@@ -87,9 +89,9 @@ module Riml
           @i += operator.size
         elsif whitespaces = chunk[/\A +/]
           @i += whitespaces.size
-        elsif one_line_comment = chunk[/\A\s*#.*$/]
-          @i += one_line_comment.size
-        # operators and tokens of single chars ( ) , . [ ] ! + - = < >
+        elsif single_line_comment = chunk[/\A\s*#.*$/]
+          @i += single_line_comment.size
+        # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < >
         else
           value = chunk[0, 1]
           @tokens << [value, value]
