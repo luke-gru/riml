@@ -56,6 +56,27 @@ module Riml
 
     UnlessNodeVisitor = IfNodeVisitor
 
+    class TernaryOperatorNodeVisitor < Visitor
+      def visit(node)
+        _compile(node)
+        propagate_up_tree(node, @value)
+      end
+
+      private
+      def _compile(node)
+        node.operands.each {|n| n.parent_node = node}
+        cond_visitor = visitor_for_node(node.condition)
+        node.condition.accept(cond_visitor)
+        node.compiled_output << ' ? '
+        if_expr_visitor = visitor_for_node(node.if_expr)
+        node.if_expr.accept(if_expr_visitor)
+        node.compiled_output << ' : '
+        else_expr_visitor =  visitor_for_node(node.else_expr)
+        node.else_expr.accept(else_expr_visitor)
+        @value = node.compiled_output
+      end
+    end
+
     class WhileNodeVisitor < Visitor
       def visit(node)
         _compile(node)
@@ -64,12 +85,12 @@ module Riml
 
       private
       def _compile(node)
-        condition_visitor = visitor_for_node(node.condition)
+        cond_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
         node.compiled_output = "while ("
 
-        node.condition.accept(condition_visitor)
+        node.condition.accept(cond_visitor)
         node.compiled_output << ")\n"
 
         output = node.compiled_output.dup

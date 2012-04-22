@@ -124,13 +124,23 @@ class OperatorNode < Struct.new(:operator, :operands)
 end
 
 class BinaryOperatorNode < OperatorNode
-  def operand1
-    operands.first
+  def operand1() operands.first end
+
+  def operand2() operands[1] end
+end
+
+# operator = :ternary
+# operands = [condition, if_expr, else_expr]
+class TernaryOperatorNode < OperatorNode
+  def initialize(operands, operator=:ternary)
+    super(operator, operands)
   end
 
-  def operand2
-    operands[1]
-  end
+  def condition() operands.first end
+
+  def if_expr() operands[1] end
+
+  def else_expr() operands[2] end
 end
 
 class GetConstantNode < Struct.new(:name)
@@ -205,7 +215,6 @@ end
 
 class IfNode < ControlStructure
 end
-
 
 class UnlessNode < ControlStructure
 end

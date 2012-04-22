@@ -305,4 +305,11 @@ Viml
     assert_equal expected2, compile(riml2)
     assert_equal expected3, compile(riml3)
   end
+
+  test "ternary operators compile correctly" do
+    riml = 'a = b ? c : d'
+    expected = 'let s:a = s:b ? s:c : s:d' << "\n"
+
+    assert_equal expected, compile(riml)
+  end
 end

@@ -6,7 +6,7 @@ token DEF
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
-token NUMBER STRING_D STRING_S # single and double-quoted
+token NUMBER STRING_D STRING_S # single- and double-quoted
 token TRUE FALSE NIL
 token IDENTIFIER
 token CONSTANT
@@ -53,6 +53,7 @@ rule
   | Constant                              { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
+  | Ternary                               { result = val[0] }
   | While                                 { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
@@ -199,6 +200,10 @@ rule
   Unless:
     UNLESS Expression Block End             { indent = val[2].pop; result = UnlessNode.new(val[1], val[2]) }
   | UNLESS Expression THEN Expression End   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
+  ;
+
+  Ternary:
+    Expression '?' Expression ':' Expression    { result = TernaryOperatorNode.new([val[0], val[2], val[4]]) }
   ;
 
   While:

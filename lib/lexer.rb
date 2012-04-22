@@ -24,13 +24,11 @@ module Riml
 
           # keyword identifiers
           if KEYWORDS.include?(identifier)
-
             # strip out '?' for token names
             token_name = identifier[-1] == ?? ? identifier[0..-2] : identifier
             @tokens << [token_name.upcase.intern, identifier]
 
             track_indent_level(chunk, identifier)
-
           # method names and variable names
           else
             @tokens << [:IDENTIFIER, identifier ]
@@ -63,11 +61,6 @@ module Riml
           type = ($1 == '"' ? :D : :S)
           @tokens << [:"STRING_#{type}", string]
           @i += string.size + 2
-        # need to fix this regexp
-        #elsif list = chunk[/\A\[.*?\](.*?\])*/]
-          #@tokens << [:LIST, list]
-          #p list
-          #@i += list.size
         elsif newlines = chunk[/\A(\n+)/, 1]
           # just push 1 newline
           @tokens << [:NEWLINE, "\n"]
