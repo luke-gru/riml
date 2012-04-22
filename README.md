@@ -4,9 +4,6 @@ Riml, a relaxed version of Vimscript
 Variables
 ---------
 
-The following won't raise a compilation error unless there are multiple count
-variables in scope with different scope modifiers.
-
     count = 1                     let s:count = 1
     while count < 5               while s:count < 5
       source other.vim              source other.vim

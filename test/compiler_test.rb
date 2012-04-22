@@ -92,13 +92,13 @@ Viml
   test "unless expression" do
     riml = <<Riml
 unless shy()
-  echo("hi");
+  echo('hi');
 end
 Riml
 
     expected = <<Viml
 if (!shy())
-  echo("hi")
+  echo('hi')
 endif
 Viml
 
@@ -134,20 +134,25 @@ Viml
   riml2 = '"#{n} words were found"'
   expected2 = 's:n . " words were found"'
 
+  # single-quoted
+  riml3 = '\'#{n} words were found\''
+  expected3 = '\'#{n} words were found\''
+
   assert_equal expected1, compile(riml1)
   assert_equal expected2, compile(riml2)
+  assert_equal expected3, compile(riml3)
   end
 
   test "functions can take expressions" do
     riml = 'echo("found #{n} words")'
-    expected = 'echo("found " . s:n . " words")' + "\n"
+    expected = 'echo("found " . s:n . " words")' << "\n"
 
     assert_equal expected, compile(riml)
   end
 
   test "chaining method calls" do
     riml = 'n = n + len(split(getline(lnum)))'
-    expected = 'let s:n = s:n + len(split(getline(s:lnum)))' + "\n"
+    expected = 'let s:n = s:n + len(split(getline(s:lnum)))' << "\n"
 
     assert_equal expected, compile(riml)
   end
@@ -290,10 +295,14 @@ Viml
     riml = 'dict = {"one": "een", "two": "twee"}'
     expected = 'let s:dict = {"one": "een", "two": "twee"}' << "\n"
 
-    riml2 = 'dict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}'
-    expected2 = 'let s:dict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}' << "\n"
+    riml2 = 'emptyDict = {}'
+    expected2 = 'let s:emptyDict = {}' << "\n"
+
+    riml3 = 'dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}'
+    expected3 = 'let s:dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}' << "\n"
 
     assert_equal expected, compile(riml)
     assert_equal expected2, compile(riml2)
+    assert_equal expected3, compile(riml3)
   end
 end

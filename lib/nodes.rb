@@ -9,7 +9,13 @@ def global_variables
   @@global_variables ||= []
 end
 
+module Scopable
+  attr_accessor :scope
+end
+
 module Visitable
+  include Scopable
+
   def accept(visitor)
     visitor.visit(self)
   end
@@ -45,8 +51,6 @@ class Nodes < Struct.new(:nodes)
   include Visitable
   include Enumerable
 
-  attr_accessor :scope
-
   def <<(node)
     nodes << node
     self
@@ -70,12 +74,16 @@ end
 class LiteralNode < Struct.new(:value)
   include Visitable
 
-  attr_accessor :scope
   attr_accessor :explicit_return
 end
 
 class NumberNode < LiteralNode; end
-class StringNode < LiteralNode; end
+class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or single-quoted
+  include Visitable
+
+  attr_accessor :explicit_return
+end
+
 class ListNode < LiteralNode; end
 class DictionaryNode < LiteralNode; end
 
@@ -109,14 +117,10 @@ end
 #   method(argument1, argument2)
 class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Visitable
-
-  attr_accessor :scope
 end
 
 class OperatorNode < Struct.new(:operator, :operands)
   include Visitable
-
-  attr_accessor :scope
 end
 
 class BinaryOperatorNode < OperatorNode
@@ -131,26 +135,18 @@ end
 
 class GetConstantNode < Struct.new(:name)
   include Visitable
-
-  attr_accessor :scope
 end
 
 class SetConstantNode < Struct.new(:name, :value)
   include Visitable
-
-  attr_accessor :scope
 end
 
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
-
-  attr_accessor :scope
 end
 
 class GetVariableNode < Struct.new(:scope_modifier, :name)
   include Visitable
-
-  attr_accessor :scope
 
   alias name_with_question_mark name
   def name_without_question_mark
@@ -174,8 +170,6 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body,
   include Visitable
   include Enumerable
   include Indentable
-
-  attr_accessor :scope
 
   def local_scope?
     true
@@ -204,8 +198,6 @@ class ControlStructure < Struct.new(:condition, :body)
   include Enumerable
   include Indentable
 
-  attr_accessor :scope
-
   def each(&block)
     body.each &block
   end
@@ -224,8 +216,6 @@ end
 class ElseNode < Struct.new(:expressions)
   include Visitable
   include Enumerable
-
-  attr_accessor :scope
 
   def each(&block)
     expressions.each &block

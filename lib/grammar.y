@@ -6,7 +6,7 @@ token DEF
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
-token NUMBER STRING
+token NUMBER STRING_D STRING_S # single and double-quoted
 token TRUE FALSE NIL
 token IDENTIFIER
 token CONSTANT
@@ -66,12 +66,17 @@ rule
   # All hard-coded values
   Literal:
     NUMBER                                { result = NumberNode.new(val[0]) }
-  | STRING                                { result = StringNode.new(val[0]) }
+  | String                                { result = val[0] }
   | List                                  { result = ListNode.new(val[0]) }
   | Dictionary                            { result = DictionaryNode.new(val[0]) }
   | TRUE                                  { result = TrueNode.new }
   | FALSE                                 { result = FalseNode.new }
   | NIL                                   { result = NilNode.new }
+  ;
+
+  String:
+    STRING_S                              { result = StringNode.new(val[0], :s) }
+  | STRING_D                              { result = StringNode.new(val[0], :d) }
   ;
 
   List:

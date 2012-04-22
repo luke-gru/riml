@@ -50,17 +50,18 @@ module Riml
         elsif interpolation = chunk[/\A"(.*?)(\#{(.*?)})(.*?)"/]
           # "#{hey} guys" = hey . " guys"
           unless $1.empty?
-            @tokens << [:STRING, $1]
+            @tokens << [:STRING_D, $1]
             @tokens << ['.', '.']
           end
           @tokens << [:IDENTIFIER, $3]
           unless $4.empty?
             @tokens << ['.', '.']
-            @tokens << [ :STRING, " #{$4[1..-1]}" ]
+            @tokens << [ :STRING_D, " #{$4[1..-1]}" ]
           end
           @i += interpolation.size
-        elsif string = chunk[/\A("|')(.*?)("|')/, 2]
-          @tokens << [:STRING, string]
+        elsif string = chunk[/\A("|')(.*?)(\1)/, 2]
+          type = ($1 == '"' ? :D : :S)
+          @tokens << [:"STRING_#{type}", string]
           @i += string.size + 2
         # need to fix this regexp
         #elsif list = chunk[/\A\[.*?\](.*?\])*/]

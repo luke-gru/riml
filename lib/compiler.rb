@@ -147,7 +147,7 @@ module Riml
         when NilClass
           'nil'
         when String
-          StringNode === node ? escape(node.value) : node.value.dup
+          StringNode === node ? escape(node) : node.value.dup
         when Array
           '[' << node.value.map {|n| _compile(n)}.join(', ') << ']'
         when Hash
@@ -167,9 +167,13 @@ module Riml
         p node
       end
 
-      def escape(string)
-        #TODO: implement
-        '"' + string + '"'
+      def escape(string_node)
+        case string_node.type
+        when :d
+          '"' << string_node.value << '"'
+        when :s
+          "'" << string_node.value << "'"
+        end
       end
     end
 
