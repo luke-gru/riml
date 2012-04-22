@@ -31,7 +31,7 @@ Viml
 
   test "branching function compiles and returns on all branches" do
     riml = <<Riml
-def b:another_method(a, b)
+function b:another_method(a, b)
   if hello()
     false
   else

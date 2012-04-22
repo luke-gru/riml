@@ -1,6 +1,7 @@
 module Riml
   class Lexer
-    KEYWORDS = %w(def end if then else elsif unless while true false nil return command command? finish)
+    KEYWORDS = %w(def function end if then else elsif unless while true false nil
+                  command command? return finish break continue)
 
     def tokenize(code)
       code.chomp!
@@ -24,6 +25,10 @@ module Riml
 
           # keyword identifiers
           if KEYWORDS.include?(identifier)
+            if identifier == 'function'
+              identifier = 'def'
+              @i += 'function'.size - 'def'.size
+            end
             # strip out '?' for token names
             token_name = identifier[-1] == ?? ? identifier[0..-2] : identifier
             @tokens << [token_name.upcase.intern, identifier]
@@ -31,7 +36,7 @@ module Riml
             track_indent_level(chunk, identifier)
           # method names and variable names
           else
-            @tokens << [:IDENTIFIER, identifier ]
+            @tokens << [:IDENTIFIER, identifier]
           end
 
           @expecting_identifier = false

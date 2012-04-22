@@ -1,6 +1,15 @@
 Riml, a relaxed version of Vimscript
 ====================================
 
+Riml aims to be a superset of VimL that includes some nice features that I
+enjoy in other scripting languages, including string interpolation, default
+case-sensitive string comparison and other things most programmers take for
+granted. Also, Riml takes some liberties and provides some syntactic sugar for
+lots of VimL constructs. Check out the test/compiler\_test.rb file to see how
+Riml constructs are compiled into VimL, or just take a look in this README.
+The left side is Riml, and the right side is the equivalent VimL after
+compilation.
+
 Variables
 ---------
 
@@ -34,7 +43,7 @@ Checking for existence
     unless s:callcount?                    if !exists("s:callcount")
       callcount = 0                         let s:callcount = 0
     end                                    endif
-    callcount += 1                         let s:callcount = s:callcount + 1
+    callcount += 1                         let s:callcount += 1
     puts "called #{callcount} times"       echo "called" s:callcount "times"
 
 
