@@ -6,7 +6,7 @@ token DEF
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
-token NUMBER STRING LIST DICT
+token NUMBER STRING
 token TRUE FALSE NIL
 token IDENTIFIER
 token CONSTANT
@@ -67,10 +67,37 @@ rule
   Literal:
     NUMBER                                { result = NumberNode.new(val[0]) }
   | STRING                                { result = StringNode.new(val[0]) }
-  | LIST                                  { result = ListNode.new(val[0]) }
+  | List                                  { result = ListNode.new(val[0]) }
+  | Dictionary                            { result = DictionaryNode.new(val[0]) }
   | TRUE                                  { result = TrueNode.new }
   | FALSE                                 { result = FalseNode.new }
   | NIL                                   { result = NilNode.new }
+  ;
+
+  List:
+    '[' ListItems ']'                     { result = val[1] }
+  ;
+
+  ListItems:
+    /* nothing */                         { result = [] }
+  | Literal                               { result = val }
+  | ListItems "," Literal                 { result = val[0] << val[2] }
+  ;
+
+  Dictionary:
+    '{' DictItems '}'                     { result = Hash[val[1]] }
+  ;
+
+  # [[key, value], [key, value]]
+  DictItems:
+    /* nothing */                         { result = [] }
+  | DictItem                              { result = val }
+  | DictItems "," DictItem                { result = val[0] << val[2] }
+  ;
+
+  # [key, value]
+  DictItem:
+    Literal ':' Literal                   { result = [val[0], val[2]] }
   ;
 
   # A function call

@@ -63,10 +63,10 @@ module Riml
           @tokens << [:STRING, string]
           @i += string.size + 2
         # need to fix this regexp
-        elsif list = chunk[/\A\[.*?\](.*?\])*/]
-          @tokens << [:LIST, list]
-          p list
-          @i += list.size
+        #elsif list = chunk[/\A\[.*?\](.*?\])*/]
+          #@tokens << [:LIST, list]
+          #p list
+          #@i += list.size
         elsif newlines = chunk[/\A(\n+)/, 1]
           # just push 1 newline
           @tokens << [:NEWLINE, "\n"]

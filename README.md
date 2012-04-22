@@ -51,3 +51,12 @@ Checking for existence
     command? -nargs=1 Correct :call s:Add(<q-args>, 0)          if !exists(":Correct")
                                                                   command -nargs=1 Correct :call s:Add(<q-args>, 0)
                                                                 end
+
+Hacking
+-------
+
+Make sure to generate the parser before running tests or developing on Riml.
+Also, make sure to regenerate the parser after modifiying the grammar file.
+
+1. `bundle install`
+2. Go to the lib directory and enter `racc -o parser.rb grammar.y`

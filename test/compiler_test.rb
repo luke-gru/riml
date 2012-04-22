@@ -236,19 +236,19 @@ Viml
 
   test "basic lists compile correctly" do
     riml = <<Riml
-alist = ['aap', 'mies', 'noot']
+alist = ["aap", "mies", "noot"]
 Riml
 
     expected = <<Viml
-let s:alist = ['aap', 'mies', 'noot']
+let s:alist = ["aap", "mies", "noot"]
 Viml
 
-    riml2 = "emptyList = []"
-    expected2 = "let s:emptyList = []\n"
+    riml2 = 'emptyList = []'
+    expected2 = 'let s:emptyList = []' << "\n"
 
     # list concatenation
-    riml3 = "echo(alist + ['foo', 'bar'])"
-    expected3 = "echo(s:alist + ['foo', 'bar'])\n"
+    riml3 = 'echo(alist + ["foo", "bar"])'
+    expected3 = 'echo(s:alist + ["foo", "bar"])' << "\n"
 
   assert_equal expected, compile(riml)
   assert_equal expected2, compile(riml2)
@@ -256,17 +256,44 @@ Viml
   end
 
   test "multi dimensional lists compile correctly" do
-    riml = "_2d = ['one', ['two', 'three']]"
-    expected = "let s:_2d = ['one', ['two', 'three']]\n"
+    riml = '_2d = ["one", ["two", "three"]]'
+    expected = 'let s:_2d = ["one", ["two", "three"]]' << "\n"
 
-    riml2 = "mult_inner_lists = [['one'], 'two', 'three', ['four', 'five']]"
-    expected2 = "let s:mult_inner_lists = [['one'], 'two', 'three', ['four', 'five']]\n"
+    riml2 = 'mult_inner_lists = [["one"], "two", "three", ["four", "five"]]'
+    expected2 = 'let s:mult_inner_lists = [["one"], "two", "three", ["four", "five"]]' << "\n"
 
-    riml3 = "three_d = [['one'], 'two', 'three', ['four', 'five', ['six', 'seven']]]"
-    expected3 = "let s:three_d = [['one'], 'two', 'three', ['four', 'five', ['six', 'seven']]]\n"
+    riml3 = 'three_d = [["one"], "two", "three", ["four", "five", ["six", "seven"]]]'
+    expected3 = 'let s:three_d = [["one"], "two", "three", ["four", "five", ["six", "seven"]]]' << "\n"
 
   assert_equal expected, compile(riml)
   assert_equal expected2, compile(riml2)
   assert_equal expected3, compile(riml3)
+  end
+
+  test "comparing strings is non ignorecase by default" do
+    riml = <<Riml
+string1 = "meet"
+string2 = "moot"
+string1 == string2
+Riml
+
+  expected = <<Viml.chomp
+let s:string1 = "meet"
+let s:string2 = "moot"
+s:string1 ==# s:string2
+Viml
+
+  assert_equal expected, compile(riml)
+  end
+
+  test "basic dictionaries compile correctly" do
+    riml = 'dict = {"one": "een", "two": "twee"}'
+    expected = 'let s:dict = {"one": "een", "two": "twee"}' << "\n"
+
+    riml2 = 'dict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}'
+    expected2 = 'let s:dict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}' << "\n"
+
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
   end
 end

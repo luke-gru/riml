@@ -35,6 +35,11 @@ module Visitable
   end
 end
 
+module Indentable
+  def indent
+    @indent ||= " " * 2
+  end
+end
 
 class Nodes < Struct.new(:nodes)
   include Visitable
@@ -72,6 +77,7 @@ end
 class NumberNode < LiteralNode; end
 class StringNode < LiteralNode; end
 class ListNode < LiteralNode; end
+class DictionaryNode < LiteralNode; end
 
 class TrueNode < LiteralNode
   def initialize
@@ -91,32 +97,16 @@ class NilNode < LiteralNode
   end
 end
 
-class NewlineNode < LiteralNode
-  def initialize
-    super("\n")
-  end
-end
-
-# to prepend next to a node that
-# needs explicit returning
-class ReturnNode < LiteralNode
-  def initialize
-    super("return")
-  end
-end
-
 class FinishNode < LiteralNode
   def initialize
     super("finish\n")
   end
 end
 
-# Node of a method call or local variable access, can take any of these forms:
+# Node of a method call, can take any of these forms:
 #
-#   variable
 #   method()
 #   method(argument1, argument2)
-#
 class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Visitable
 
@@ -139,21 +129,18 @@ class BinaryOperatorNode < OperatorNode
   end
 end
 
-# Retrieving the value of a constant.
 class GetConstantNode < Struct.new(:name)
   include Visitable
 
   attr_accessor :scope
 end
 
-# Setting the value of a constant.
 class SetConstantNode < Struct.new(:name, :value)
   include Visitable
 
   attr_accessor :scope
 end
 
-# Setting the value of a local variable.
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
 
@@ -181,14 +168,16 @@ class GetVariableNode < Struct.new(:scope_modifier, :name)
 
 end
 
+
 # Method definition.
 class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body, :indent)
   include Visitable
   include Enumerable
+  include Indentable
 
   attr_accessor :scope
 
-  def local?
+  def local_scope?
     true
   end
 
@@ -209,20 +198,11 @@ end
 class CommandNode < Struct.new(:command, :nargs, :name, :body)
 end
 
-class ListNode
-end
-
-class DictionaryNode
-end
-
 # abstract control structure
 class ControlStructure < Struct.new(:condition, :body)
   include Visitable
   include Enumerable
-
-  def indent
-    @indent ||= " " * 2
-  end
+  include Indentable
 
   attr_accessor :scope
 
@@ -236,9 +216,6 @@ end
 
 
 class UnlessNode < ControlStructure
-  def unless?
-    true
-  end
 end
 
 class WhileNode < ControlStructure
@@ -266,4 +243,7 @@ class ElseNode < Struct.new(:expressions)
   def last
     expressions.last
   end
+end
+
+class ElsifNode < ElseNode
 end
