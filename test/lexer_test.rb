@@ -5,7 +5,7 @@ class BasicLexerTest < Riml::TestCase
   test "basic lexing" do
     riml = <<-Riml
     if 1 #### comment
-      print "..."
+      print '...'
       if false
         do_something
       end
@@ -15,12 +15,12 @@ class BasicLexerTest < Riml::TestCase
     expected =
     [
       [:IF, "if"], [:NUMBER, 1], [:NEWLINE, "\n"],
-        [:INDENT, 2], [:IDENTIFIER, "print"], [:STRING, '...'], [:NEWLINE, "\n"],
+        [:INDENT, 2], [:IDENTIFIER, "print"], [:STRING_S, '...'], [:NEWLINE, "\n"],
         [:IF, "if"], [:FALSE, 'false'], [:NEWLINE, "\n"],
           [:INDENT, 4], [:IDENTIFIER, "do_something"], [:NEWLINE, "\n"],
         [:END, 'end'], [:NEWLINE, "\n"], [:DEDENT, 2],
       [:END, 'end'], [:NEWLINE, "\n"], [:DEDENT, 0],
-      [:IDENTIFIER, 'print'], [:STRING, 'omg'], [';', ';']
+      [:IDENTIFIER, 'print'], [:STRING_D, 'omg'], [';', ';']
     ]
     assert_equal expected, lex(riml)
   end
@@ -57,7 +57,7 @@ Riml
       [:NEWLINE, "\n"],
       [:INDENT, 2],
       [:IDENTIFIER, "echo"],
-      [:STRING, "hi"],
+      [:STRING_D, "hi"],
       [";", ";"],
       [:NEWLINE, "\n"],
       [:END, "end"]

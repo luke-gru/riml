@@ -54,10 +54,9 @@ Viml
     assert_equal expected, parse(code)
   end
 
-  # TODO: fix scope_modifier and parens in if expressions
   test "parsing an unless expression" do
     riml = <<Riml
-unless (shy())
+unless shy()
   echo("hi");
 end
 Riml
@@ -65,7 +64,7 @@ Riml
       UnlessNode.new(
         CallNode.new(nil, 'shy', []),
         Nodes.new(
-          [ CallNode.new(nil, 'echo', [StringNode.new('hi')]) ]
+          [ CallNode.new(nil, 'echo', [StringNode.new('hi', :d)]) ]
         )
       )
     ])
