@@ -160,7 +160,7 @@ Viml
 
   test "function can take range when given parens" do
     riml = <<Riml
-def My_function(a,b) range
+def My_function(a, b) range
 end
 Riml
 
@@ -350,6 +350,18 @@ Riml
 
     expected = <<Viml
 call myFunction(s:arg1, s:arg2)
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "multiple variable initialization" do
+    riml = <<Riml
+[a, b, c] = expression()
+Riml
+
+    expected = <<Viml
+let [s:a, s:b, s:c] = expression()
 Viml
 
     assert_equal expected, compile(riml)

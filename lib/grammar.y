@@ -9,7 +9,7 @@ token INDENT DEDENT
 token NEWLINE
 token NUMBER STRING_D STRING_S # single- and double-quoted
 token TRUE FALSE NIL
-token IDENTIFIER
+token IDENTIFIER LET
 token CONSTANT
 token SCOPE_MODIFIER
 token FINISH
@@ -89,7 +89,9 @@ rule
   ListItems:
     /* nothing */                         { result = [] }
   | Literal                               { result = val }
+  | VariableRetrieval                     { result = val }
   | ListItems "," Literal                 { result = val[0] << val[2] }
+  | ListItems "," VariableRetrieval       { result = val[0] << val[2] }
   ;
 
   Dictionary:
@@ -157,8 +159,10 @@ rule
 
   # Assignment to a variable
   Assign:
-    Scope IDENTIFIER '=' Expression             { result = SetVariableNode.new(val[0], val[1], val[3]) }
-  | CONSTANT '=' Expression                     { result = SetConstantNode.new(val[0], val[2]) }
+    LET Scope IDENTIFIER '=' Expression         { result = SetVariableNode.new(val[1], val[2], val[4]) }
+  | LET List '=' Expression                     { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
+  | Scope IDENTIFIER '=' Expression             { result = SetVariableNode.new(val[0], val[1], val[3]) }
+  | List '=' Expression                         { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
   ;
 
   # retrieving the value of a variable

@@ -1,3 +1,5 @@
+require File.expand_path('../constants', __FILE__)
+
 module Scopable
   attr_accessor :scope
 end
@@ -106,6 +108,7 @@ end
 #   method()
 #   method(argument1, argument2)
 class CallNode < Struct.new(:scope_modifier, :name, :arguments)
+  include Riml::Constants
   include Visitable
 
   #def builtin_range?
@@ -120,7 +123,7 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   end
 
   def no_parens_necessary?
-    %w(echo).include?(name) and scope_modifier.nil?
+    VIML_FUNC_NO_PARENS_NECESSARY.include?(name) and scope_modifier.nil?
   end
 end
 
@@ -164,6 +167,11 @@ class SetConstantNode < Struct.new(:name, :value)
 end
 
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
+  include Visitable
+end
+
+# [a, b] = expression()
+class SetVariableNodeList < Struct.new(:list, :expression)
   include Visitable
 end
 

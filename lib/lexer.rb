@@ -1,12 +1,8 @@
+require File.expand_path('../constants', __FILE__)
+
 module Riml
   class Lexer
-    RIML_KEYWORDS = %w(def function end if then else elsif unless while for in
-                       true false nil command command? return finish break
-                       continue call)
-    VIML_END_KEYWORDS = %w(endif endfunction endwhile endfor)
-    KEYWORDS = RIML_KEYWORDS + VIML_END_KEYWORDS
-
-    VIML_FUNC_NO_PARENS_NECESSARY = %W(echo)
+    include Riml::Constants
 
     def tokenize(code)
       code.chomp!
@@ -32,7 +28,7 @@ module Riml
           if KEYWORDS.include?(identifier)
             if identifier == 'function'
               identifier = 'def'
-              @i += 'function'.size - 'def'.size
+              @i += 5
             elsif VIML_END_KEYWORDS.include? identifier
               old_identifier = identifier.dup
               identifier = 'end'
@@ -43,15 +39,15 @@ module Riml
             @tokens << [token_name.upcase.intern, identifier]
 
             track_indent_level(chunk, identifier)
-          # method names and variable names
           elsif VIML_FUNC_NO_PARENS_NECESSARY.include? identifier
             @tokens << [:FUNC_NO_PARENS_NECESSARY, identifier]
+          # method names and variable names
           else
             @tokens << [:IDENTIFIER, identifier]
           end
 
-          @expecting_identifier = false
           @i += identifier.size
+          @expecting_identifier = false
 
         elsif @expecting_identifier
           raise SyntaxError, "expected identifier after scope modifier"
@@ -104,8 +100,12 @@ module Riml
         # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < >
         else
           value = chunk[0, 1]
-          @tokens << [value, value]
-          @i += 1
+          if value == '|'
+            @tokens << [:NEWLINE, "\n"]
+          else
+            @tokens << [value, value]
+          end
+            @i += 1
         end
       end
       raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0

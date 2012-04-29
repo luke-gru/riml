@@ -151,8 +151,10 @@ module Riml
         when String
           StringNode === node ? escape(node) : node.value.dup
         when Array
+          node.value.each {|n| n.parent_node = node}
           '[' << node.value.map {|n| _compile(n)}.join(', ') << ']'
         when Hash
+          node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = [node, node]}
           '{' << node.value.map {|k,v| _compile(k) << ': ' << _compile(v)}.join(', ') << '}'
         when Numeric
           node.value
@@ -165,8 +167,11 @@ module Riml
             value
           end
         end
-      rescue
-        STDERR.puts node.inspect if Compiler.debug?
+      rescue NoMethodError
+        if GetVariableNode === node
+          node.accept(GetVariableNodeVisitor.new)
+          @value = node.compiled_output
+        end
       end
 
       def escape(string_node)
@@ -254,6 +259,20 @@ module Riml
         # ex: {"b:a" => :NilNode}
         @variable_map[compiled_var_name] = node.value.class.name.to_sym
         STDERR.puts @variable_map.inspect if Compiler.debug?
+      end
+    end
+
+    # list, expression
+    class SetVariableNodeListVisitor < Visitor
+      private
+      def _compile(node)
+        node.compiled_output = "let "
+        node.list.parent_node = node
+        node.list.accept(ListNodeVisitor.new)
+        node.compiled_output << " = "
+        node.expression.parent_node = node
+        node.expression.accept(visitor_for_node(node.expression))
+        @value = node.compiled_output
       end
     end
 
