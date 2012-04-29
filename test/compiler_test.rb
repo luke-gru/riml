@@ -93,13 +93,13 @@ Viml
   test "unless expression" do
     riml = <<Riml
 unless shy()
-  echo('hi');
+  echo 'hi';
 end
 Riml
 
     expected = <<Viml
 if (!shy())
-  echo('hi')
+  echo 'hi'
 endif
 Viml
 
@@ -145,8 +145,8 @@ Viml
   end
 
   test "functions can take expressions" do
-    riml = 'echo("found #{n} words")'
-    expected = 'echo("found " . s:n . " words")' << "\n"
+    riml = 'echo "found #{n} words"'
+    expected = 'echo "found " . s:n . " words"' << "\n"
 
     assert_equal expected, compile(riml)
   end
@@ -181,7 +181,7 @@ Riml
 
     expected = <<Viml
 function s:Short_function()
-  echo("martin short")
+  echo "martin short"
 endfunction
 Viml
 
@@ -232,7 +232,7 @@ Riml
     expected = <<Viml
 let s:i = 0
 while (s:i < 5)
-  echo("hi")
+  echo "hi"
   s:i += 1
 endwhile
 Viml
@@ -254,7 +254,7 @@ Viml
 
     # list concatenation
     riml3 = 'echo(alist + ["foo", "bar"])'
-    expected3 = 'echo(s:alist + ["foo", "bar"])' << "\n"
+    expected3 = 'echo s:alist + ["foo", "bar"]' << "\n"
 
   assert_equal expected, compile(riml)
   assert_equal expected2, compile(riml2)
@@ -336,7 +336,7 @@ Riml
 
     expected = <<Viml.chomp
 for var in range(1, 2, 3)
-  echo(var)
+  echo var
 endfor
 Viml
 

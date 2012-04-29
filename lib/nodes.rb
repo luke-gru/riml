@@ -118,6 +118,10 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
       super
     end
   end
+
+  def no_parens_necessary?
+    %w(echo).include?(name) and scope_modifier.nil?
+  end
 end
 
 # Node of an explicitly called method, can take any of these forms:

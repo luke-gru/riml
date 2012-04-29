@@ -6,6 +6,8 @@ module Riml
     VIML_END_KEYWORDS = %w(endif endfunction endwhile endfor)
     KEYWORDS = RIML_KEYWORDS + VIML_END_KEYWORDS
 
+    VIML_FUNC_NO_PARENS_NECESSARY = %W(echo)
+
     def tokenize(code)
       code.chomp!
       @i = 0 # number of characters consumed
@@ -42,6 +44,8 @@ module Riml
 
             track_indent_level(chunk, identifier)
           # method names and variable names
+          elsif VIML_FUNC_NO_PARENS_NECESSARY.include? identifier
+            @tokens << [:FUNC_NO_PARENS_NECESSARY, identifier]
           else
             @tokens << [:IDENTIFIER, identifier]
           end

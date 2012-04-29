@@ -389,14 +389,15 @@ Viml
     class CallNodeVisitor < Visitor
       private
       def _compile(node)
-        node.compiled_output = "#{node.scope_modifier}#{node.name}("
+        node.compiled_output = "#{node.scope_modifier}#{node.name}"
+        node.compiled_output << (node.no_parens_necessary? ? " " : "(")
         node.arguments.each_with_index do |arg, i|
           arg.parent_node = node
           arg_visitor = visitor_for_node(arg)
           arg.accept(arg_visitor)
           node.compiled_output << ", " unless last_arg?(node.arguments, i)
         end
-        node.compiled_output << ")"
+        node.compiled_output << ")" unless node.no_parens_necessary?
 
         unless node.descendant_of_control_structure? || node.descendant_of_call_node?
           node.compiled_output << "\n"

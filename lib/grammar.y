@@ -3,7 +3,7 @@ class Riml::Parser
 token IF ELSE ELSIF THEN UNLESS END
 token WHILE UNTIL
 token FOR IN
-token DEF CALL
+token DEF CALL FUNC_NO_PARENS_NECESSARY # such as echo "hi"
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
@@ -111,6 +111,7 @@ rule
   Call:
     Scope IDENTIFIER "(" ArgList ")"      { result = CallNode.new(val[0], val[1], val[3]) }
   | CALL Scope IDENTIFIER "(" ArgList ")" { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | FUNC_NO_PARENS_NECESSARY ArgList      { result = CallNode.new(nil, val[0], val[1]) }
   ;
 
 
