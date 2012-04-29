@@ -1,9 +1,10 @@
 require File.expand_path('../test_helper', __FILE__)
 
 class BasicCompilerTest < Riml::TestCase
+  Compiler = Riml::Compiler
 
   def setup
-    global_variables.clear
+    Compiler.global_variables.clear
   end
 
   test "basic function compiles" do
@@ -86,7 +87,7 @@ Viml
     expected = "unlet! b:a\n"
 
     assert_equal expected, compile(riml)
-    assert_equal 1, global_variables.count
+    assert_equal 1, Compiler.global_variables.count
   end
 
   test "unless expression" do
@@ -103,7 +104,7 @@ endif
 Viml
 
     assert_equal expected, compile(riml)
-    assert_equal 0, global_variables.count
+    assert_equal 0, Compiler.global_variables.count
   end
 
   test "variables work as expected in local and global scopes" do
@@ -124,7 +125,7 @@ endfunction
 Viml
 
     assert_equal expected, compile(riml)
-    assert_equal 1, global_variables.count
+    assert_equal 2, Compiler.global_variables.count
   end
 
   test "interpolation in double-quoted strings" do
@@ -288,7 +289,20 @@ let s:string2 = "moot"
 s:string1 ==# s:string2
 Viml
 
+  riml2 = <<Riml2
+string = "meet"
+number = 2
+string == number
+Riml2
+
+  expected2 = <<Viml.chomp
+let s:string = "meet"
+let s:number = 2
+s:string == s:number
+Viml
+
   assert_equal expected, compile(riml)
+  assert_equal expected2, compile(riml2)
   end
 
   test "basic dictionaries compile correctly" do

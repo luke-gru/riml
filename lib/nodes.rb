@@ -1,13 +1,4 @@
-# Collection of nodes each one representing an expression.
-
-# global methods
-def debug?
-  not ENV["DEBUG"].nil?
-end
-
-def global_variables
-  @@global_variables ||= []
-end
+require 'set'
 
 module Scopable
   attr_accessor :scope
@@ -47,6 +38,7 @@ module Indentable
   end
 end
 
+# Collection of nodes each one representing an expression.
 class Nodes < Struct.new(:nodes)
   include Visitable
   include Enumerable
@@ -157,6 +149,7 @@ end
 
 class GetVariableNode < Struct.new(:scope_modifier, :name)
   include Visitable
+  attr_accessor :node_type
 
   alias name_with_question_mark name
   def name_without_question_mark
@@ -171,7 +164,6 @@ class GetVariableNode < Struct.new(:scope_modifier, :name)
   def question_existence?
     name_with_question_mark[-1] == ??
   end
-
 end
 
 
@@ -186,7 +178,7 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body,
   end
 
   def scoped_variables
-    @scoped_variables ||= []
+    @scoped_variables ||= {}
   end
 
   def arg_variables

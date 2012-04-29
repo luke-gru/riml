@@ -25,9 +25,9 @@ module Riml
       end
     end
 
-    def lexer; Riml::Lexer.new end
-    def parser; Riml::Parser.new end
-    def compiler; Riml::Compiler.new end
+    def lexer; Lexer.new end
+    def parser; Parser.new end
+    def compiler; Compiler.new end
 
     # lex code into tokens
     def lex(code)

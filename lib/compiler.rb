@@ -4,7 +4,15 @@ require File.expand_path('../nodes', __FILE__)
 module Riml
   class Compiler
 
-    # abstract
+    def self.debug?
+      not ENV["RIML_DEBUG"].nil?
+    end
+
+    def self.global_variables
+      @global_variables ||= {}
+    end
+
+    # Base abstract visitor
     class Visitor
       attr_accessor :propagate_up_tree
       attr_reader :value
@@ -14,7 +22,8 @@ module Riml
       end
 
       def visit(node)
-        raise "#{self.class.name} must provide a visit method"
+        _compile(node)
+        propagate_up_tree(node, @value)
       end
 
       def propagate_up_tree(node, output)
@@ -27,11 +36,6 @@ module Riml
     end
 
     class IfNodeVisitor < Visitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         condition_visitor = visitor_for_node(node.condition)
@@ -57,11 +61,6 @@ module Riml
     UnlessNodeVisitor = IfNodeVisitor
 
     class TernaryOperatorNodeVisitor < Visitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         node.operands.each {|n| n.parent_node = node}
@@ -78,11 +77,6 @@ module Riml
     end
 
     class WhileNodeVisitor < Visitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         cond_visitor = visitor_for_node(node.condition)
@@ -109,11 +103,6 @@ module Riml
     UntilNodeVisitor = WhileNodeVisitor
 
     class ElseNodeVisitor < Visitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         node.compiled_output = "else\n"
@@ -125,11 +114,6 @@ module Riml
     end
 
     class NodesVisitor < Visitor
-      def visit(nodes)
-        _compile(nodes)
-        propagate_up_tree(nodes, @value)
-      end
-
       private
       def _compile(nodes)
         nodes.each_with_index do |node, i|
@@ -143,7 +127,7 @@ module Riml
             node.parent_node = nodes
             node.accept(visitor)
           rescue
-            p "Bad Node: #{node.inspect}" if debug?
+            STDERR.puts "Bad Node: #{node.inspect}" if Compiler.debug?
             raise
           end
         end
@@ -152,12 +136,6 @@ module Riml
     end
 
     class LiteralNodeVisitor < Visitor
-
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         value = case node.value
@@ -213,49 +191,42 @@ module Riml
 
     # common visiting methods for SetVariableVisitor and GetVariableVisitor
     class VariableVisitor < Visitor
-
       private
       def set_modifier(node)
-        @modifier =
-        # local scope
-        if node.scope and node.scope.local_scope?
-          scope_modifier_for_variable_name(:local, node.name, node.scope)
-          # global scope
-        else
-          scope_modifier_for_variable_name(:global, node.name)
-        end
+        @modifier = get_scope_modifier_for_variable_name(node)
       end
 
-      def scope_modifier_for_variable_name(type, var_name, scope=nil)
-        case type
-        when :local
-          variable_list = scope.scoped_variables
+      def get_scope_modifier_for_variable_name(node)
+        get_variable_map_for_node(node)
+        if @local_scope
           default_modifier = ''
-        when :global
-          variable_list = global_variables
+        else
           default_modifier = 's:'
         end
-        variable_list.reverse_each do |name|
-          if name[2..-1] == var_name then return name[0...2] end
+        @variable_map.values.each do |name|
+          return name[0...2] if name[2..-1] == node.name
         end
         default_modifier
+      end
+
+      def get_variable_map_for_node(node)
+        @variable_map ||= begin
+          if node.scope and node.scope.local_scope?
+            @local_scope = true
+            node.scope.scoped_variables
+          else
+            Compiler.global_variables
+          end
+        end
       end
     end
 
     class SetVariableNodeVisitor < VariableVisitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         @modifier = node.scope_modifier
-        if @modifier
-          push_explicitly_scoped_variable_onto_stack("#{@modifier}#{node.name}", node)
-        else
-          set_modifier(node)
-        end
+        set_modifier(node) unless @modifier
+        associate_var_name_with_type("#{@modifier}#{node.name}", node)
 
         value_visitor = visitor_for_node(node.value)
         # didn't set parent node on purpose, no propagation
@@ -273,64 +244,67 @@ module Riml
         @value = node.compiled_output
       end
 
-      private
-      def push_explicitly_scoped_variable_onto_stack(var_name, node)
+      def associate_var_name_with_type(compiled_var_name, node)
         if node.scope and node.scope.local_scope?
           variables = node.scope.scoped_variables
         else
-          variables = global_variables
+          variables = Compiler.global_variables
         end
-        variables << var_name
-        variables.uniq!
+        # ex: {"b:a" => :NilNode}
+        variables[compiled_var_name] = node.value.class.name.to_sym
+        STDERR.puts variables.inspect if Compiler.debug?
       end
     end
 
     # scope_modifier, name
     class GetVariableNodeVisitor < VariableVisitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         @modifier = node.scope_modifier
         set_modifier(node) unless @modifier
+        value_type = get_type_for_value(node)
+        node.node_type = value_type
         if node.question_existence?
-          node.compiled_output = "exists?(\"#{@modifier}#{node.name}\")"
+          node.compiled_output = %Q{exists?("#{@modifier}#{node.name}")}
         else
           node.compiled_output = "#{@modifier}#{node.name}"
         end
         @value = node.compiled_output
       end
+
+      def get_type_for_value(node)
+        get_variable_map_for_node(node)
+        @variable_map.each do |name, type|
+          return type if name[2..-1] == node.name
+        end
+      end
     end
 
     # operator, operands
     class BinaryOperatorNodeVisitor < Visitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         op1, op2 = node.operand1, node.operand2
-        op1_visitor = visitor_for_node(op1)
-        op2_visitor = visitor_for_node(op2)
+        op1_visitor, op2_visitor = visitor_for_node(op1), visitor_for_node(op2)
         node.operands.each {|n| n.parent_node = node}
         op1.accept(op1_visitor)
-        if operands_are_string_or_variable_nodes?(op1, op2) && ignorecase_capable?(node.operator)
+        op2_visitor.propagate_up_tree = false
+        op2.accept(op2_visitor)
+        if ignorecase_capable?(node.operator) && operands_are_string_nodes?(op1, op2)
           operator_suffix = "# "
         else
           operator_suffix = " "
         end
         node.compiled_output << " #{node.operator}#{operator_suffix}"
-        node.operand2.accept(op2_visitor)
+        op2_visitor.propagate_up_tree = true
+        op2.accept(op2_visitor)
         @value = node.compiled_output
       end
 
-      def operands_are_string_or_variable_nodes? *nodes
-        nodes.all? {|n| StringNode === n || GetVariableNode === n}
+      def operands_are_string_nodes? *nodes
+        nodes.all? do |n|
+          n.is_a?(StringNode) || (n.respond_to?(:node_type) && n.node_type == :StringNode)
+        end
       end
 
       def ignorecase_capable? operator
@@ -342,8 +316,7 @@ module Riml
     class DefNodeVisitor < Visitor
       def visit(node)
         setup_local_scope_for_descendants(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
+        super
       end
 
       private
@@ -410,11 +383,6 @@ Viml
     end
 
     class CallNodeVisitor < Visitor
-      def visit(node)
-        _compile(node)
-        propagate_up_tree(node, @value)
-      end
-
       private
       def _compile(node)
         node.compiled_output = "#{node.scope_modifier}#{node.name}("
