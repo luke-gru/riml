@@ -2,7 +2,7 @@ module Riml
   class Lexer
     RIML_KEYWORDS = %w(def function end if then else elsif unless while for in
                        true false nil command command? return finish break
-                       continue)
+                       continue call)
     VIML_END_KEYWORDS = %w(endif endfunction endwhile endfor)
     KEYWORDS = RIML_KEYWORDS + VIML_END_KEYWORDS
 

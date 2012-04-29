@@ -1,5 +1,3 @@
-require 'set'
-
 module Scopable
   attr_accessor :scope
 end
@@ -120,6 +118,13 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
       super
     end
   end
+end
+
+# Node of an explicitly called method, can take any of these forms:
+#
+#   call method()
+#   call method(argument1, argument2)
+class ExplicitCallNode < CallNode
 end
 
 class OperatorNode < Struct.new(:operator, :operands)

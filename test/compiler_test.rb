@@ -334,10 +334,22 @@ for var in range(1,2,3)
 end
 Riml
 
-  expected = <<Viml.chomp
+    expected = <<Viml.chomp
 for var in range(1, 2, 3)
   echo(var)
 endfor
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "explicitly called functions" do
+    riml = <<Riml
+call myFunction(arg1, arg2)
+Riml
+
+    expected = <<Viml
+call myFunction(s:arg1, s:arg2)
 Viml
 
     assert_equal expected, compile(riml)

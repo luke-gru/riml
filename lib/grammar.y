@@ -3,7 +3,7 @@ class Riml::Parser
 token IF ELSE ELSIF THEN UNLESS END
 token WHILE UNTIL
 token FOR IN
-token DEF
+token DEF CALL
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
@@ -108,11 +108,9 @@ rule
     Literal ':' Literal                   { result = [val[0], val[2]] }
   ;
 
-  # A function call
-  # some_function()
-  # some_function(a, b)
   Call:
     Scope IDENTIFIER "(" ArgList ")"      { result = CallNode.new(val[0], val[1], val[3]) }
+  | CALL Scope IDENTIFIER "(" ArgList ")" { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
   ;
 
 
@@ -240,13 +238,13 @@ end
   # This code will be put as-is in the parser class
 
   # parses tokens or code into output nodes
-  def parse(object, show_tokens=false)
+  def parse(object)
     @tokens = if tokens?(object)
       object
     elsif code?(object)
       Riml::Lexer.new.tokenize(object)
     end
-    pp(@tokens) if show_tokens
+    pp(@tokens) unless ENV["RIML_DEBUG"].nil?
     do_parse
   end
 

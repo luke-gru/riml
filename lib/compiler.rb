@@ -21,12 +21,12 @@ module Riml
       attr_reader :value
 
       def initialize(options={})
-        @propagate_up_tree = true unless options[:propagate_up_tree] == false
+        @propagate_up_tree = options[:propagate_up_tree]
       end
 
       def visit(node)
         _compile(node)
-        propagate_up_tree(node, @value) if @propagate_up_tree
+        propagate_up_tree(node, @value)
       end
 
       def propagate_up_tree(node, output)
@@ -253,7 +253,7 @@ module Riml
         get_variable_map_for_node(node)
         # ex: {"b:a" => :NilNode}
         @variable_map[compiled_var_name] = node.value.class.name.to_sym
-        STDERR.puts variables.inspect if Compiler.debug?
+        STDERR.puts @variable_map.inspect if Compiler.debug?
       end
     end
 
@@ -347,7 +347,7 @@ Viml
       end
 
       def setup_local_scope_for_descendants(node)
-        node.body.accept(DrillDownVisitor.new(:establish_scope => true, :scope => node))
+        node.body.accept(DrillDownVisitor.new(:establish_scope => node))
       end
     end
 
@@ -357,10 +357,7 @@ Viml
 
       def initialize(options={})
         if options[:establish_scope]
-          @establish_scope = true
-          @scope = options[:scope]
-          raise ArgumentError, "need to pass scope to new instance in order " \
-            "to establish scope" unless @scope
+        @scope = @establish_scope = options[:establish_scope]
         end
         super
       end
@@ -412,6 +409,15 @@ Viml
       end
     end
 
+    class ExplicitCallNodeVisitor < CallNodeVisitor
+      private
+      def _compile(node)
+        pre = "call "
+        post = super
+        @value = node.compiled_output = pre << post
+      end
+    end
+
     class ForNodeVisitor < Visitor
       private
       def _compile(node)
@@ -419,7 +425,7 @@ Viml
         node.call.parent_node = node
         node.call.accept(CallNodeVisitor.new)
         node.expressions.parent_node = node
-        node.expressions.accept(DrillDownVisitor.new(:establish_scope => true, :scope => node))
+        node.expressions.accept(DrillDownVisitor.new(:establish_scope => node))
         node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
         body = node.expressions.compiled_output
         body.each_line do |line|
