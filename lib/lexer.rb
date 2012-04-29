@@ -1,7 +1,10 @@
 module Riml
   class Lexer
-    KEYWORDS = %w(def function end if then else elsif unless while true false nil
-                  command command? return finish break continue)
+    RIML_KEYWORDS = %w(def function end if then else elsif unless while for in
+                       true false nil command command? return finish break
+                       continue)
+    VIML_END_KEYWORDS = %w(endif endfunction endwhile endfor)
+    KEYWORDS = RIML_KEYWORDS + VIML_END_KEYWORDS
 
     def tokenize(code)
       code.chomp!
@@ -28,6 +31,10 @@ module Riml
             if identifier == 'function'
               identifier = 'def'
               @i += 'function'.size - 'def'.size
+            elsif VIML_END_KEYWORDS.include? identifier
+              old_identifier = identifier.dup
+              identifier = 'end'
+              @i += old_identifier.size - identifier.size
             end
             # strip out '?' for token names
             token_name = identifier[-1] == ?? ? identifier[0..-2] : identifier
@@ -106,7 +113,7 @@ module Riml
     private
     def track_indent_level(chunk, identifier)
       case identifier
-      when "def", "while"
+      when "def", "while", "for"
         @current_indent += 2
         @indent_pending = true
       when "if", "unless"

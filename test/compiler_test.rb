@@ -326,4 +326,20 @@ Viml
 
     assert_equal expected, compile(riml)
   end
+
+  test "for var in call() block end compiles correctly" do
+    riml = <<Riml
+for var in range(1,2,3)
+  echo(var)
+end
+Riml
+
+  expected = <<Viml.chomp
+for var in range(1, 2, 3)
+  echo(var)
+endfor
+Viml
+
+    assert_equal expected, compile(riml)
+  end
 end

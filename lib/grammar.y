@@ -2,6 +2,7 @@ class Riml::Parser
 
 token IF ELSE ELSIF THEN UNLESS END
 token WHILE UNTIL
+token FOR IN
 token DEF
 token COMMAND NARGS
 token INDENT DEDENT
@@ -55,6 +56,7 @@ rule
   | Unless                                { result = val[0] }
   | Ternary                               { result = val[0] }
   | While                                 { result = val[0] }
+  | For                                   { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
   ;
@@ -110,7 +112,7 @@ rule
   # some_function()
   # some_function(a, b)
   Call:
-    Scope IDENTIFIER "(" ArgList ")"        { result = CallNode.new(val[0], val[1], val[3]) }
+    Scope IDENTIFIER "(" ArgList ")"      { result = CallNode.new(val[0], val[1], val[3]) }
   ;
 
 
@@ -188,7 +190,7 @@ rule
   ;
 
   EndScript:
-    FINISH                                      { result = FinishNode.new }
+    FINISH                                { result = FinishNode.new }
   ;
 
   ParamList:
@@ -214,6 +216,10 @@ rule
 
   While:
     WHILE Expression Block End              { indent = val[2].pop; result = WhileNode.new(val[1], val[2]) }
+  ;
+
+  For:
+    FOR IDENTIFIER IN Call Block End    { indent = val[4].pop; result = ForNode.new(val[1], val[3], val[4]) }
   ;
 
   # [expressions, indent]

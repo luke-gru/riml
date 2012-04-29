@@ -109,6 +109,17 @@ end
 #   method(argument1, argument2)
 class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Visitable
+
+  #def builtin_range?
+  #  name == "range" and scope_modifier.nil?
+  #end
+  def method_missing(method, *args, &blk)
+    if method.to_s =~ /\Abuiltin_(.*?)\?\Z/
+      name == $1 and scope_modifier.nil?
+    else
+      super
+    end
+  end
 end
 
 class OperatorNode < Struct.new(:operator, :operands)
@@ -237,4 +248,19 @@ class ElseNode < Struct.new(:expressions)
 end
 
 class ElsifNode < ElseNode
+end
+
+# for variable in someFunction(1,2,3)
+#   echo variable
+# end
+class ForNode < Struct.new(:variable, :call, :expressions)
+  include Visitable
+  include Enumerable
+  include Indentable
+
+  alias for_variable variable
+
+  def each(&block)
+    expressions.each &block
+  end
 end

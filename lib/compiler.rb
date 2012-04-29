@@ -8,6 +8,9 @@ module Riml
       not ENV["RIML_DEBUG"].nil?
     end
 
+    # Map of compiled variable names to the type of node that they represent.
+    #
+    # Ex: {"s:string" => :StringNode}
     def self.global_variables
       @global_variables ||= {}
     end
@@ -23,7 +26,7 @@ module Riml
 
       def visit(node)
         _compile(node)
-        propagate_up_tree(node, @value)
+        propagate_up_tree(node, @value) if @propagate_up_tree
       end
 
       def propagate_up_tree(node, output)
@@ -163,7 +166,7 @@ module Riml
           end
         end
       rescue
-        p node
+        STDERR.puts node.inspect if Compiler.debug?
       end
 
       def escape(string_node)
@@ -196,6 +199,8 @@ module Riml
         @modifier = get_scope_modifier_for_variable_name(node)
       end
 
+      # `@variable_map` is a mapping of scope_modified variable names
+      # to the type of the value that they represent
       def get_scope_modifier_for_variable_name(node)
         get_variable_map_for_node(node)
         if @local_scope
@@ -226,7 +231,7 @@ module Riml
       def _compile(node)
         @modifier = node.scope_modifier
         set_modifier(node) unless @modifier
-        associate_var_name_with_type("#{@modifier}#{node.name}", node)
+        associate_variable_name_with_type("#{@modifier}#{node.name}", node)
 
         value_visitor = visitor_for_node(node.value)
         # didn't set parent node on purpose, no propagation
@@ -244,14 +249,10 @@ module Riml
         @value = node.compiled_output
       end
 
-      def associate_var_name_with_type(compiled_var_name, node)
-        if node.scope and node.scope.local_scope?
-          variables = node.scope.scoped_variables
-        else
-          variables = Compiler.global_variables
-        end
+      def associate_variable_name_with_type(compiled_var_name, node)
+        get_variable_map_for_node(node)
         # ex: {"b:a" => :NilNode}
-        variables[compiled_var_name] = node.value.class.name.to_sym
+        @variable_map[compiled_var_name] = node.value.class.name.to_sym
         STDERR.puts variables.inspect if Compiler.debug?
       end
     end
@@ -260,6 +261,12 @@ module Riml
     class GetVariableNodeVisitor < VariableVisitor
       private
       def _compile(node)
+        # the variable is a ForNode variable
+        scope = node.parent_node.scope
+        if scope && scope.for_variable == node.name && node.scope_modifier.nil?
+          return @value = node.name
+        end
+
         @modifier = node.scope_modifier
         set_modifier(node) unless @modifier
         value_type = get_type_for_value(node)
@@ -402,6 +409,23 @@ Viml
 
       def last_arg?(args, i)
         args[i+1].nil?
+      end
+    end
+
+    class ForNodeVisitor < Visitor
+      private
+      def _compile(node)
+        node.compiled_output = "for #{node.variable} in "
+        node.call.parent_node = node
+        node.call.accept(CallNodeVisitor.new)
+        node.expressions.parent_node = node
+        node.expressions.accept(DrillDownVisitor.new(:establish_scope => true, :scope => node))
+        node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
+        body = node.expressions.compiled_output
+        body.each_line do |line|
+          node.compiled_output << node.indent << line
+        end
+        @value = node.compiled_output << "endfor"
       end
     end
 
