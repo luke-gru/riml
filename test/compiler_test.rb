@@ -61,6 +61,42 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "argument variable references in function bodies don't have to prefixed by a:" do
+    riml = <<Riml
+def s:A_method(a, b)
+  if a
+    echo a
+  end
+end
+Riml
+
+  expected = <<Viml
+function s:A_method(a, b)
+  if (a:a)
+    echo a:a
+  endif
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "splats are allowed in function definitions" do
+    riml = <<Riml
+def splat(a, b, *args)
+  var = args
+end
+Riml
+
+  expected = <<Viml
+function s:Splat(a, b, ...)
+  let var = a:000
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
   test "ruby-like if this then that end expression" do
     riml = "if b() then a = 2 end"
     nodes = Nodes.new([

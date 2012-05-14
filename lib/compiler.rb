@@ -213,8 +213,8 @@ module Riml
         else
           default_modifier = 's:'
         end
-        @variable_map.values.each do |name|
-          return name[0...2] if name[2..-1] == node.name
+        @variable_map.keys.each do |name|
+          return name[0..1] if name[2..-1] == node.name
         end
         default_modifier
       end
@@ -223,7 +223,7 @@ module Riml
         @variable_map ||= begin
           if node.scope and node.scope.local_scope?
             @local_scope = true
-            node.scope.scoped_variables
+            node.scope.scoped_variables.merge(node.scope.arg_variables)
           else
             Compiler.global_variables
           end
@@ -281,8 +281,9 @@ module Riml
       private
       def _compile(node)
         # the variable is a ForNode variable
-        scope = node.parent_node.scope
-        if scope && scope.for_variable == node.name && node.scope_modifier.nil?
+        scope = node.parent_node && node.parent_node.scope
+        if scope && scope.respond_to?(:for_variable) &&
+           scope.for_variable == node.name && node.scope_modifier.nil?
           return @value = node.name
         end
 
@@ -290,6 +291,9 @@ module Riml
         set_modifier(node) unless @modifier
         value_type = get_type_for_value(node)
         node.node_type = value_type
+        if node.scope && node.scope.respond_to?(:splat) && (splat = node.scope.splat)
+          check_for_splat_match!(node, splat)
+        end
         if node.question_existence?
           node.compiled_output = %Q{exists?("#{@modifier}#{node.name}")}
         else
@@ -302,6 +306,13 @@ module Riml
         get_variable_map_for_node(node)
         @variable_map.each do |name, type|
           return type if name[2..-1] == node.name
+        end
+      end
+
+      def check_for_splat_match!(node, splat)
+        if node.name == splat[1..-1]
+          @modifier = nil
+          node.name = 'a:000'
         end
       end
     end
@@ -348,8 +359,9 @@ module Riml
       private
       def _compile(node)
         modifier = node.scope_modifier || 's:'
+        params = process_parameters!(node)
         declaration = <<Viml.chomp
-function #{modifier}#{node.name.capitalize}(#{node.parameters.join(', ')})
+function #{modifier}#{node.name.capitalize}(#{params.join(', ')})
 Viml
         declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
         node.body.parent_node = node
@@ -368,6 +380,12 @@ Viml
       def setup_local_scope_for_descendants(node)
         node.body.accept(DrillDownVisitor.new(:establish_scope => node))
       end
+
+      def process_parameters!(node)
+        splat = node.splat
+        return node.parameters unless splat
+        node.parameters.map {|p| p == splat ? '...' : p}
+      end
     end
 
     # helper to drill down to all descendants of a certain node and do
@@ -376,7 +394,7 @@ Viml
 
       def initialize(options={})
         if options[:establish_scope]
-        @scope = @establish_scope = options[:establish_scope]
+          @scope = @establish_scope = options[:establish_scope]
         end
         super
       end
@@ -401,6 +419,12 @@ Viml
           node.each do |body_expr|
             body_expr.accept(self)
           end
+        when CallNode
+          node.arguments.each do |arg|
+            arg.accept(self)
+          end
+        when SetVariableNode
+          node.value.accept(self)
         end
       end
     end

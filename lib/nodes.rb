@@ -201,6 +201,8 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body,
   include Enumerable
   include Indentable
 
+  SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}
+
   def local_scope?
     true
   end
@@ -209,8 +211,17 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body,
     @scoped_variables ||= {}
   end
 
+  # {"a:arg1" => :Argument0, "a:arg2" => :Argument1}
   def arg_variables
-    @arg_variables ||= parameters
+    @arg_variables ||=
+      Hash[parameters.delete_if(&SPLAT).map.with_index {|p, i| ["a:#{p}", :"Argument#{i}"] }]
+  end
+
+  # returns the splat argument or nil
+  def splat
+    @splat ||= begin
+      parameters.select(&SPLAT).first
+    end
   end
 
   def each(&block)

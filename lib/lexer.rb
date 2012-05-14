@@ -13,6 +13,7 @@ module Riml
       @dedent_pending = false
       @expecting_identifier = false
       @one_line_conditional_END_pending = false
+      @splat_allowed = false
 
       while @i < code.size
         chunk = code[@i..-1]
@@ -51,13 +52,18 @@ module Riml
 
         elsif @expecting_identifier
           raise SyntaxError, "expected identifier after scope modifier"
+        elsif splat = chunk[/\A(\.{3}|\*[a-zA-Z_]\w*)/]
+          raise SyntaxError, "unexpected splat, has to be enclosed in parentheses" unless @splat_allowed
+          @tokens << [:SPLAT, splat]
+          @splat_allowed = false
+          @i += splat.size
         elsif constant = chunk[/\A[A-Z]\w*/]
           @tokens << [:CONSTANT, constant]
           @i += constant.size
         elsif number = chunk[/\A[0-9]+/]
           @tokens << [:NUMBER, number.to_i]
           @i += number.size
-        elsif interpolation = chunk[/\A"(.*?)(\#{(.*?)})(.*?)"/]
+        elsif interpolation = chunk[/\A"(.*?)(\#\{(.*?)\})(.*?)"/]
           # "#{hey} guys" = hey . " guys"
           unless $1.empty?
             @tokens << [:STRING_D, $1]
@@ -105,7 +111,9 @@ module Riml
           else
             @tokens << [value, value]
           end
-            @i += 1
+          @splat_allowed = true  if value == '('
+          @splat_allowed = false if value == ')'
+          @i += 1
         end
       end
       raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0

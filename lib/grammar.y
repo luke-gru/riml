@@ -1,9 +1,9 @@
 class Riml::Parser
 
-token IF ELSE ELSIF THEN UNLESS END
+token IF ELSE ELSEIF THEN UNLESS END
 token WHILE UNTIL
 token FOR IN
-token DEF CALL FUNC_NO_PARENS_NECESSARY # such as echo "hi"
+token DEF SPLAT CALL FUNC_NO_PARENS_NECESSARY # such as echo "hi"
 token COMMAND NARGS
 token INDENT DEDENT
 token NEWLINE
@@ -173,8 +173,9 @@ rule
   # Method definition
   # [scope_modifier, name, args, expressions, indent]
   Def:
-    DEF Scope IDENTIFIER Keyword Block End                             { indent = val[4].pop; result = DefNode.new(val[1], val[2], [],     val[3], val[4], indent) }
-  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End           { indent = val[7].pop; result = DefNode.new(val[1], val[2], val[4], val[6], val[7], indent) }
+    DEF Scope IDENTIFIER Keyword Block End                                { indent = val[4].pop; result = DefNode.new(val[1], val[2], [],     val[3], val[4], indent) }
+  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End              { indent = val[7].pop; result = DefNode.new(val[1], val[2], val[4], val[6], val[7], indent) }
+  | DEF Scope IDENTIFIER "(" ParamList ',' SPLAT ")" Keyword Block End    { indent = val[9].pop; result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9], indent) }
   ;
 
   # like 'range' after function definition
