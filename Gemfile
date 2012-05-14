@@ -4,6 +4,4 @@ source :rubygems
 # and executing the following:
 #
 # $ racc -o parser.rb grammar.y
-group :test, :development do
-  gem 'racc'
-end
+gem 'racc'
