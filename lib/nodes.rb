@@ -103,6 +103,23 @@ class FinishNode < LiteralNode
   end
 end
 
+module FullyNameable
+  def self.included(base)
+    base.class_eval do
+      raise "#{base} must define method 'name'" unless method_defined?(:name)
+      if method_defined?(:scope_modifier)
+        def full_name
+          "#{scope_modifier}#{name}"
+        end
+      elsif method_defined?(:prefix)
+        def full_name
+          "#{prefix}#{name}"
+        end
+      end
+    end
+  end
+end
+
 # Node of a method call, can take any of these forms:
 #
 #   method()
@@ -110,13 +127,18 @@ end
 class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Riml::Constants
   include Visitable
+  include FullyNameable
+
+  def builtin_function?
+    (BUILTIN_FUNCTIONS + VIML_FUNC_NO_PARENS_NECESSARY).include?(name) and scope_modifier.nil?
+  end
 
   #def builtin_range?
-  #  name == "range" and scope_modifier.nil?
+  #  BUILTIN_FUNCTIONS.include?("range") and scope_modifier.nil?
   #end
   def method_missing(method, *args, &blk)
     if method.to_s =~ /\Abuiltin_(.*?)\?\Z/
-      name == $1 and scope_modifier.nil?
+      BUILTIN_FUNCTIONS.include?($1) and scope_modifier.nil?
     else
       super
     end
@@ -162,6 +184,7 @@ end
 # let s:var = 4
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
+  include FullyNameable
 end
 
 # let &compatible = 1
@@ -169,6 +192,7 @@ end
 # let $HOME = '/home/luke'
 class SetSpecialVariableNode < Struct.new(:prefix, :name, :value)
   include Visitable
+  include FullyNameable
 end
 
 # let [var1, var2] = expression()
@@ -178,9 +202,8 @@ end
 
 module QuestionVariableExistence
   def self.included(base)
-    raise "#{base.class.name} must define method 'name'" unless
-      base.instance_methods.map(&:to_s).include? 'name'
       base.class_eval do
+        raise "#{base} must define method 'name'" unless method_defined?(:name)
         alias name_with_question_mark name
         def name_without_question_mark
           if question_existence?
@@ -202,6 +225,7 @@ end
 # var
 class GetVariableNode < Struct.new(:scope_modifier, :name)
   include Visitable
+  include FullyNameable
   include QuestionVariableExistence
   attr_accessor :node_type
 end
@@ -210,6 +234,7 @@ end
 # @q
 class GetSpecialVariableNode < Struct.new(:prefix, :name)
   include Visitable
+  include FullyNameable
   attr_accessor :node_type
 end
 
@@ -218,6 +243,13 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
   include Visitable
   include Enumerable
   include Indentable
+  include FullyNameable
+
+  def initialize(*args)
+    super
+    # max number of arguments in viml
+    raise SyntaxError, "too many arguments" if parameters.size > 20
+  end
 
   SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}
 

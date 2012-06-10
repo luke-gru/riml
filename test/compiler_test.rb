@@ -110,12 +110,18 @@ Viml
     ])
 
   expected = <<Viml
-if (b())
+if (s:b())
   let s:a = 2
 endif
 Viml
 
     assert_equal expected, compile(nodes)
+    assert_equal expected, compile(riml)
+  end
+
+  test "override riml default scipt-local scoping for variables/functions" do
+    riml     =   "n:a = 'no default scoping! Hooray!'"
+    expected = "let a = 'no default scoping! Hooray!'\n"
     assert_equal expected, compile(riml)
   end
 
@@ -135,7 +141,7 @@ end
 Riml
 
     expected = <<Viml
-if (!shy())
+if (!s:shy())
   echo 'hi'
 endif
 Viml
@@ -386,7 +392,7 @@ call myFunction(arg1, arg2)
 Riml
 
     expected = <<Viml
-call myFunction(s:arg1, s:arg2)
+call s:myFunction(s:arg1, s:arg2)
 Viml
 
     assert_equal expected, compile(riml)
@@ -398,7 +404,7 @@ Viml
 Riml
 
     expected = <<Viml
-let [s:a, s:b, s:c] = expression()
+let [s:a, s:b, s:c] = s:expression()
 Viml
 
     assert_equal expected, compile(riml)

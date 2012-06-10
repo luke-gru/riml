@@ -18,7 +18,8 @@ module Riml
       while @i < code.size
         chunk = code[@i..-1]
 
-        if scope_modifier = chunk[/\A[sbwgva]:/]
+        # the 'n' scope modifier is added by riml
+        if scope_modifier = chunk[/\A[bwtglsavn]:/]
           raise SyntaxError, "expected identifier, got scope modifier: '#{scope_modifier}'" if @expecting_identifier
           @tokens << [:SCOPE_MODIFIER, scope_modifier]
           @expecting_identifier = true
