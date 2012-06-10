@@ -158,45 +158,63 @@ class TernaryOperatorNode < OperatorNode
   def else_expr() operands[2] end
 end
 
-class GetConstantNode < Struct.new(:name)
-  include Visitable
-end
-
-class SetConstantNode < Struct.new(:name, :value)
-  include Visitable
-end
-
+# let var = 2
+# let s:var = 4
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
 end
 
-# [a, b] = expression()
+# let &compatible = 1
+# let @r = ''
+# let $HOME = '/home/luke'
+class SetSpecialVariableNode < Struct.new(:prefix, :name, :value)
+  include Visitable
+end
+
+# let [var1, var2] = expression()
 class SetVariableNodeList < Struct.new(:list, :expression)
   include Visitable
 end
 
-class GetVariableNode < Struct.new(:scope_modifier, :name)
-  include Visitable
-  attr_accessor :node_type
+module QuestionVariableExistence
+  def self.included(base)
+    raise "#{base.class.name} must define method 'name'" unless
+      base.instance_methods.map(&:to_s).include? 'name'
+      base.class_eval do
+        alias name_with_question_mark name
+        def name_without_question_mark
+          if question_existence?
+            name_with_question_mark[0...-1]
+          else
+            name_with_question_mark
+          end
+        end
+        alias name name_without_question_mark
 
-  alias name_with_question_mark name
-  def name_without_question_mark
-    if question_existence?
-      name_with_question_mark[0...-1]
-    else
-      name_with_question_mark
-    end
-  end
-  alias name name_without_question_mark
-
-  def question_existence?
-    name_with_question_mark[-1] == ??
+        def question_existence?
+          name_with_question_mark[-1] == ??
+        end
+      end
   end
 end
 
+# s:var
+# var
+class GetVariableNode < Struct.new(:scope_modifier, :name)
+  include Visitable
+  include QuestionVariableExistence
+  attr_accessor :node_type
+end
+
+# &autoindent
+# @q
+class GetSpecialVariableNode < Struct.new(:prefix, :name)
+  include Visitable
+  attr_accessor :node_type
+end
 
 # Method definition.
-class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body, :indent)
+class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
   include Visitable
   include Enumerable
   include Indentable

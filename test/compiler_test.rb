@@ -5,6 +5,7 @@ class BasicCompilerTest < Riml::TestCase
 
   def setup
     Compiler.global_variables.clear
+    Compiler.special_variables.clear
   end
 
   test "basic function compiles" do
@@ -16,7 +17,7 @@ Riml
 
     nodes = Nodes.new([
       DefNode.new(nil, "a_method", ['a', 'b'], nil,
-        Nodes.new([TrueNode.new]), 2
+        Nodes.new([TrueNode.new])
       )
     ])
 
@@ -44,7 +45,7 @@ Riml
     nodes = Nodes.new([
       DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new(
         [IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]))]
-      ),2)
+      ))
     ])
 
     expected = <<Viml
@@ -401,5 +402,28 @@ let [s:a, s:b, s:c] = expression()
 Viml
 
     assert_equal expected, compile(riml)
+  end
+
+  test "special variables compile correctly" do
+    riml = <<Riml
+echo $VAR
+@a = "register a"
+&hello = "omg"
+if &hello == "omg"
+  echo &hello
+end
+Riml
+
+    expected = <<Viml
+echo $VAR
+let @a = "register a"
+let &hello = "omg"
+if (&hello ==# "omg")
+  echo &hello
+endif
+Viml
+    assert_equal expected, compile(riml)
+    # the types are only known for 2 of them, not $VAR
+    assert_equal 2, Compiler.special_variables.values.size
   end
 end

@@ -15,11 +15,11 @@ class BasicLexerTest < Riml::TestCase
     expected =
     [
       [:IF, "if"], [:NUMBER, 1], [:NEWLINE, "\n"],
-        [:INDENT, 2], [:IDENTIFIER, "print"], [:STRING_S, '...'], [:NEWLINE, "\n"],
+        [:IDENTIFIER, "print"], [:STRING_S, '...'], [:NEWLINE, "\n"],
         [:IF, "if"], [:FALSE, 'false'], [:NEWLINE, "\n"],
-          [:INDENT, 4], [:IDENTIFIER, "do_something"], [:NEWLINE, "\n"],
-        [:END, 'end'], [:NEWLINE, "\n"], [:DEDENT, 2],
-      [:END, 'end'], [:NEWLINE, "\n"], [:DEDENT, 0],
+        [:IDENTIFIER, "do_something"], [:NEWLINE, "\n"],
+        [:END, 'end'], [:NEWLINE, "\n"],
+      [:END, 'end'], [:NEWLINE, "\n"],
       [:IDENTIFIER, 'print'], [:STRING_D, 'omg'], [';', ';']
     ]
     assert_equal expected, lex(riml)
@@ -55,8 +55,7 @@ Riml
       [:SCOPE_MODIFIER, "b:"],
       [:IDENTIFIER, "salutation"],
       [:NEWLINE, "\n"],
-      [:INDENT, 2],
-      [:IDENTIFIER, "echo"],
+      [:FUNC_NO_PARENS_NECESSARY, "echo"],
       [:STRING_D, "hi"],
       [";", ";"],
       [:NEWLINE, "\n"],

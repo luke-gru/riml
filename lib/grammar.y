@@ -5,13 +5,11 @@ token WHILE UNTIL
 token FOR IN
 token DEF SPLAT CALL FUNC_NO_PARENS_NECESSARY # such as echo "hi"
 token COMMAND NARGS
-token INDENT DEDENT
 token NEWLINE
 token NUMBER STRING_D STRING_S # single- and double-quoted
 token TRUE FALSE NIL
-token IDENTIFIER LET
-token CONSTANT
-token SCOPE_MODIFIER
+token LET IDENTIFIER
+token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
 token FINISH
 
 prechigh
@@ -51,7 +49,6 @@ rule
   | Command                               { result = val[0] }
   | VariableRetrieval                     { result = val[0] }
   | Literal                               { result = val[0] }
-  | Constant                              { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
   | Ternary                               { result = val[0] }
@@ -153,32 +150,31 @@ rule
   | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   ;
 
-  Constant:
-    CONSTANT                              { result = GetConstantNode.new(val[0]) }
-  ;
-
   # Assignment to a variable
   Assign:
-    LET Scope IDENTIFIER '=' Expression         { result = SetVariableNode.new(val[1], val[2], val[4]) }
-  | LET List '=' Expression                     { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
-  | Scope IDENTIFIER '=' Expression             { result = SetVariableNode.new(val[0], val[1], val[3]) }
-  | List '=' Expression                         { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
+    LET Scope IDENTIFIER '=' Expression                   { result = SetVariableNode.new(val[1], val[2], val[4]) }
+  | LET List '=' Expression                               { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
+  | LET SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression      { result = SetSpecialVariableNode.new(val[1], val[2], val[4]) }
+  | Scope IDENTIFIER '=' Expression                       { result = SetVariableNode.new(val[0], val[1], val[3]) }
+  | List '=' Expression                                   { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
+  | SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression          { result = SetSpecialVariableNode.new(val[0], val[1], val[3]) }
   ;
 
   # retrieving the value of a variable
   VariableRetrieval:
-    Scope IDENTIFIER                            { result = GetVariableNode.new(val[0], val[1])}
+    Scope IDENTIFIER                            { result = GetVariableNode.new(val[0], val[1]) }
+  | SPECIAL_VAR_PREFIX IDENTIFIER               { result = GetSpecialVariableNode.new(val[0], val[1]) }
   ;
 
   # Method definition
-  # [scope_modifier, name, args, expressions, indent]
+  # [scope_modifier, name, args, keyword, expressions]
   Def:
-    DEF Scope IDENTIFIER Keyword Block End                                { indent = val[4].pop; result = DefNode.new(val[1], val[2], [],     val[3], val[4], indent) }
-  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End              { indent = val[7].pop; result = DefNode.new(val[1], val[2], val[4], val[6], val[7], indent) }
-  | DEF Scope IDENTIFIER "(" ParamList ',' SPLAT ")" Keyword Block End    { indent = val[9].pop; result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9], indent) }
+    DEF Scope IDENTIFIER Keyword Block End                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
+  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
+  | DEF Scope IDENTIFIER "(" ParamList ',' SPLAT ")" Keyword Block End    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
-  # like 'range' after function definition
+  # Example: 'range' after function definition
   Keyword:
     IDENTIFIER            { result = val[0] }
   | /* nothing */         { result = nil }
@@ -189,7 +185,7 @@ rule
   ;
 
   End:
-    END NEWLINE DEDENT
+    END NEWLINE
   | END
   ;
 
@@ -205,12 +201,12 @@ rule
 
   # [expression, expressions]
   If:
-    IF Expression Block End                 { indent = val[2].pop; result = IfNode.new(val[1], val[2]) }
+    IF Expression Block End                 { result = IfNode.new(val[1], val[2]) }
   | IF Expression THEN Expression End       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
   Unless:
-    UNLESS Expression Block End             { indent = val[2].pop; result = UnlessNode.new(val[1], val[2]) }
+    UNLESS Expression Block End             { result = UnlessNode.new(val[1], val[2]) }
   | UNLESS Expression THEN Expression End   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
@@ -219,19 +215,20 @@ rule
   ;
 
   While:
-    WHILE Expression Block End              { indent = val[2].pop; result = WhileNode.new(val[1], val[2]) }
+    WHILE Expression Block End              { result = WhileNode.new(val[1], val[2]) }
   ;
 
   For:
-    FOR IDENTIFIER IN Call Block End    { indent = val[4].pop; result = ForNode.new(val[1], val[3], val[4]) }
+    FOR IDENTIFIER IN Call Block End    { result = ForNode.new(val[1], val[3], val[4]) }
   ;
 
-  # [expressions, indent]
+  # [expressions]
   # expressions list could contain an ElseNode, which contains expressions
+  # itself
   Block:
-    NEWLINE INDENT Expressions ELSE NEWLINE Expressions { result = val[2] << ElseNode.new(val[5]) << val[1] }
-  | NEWLINE INDENT Expressions                          { result = val[2] << val[1] }
-  | NEWLINE INDENT                                      { result = Nodes.new([]) << val[1] }
+    NEWLINE Expressions ELSE NEWLINE Expressions { result = val[1] << ElseNode.new(val[4]) }
+  | NEWLINE Expressions                          { result = val[1] }
+  | NEWLINE                                      { result = Nodes.new([]) }
   ;
 end
 

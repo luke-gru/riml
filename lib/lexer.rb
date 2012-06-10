@@ -18,13 +18,17 @@ module Riml
       while @i < code.size
         chunk = code[@i..-1]
 
-        if scope_modifier = chunk[/\A(s|b|w|g|v|a):/]
-          raise SyntaxError, "expected identifier after scope modifier" if @expecting_identifier
+        if scope_modifier = chunk[/\A[sbwgva]:/]
+          raise SyntaxError, "expected identifier, got scope modifier: '#{scope_modifier}'" if @expecting_identifier
           @tokens << [:SCOPE_MODIFIER, scope_modifier]
           @expecting_identifier = true
           @i += 2
+        elsif special_var_prefix = chunk[/\A[&$@]/]
+          raise SyntaxError, "expected identifier, got special variable prefix: '#{special_var_prefix}'" if @expecting_identifier
+          @tokens << [:SPECIAL_VAR_PREFIX, special_var_prefix]
+          @expecting_identifier = true
+          @i += 1
         elsif identifier = chunk[/\A[a-zA-Z_]\w*\??/]
-
           # keyword identifiers
           if KEYWORDS.include?(identifier)
             if identifier == 'function'
@@ -57,9 +61,6 @@ module Riml
           @tokens << [:SPLAT, splat]
           @splat_allowed = false
           @i += splat.size
-        elsif constant = chunk[/\A[A-Z]\w*/]
-          @tokens << [:CONSTANT, constant]
-          @i += constant.size
         elsif number = chunk[/\A[0-9]+/]
           @tokens << [:NUMBER, number.to_i]
           @i += number.size
@@ -87,10 +88,8 @@ module Riml
           if @one_line_conditional_END_pending
             @one_line_conditional_END_pending = false
           elsif @indent_pending
-            @tokens << [:INDENT, @current_indent]
             @indent_pending = false
           elsif @dedent_pending
-            @tokens << [:DEDENT, @current_indent]
             @dedent_pending = false
           end
 

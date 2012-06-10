@@ -6,6 +6,8 @@ module Riml
     VIML_END_KEYWORDS = %w(endif endfunction endwhile endfor)
     KEYWORDS = RIML_KEYWORDS + VIML_END_KEYWORDS
 
-    VIML_FUNC_NO_PARENS_NECESSARY = %W(echo echohl execute sleep)
+    VIML_SPECIAL_VARIABLE_PREFIXES = %w(& @ $)
+
+    VIML_FUNC_NO_PARENS_NECESSARY = %W(echo echon echohl execute sleep)
   end
 end

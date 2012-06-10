@@ -10,7 +10,7 @@ class BasicParserTest < Riml::TestCase
     Viml
     expected = Nodes.new([
       DefNode.new(nil, "a_method", ['a', 'b'], nil,
-        Nodes.new([TrueNode.new]), 2
+        Nodes.new([TrueNode.new])
       )
     ])
     assert_equal expected, parse(code)
@@ -34,7 +34,7 @@ Viml
                                  Nodes.new([FalseNode.new])
                                 )])
                    )]
-      ), 2) #indent
+      ))
     ])
     assert_equal expected, parse(code)
   end
