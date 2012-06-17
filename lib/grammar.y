@@ -169,9 +169,9 @@ rule
   # Method definition
   # [scope_modifier, name, args, keyword, expressions]
   Def:
-    DEF Scope IDENTIFIER Keyword Block End                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
-  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block End              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
-  | DEF Scope IDENTIFIER "(" ParamList ',' SPLAT ")" Keyword Block End    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    DEF Scope IDENTIFIER Keyword Block END                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
+  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
+  | DEF Scope IDENTIFIER "(" ParamList ',' SPLAT ")" Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   # Example: 'range' after function definition
@@ -182,11 +182,6 @@ rule
 
   Command:
     COMMAND NARGS IDENTIFIER {}
-  ;
-
-  End:
-    END NEWLINE
-  | END
   ;
 
   EndScript:
@@ -201,13 +196,13 @@ rule
 
   # [expression, expressions]
   If:
-    IF Expression Block End                 { result = IfNode.new(val[1], val[2]) }
-  | IF Expression THEN Expression End       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
+    IF Expression Block END                 { result = IfNode.new(val[1], val[2]) }
+  | IF Expression THEN Expression END       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
   Unless:
-    UNLESS Expression Block End             { result = UnlessNode.new(val[1], val[2]) }
-  | UNLESS Expression THEN Expression End   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
+    UNLESS Expression Block END             { result = UnlessNode.new(val[1], val[2]) }
+  | UNLESS Expression THEN Expression END   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
   Ternary:
@@ -215,11 +210,11 @@ rule
   ;
 
   While:
-    WHILE Expression Block End              { result = WhileNode.new(val[1], val[2]) }
+    WHILE Expression Block END              { result = WhileNode.new(val[1], val[2]) }
   ;
 
   For:
-    FOR IDENTIFIER IN Call Block End    { result = ForNode.new(val[1], val[3], val[4]) }
+    FOR IDENTIFIER IN Call Block END    { result = ForNode.new(val[1], val[3], val[4]) }
   ;
 
   # [expressions]

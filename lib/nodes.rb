@@ -122,8 +122,8 @@ end
 
 # Node of a method call, can take any of these forms:
 #
-#   method()
-#   method(argument1, argument2)
+#   Method()
+#   s:Method(argument1, argument2)
 class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Riml::Constants
   include Visitable
@@ -151,8 +151,8 @@ end
 
 # Node of an explicitly called method, can take any of these forms:
 #
-#   call method()
-#   call method(argument1, argument2)
+#   call Method()
+#   call s:Method(argument1, argument2)
 class ExplicitCallNode < CallNode
 end
 
@@ -248,7 +248,9 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
   def initialize(*args)
     super
     # max number of arguments in viml
-    raise SyntaxError, "too many arguments" if parameters.size > 20
+    raise ArgumentError,
+      "can't have more than 20 parameters for #{full_name}" if
+      parameters.size > 20
   end
 
   SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}

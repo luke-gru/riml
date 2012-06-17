@@ -418,6 +418,7 @@ echo $VAR
 if &hello == "omg"
   echo &hello
 end
+echo "hi"
 Riml
 
     expected = <<Viml
@@ -427,6 +428,7 @@ let &hello = "omg"
 if (&hello ==# "omg")
   echo &hello
 endif
+echo "hi"
 Viml
     assert_equal expected, compile(riml)
     # the types are only known for 2 of them, not $VAR
