@@ -3,10 +3,11 @@ class Riml::Parser
 token IF ELSE ELSEIF THEN UNLESS END
 token WHILE UNTIL
 token FOR IN
-token DEF SPLAT CALL FUNC_NO_PARENS_NECESSARY # such as echo "hi"
+token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
 token COMMAND NARGS
 token NEWLINE
-token NUMBER STRING_D STRING_S # single- and double-quoted
+token NUMBER
+token STRING_D STRING_S # single- and double-quoted
 token TRUE FALSE NIL
 token LET IDENTIFIER
 token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
@@ -14,12 +15,14 @@ token FINISH
 
 prechigh
   right '!'
-  left '*' '/'
+  left '*' '/' '%'
   left '+' '+=' '-' '-='
   left '.'
   left '>' '>=' '<' '<='
+  left '=='
   left '&&'
   left '||'
+  right '?'
   right '='
   left ','
 preclow
@@ -91,6 +94,7 @@ rule
   | ListItems "," VariableRetrieval       { result = val[0] << val[2] }
   ;
 
+  # {'key' => 'value', 'key' => 'value'}
   Dictionary:
     '{' DictItems '}'                     { result = Hash[val[1]] }
   ;
@@ -108,9 +112,10 @@ rule
   ;
 
   Call:
-    Scope IDENTIFIER "(" ArgList ")"      { result = CallNode.new(val[0], val[1], val[3]) }
-  | CALL Scope IDENTIFIER "(" ArgList ")" { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
-  | FUNC_NO_PARENS_NECESSARY ArgList      { result = CallNode.new(nil, val[0], val[1]) }
+    Scope IDENTIFIER         "(" ArgList ")"  { result = CallNode.new(val[0], val[1], val[3]) }
+  | CALL Scope IDENTIFIER    "(" ArgList ")"  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | BUILTIN_COMMAND          "(" ArgList ")"  { result = CallNode.new(nil, val[0], val[2]) }
+  | BUILTIN_COMMAND              ArgList      { result = CallNode.new(nil, val[0], val[1]) }
   ;
 
 

@@ -1,16 +1,19 @@
 module Riml
   module Constants
-    RIML_KEYWORDS = %w(def function function! end if then else elseif unless while
-                       for in true false nil command command? return finish break
-                       continue call let)
-    VIML_END_KEYWORDS = %w(endif endfunction endwhile endfor)
-    KEYWORDS = RIML_KEYWORDS + VIML_END_KEYWORDS
-
-    VIML_SPECIAL_VARIABLE_PREFIXES = %w(& @ $)
-
-    VIML_FUNC_NO_PARENS_NECESSARY = %W(echo echon echohl execute sleep)
-
-    BUILTIN_FUNCTIONS = %w(
+    VIML_KEYWORDS =
+      %w(function function! if else elseif while for in command
+        return finish break continue call let)
+    VIML_END_KEYWORDS =
+      %w(endfunction endif endwhile endfor)
+    RIML_KEYWORDS =
+      %w(def end then unless true false nil command?)
+    KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
+    SPECIAL_VARIABLE_PREFIXES =
+      %w(& @ $)
+    BUILTIN_COMMANDS  =
+      %w(echo echon echohl execute sleep)
+    BUILTIN_FUNCTIONS =
+    %w(
 abs
 acos
 add

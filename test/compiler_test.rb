@@ -434,4 +434,25 @@ Viml
     # the types are only known for 2 of them, not $VAR
     assert_equal 2, Compiler.special_variables.values.size
   end
+
+  test "compile line-continuations, but don't (yet) preserve spaces to keep compiled viml readable" do
+riml = <<Riml
+echo lnum == 1
+\\     ? "top"
+\\     : lnum == 1000
+\\             ? "last"
+\\             : lnum
+Riml
+
+expected = <<Viml
+echo s:lnum == 1 ? "top" : s:lnum == 1000 ? "last" : s:lnum
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "octal, hex and floating point decimal numbers are preserved" do
+    riml = "echo 0x7f + 036 + 0.1265"
+    expected = riml + "\n"
+    assert_equal expected, compile(riml)
+  end
 end

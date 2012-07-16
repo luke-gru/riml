@@ -70,6 +70,7 @@ class LiteralNode < Struct.new(:value)
 end
 
 class NumberNode < LiteralNode; end
+
 class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or single-quoted
   include Visitable
 
@@ -130,7 +131,7 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include FullyNameable
 
   def builtin_function?
-    (BUILTIN_FUNCTIONS + VIML_FUNC_NO_PARENS_NECESSARY).include?(name) and scope_modifier.nil?
+    (BUILTIN_FUNCTIONS + BUILTIN_COMMANDS).include?(name) and scope_modifier.nil?
   end
 
   #def builtin_range?
@@ -145,7 +146,7 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   end
 
   def no_parens_necessary?
-    VIML_FUNC_NO_PARENS_NECESSARY.include?(name) and scope_modifier.nil?
+    BUILTIN_COMMANDS.include?(name) and scope_modifier.nil?
   end
 end
 
@@ -342,5 +343,26 @@ class ForNode < Struct.new(:variable, :call, :expressions)
 
   def each(&block)
     expressions.each &block
+  end
+end
+
+# lines: [5, 6, 8, 9]
+# This means the continuation has 4 lines (line.size is 4) and each line
+# preserves the amt of whitespace specified as the value in the array.
+# Ex: 1st line preserves 5 spaces, 2nd line preserves 6 spaces, etc...
+class LineContinuation < Struct.new(:lines)
+  include Visitable
+  include Enumerable
+
+  def size
+    lines.size
+  end
+
+  def [](idx)
+    lines[idx]
+  end
+
+  def each(&block)
+    lines.each &block
   end
 end

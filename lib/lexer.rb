@@ -18,6 +18,13 @@ module Riml
       while @i < code.size
         chunk = code[@i..-1]
 
+        # deal with line continuations
+        if cont = chunk[/\A\\/]
+          @i += 1
+          @tokens.pop until @tokens.last[0] != :NEWLINE
+          next
+        end
+
         # the 'n' scope modifier is added by riml
         if scope_modifier = chunk[/\A[bwtglsavn]:/]
           raise SyntaxError, "expected identifier, got scope modifier: '#{scope_modifier}'" if @expecting_identifier
@@ -45,8 +52,8 @@ module Riml
             @tokens << [token_name.upcase.intern, identifier]
 
             track_indent_level(chunk, identifier)
-          elsif VIML_FUNC_NO_PARENS_NECESSARY.include? identifier
-            @tokens << [:FUNC_NO_PARENS_NECESSARY, identifier]
+          elsif BUILTIN_COMMANDS.include? identifier
+            @tokens << [:BUILTIN_COMMAND, identifier]
           # method names and variable names
           else
             @tokens << [:IDENTIFIER, identifier]
@@ -62,11 +69,21 @@ module Riml
           @tokens << [:SPLAT, splat]
           @splat_allowed = false
           @i += splat.size
-        elsif number = chunk[/\A[0-9]+/]
-          @tokens << [:NUMBER, number.to_i]
-          @i += number.size
+        # integer (octal)
+        elsif octal = chunk[/\A0[0-7]+/]
+          @tokens << [:NUMBER, octal.to_s]
+          @i += octal.size
+        # integer (hex)
+        elsif hex = chunk[/\A0[xX]\h+/]
+          STDERR.puts "here"
+          @tokens << [:NUMBER, hex.to_s]
+          @i += hex.size
+        # integer or float (decimal)
+        elsif decimal = chunk[/\A[0-9]+(\.[0-9]+)?/]
+          @tokens << [:NUMBER, decimal.to_s]
+          @i += decimal.size
         elsif interpolation = chunk[/\A"(.*?)(\#\{(.*?)\})(.*?)"/]
-          # "#{hey} guys" = hey . " guys"
+          # "#{hey} guys" = "hey" . " guys"
           unless $1.empty?
             @tokens << [:STRING_D, $1]
             @tokens << ['.', '.']
