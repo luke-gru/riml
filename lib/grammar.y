@@ -70,8 +70,8 @@ rule
   Literal:
     NUMBER                                { result = NumberNode.new(val[0]) }
   | String                                { result = val[0] }
-  | List                                  { result = ListNode.new(val[0]) }
-  | Dictionary                            { result = DictionaryNode.new(val[0]) }
+  | List                                  { result = val[0] }
+  | Dictionary                            { result = val[0] }
   | TRUE                                  { result = TrueNode.new }
   | FALSE                                 { result = FalseNode.new }
   | NIL                                   { result = NilNode.new }
@@ -82,8 +82,12 @@ rule
   | STRING_D                              { result = StringNode.new(val[0], :d) }
   ;
 
-  List:
+  ListLiteral:
     '[' ListItems ']'                     { result = val[1] }
+  ;
+
+  List:
+    ListLiteral                           { result = ListNode.new(val[0]) }
   ;
 
   ListItems:
@@ -95,8 +99,12 @@ rule
   ;
 
   # {'key' => 'value', 'key' => 'value'}
-  Dictionary:
+  DictionaryLiteral:
     '{' DictItems '}'                     { result = Hash[val[1]] }
+  ;
+
+  Dictionary
+    DictionaryLiteral                     { result = DictionaryNode.new(val[0]) }
   ;
 
   # [[key, value], [key, value]]
@@ -158,10 +166,10 @@ rule
   # Assignment to a variable
   Assign:
     LET Scope IDENTIFIER '=' Expression                   { result = SetVariableNode.new(val[1], val[2], val[4]) }
-  | LET List '=' Expression                               { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
+  | LET ListLiteral '=' Expression                        { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
   | LET SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression      { result = SetSpecialVariableNode.new(val[1], val[2], val[4]) }
   | Scope IDENTIFIER '=' Expression                       { result = SetVariableNode.new(val[0], val[1], val[3]) }
-  | List '=' Expression                                   { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
+  | ListLiteral '=' Expression                            { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
   | SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression          { result = SetSpecialVariableNode.new(val[0], val[1], val[3]) }
   ;
 
@@ -211,15 +219,16 @@ rule
   ;
 
   Ternary:
-    Expression '?' Expression ':' Expression    { result = TernaryOperatorNode.new([val[0], val[2], val[4]]) }
+    Expression '?' Expression ':' Expression   { result = TernaryOperatorNode.new([val[0], val[2], val[4]]) }
   ;
 
   While:
-    WHILE Expression Block END              { result = WhileNode.new(val[1], val[2]) }
+    WHILE Expression Block END                 { result = WhileNode.new(val[1], val[2]) }
   ;
 
   For:
-    FOR IDENTIFIER IN Call Block END    { result = ForNode.new(val[1], val[3], val[4]) }
+    FOR IDENTIFIER IN Call Block END           { result = ForNodeCall.new(val[1], val[3], val[4]) }
+  | FOR IDENTIFIER IN List Block END           { result = ForNodeList.new(val[1], val[3], val[4]) }
   ;
 
   # [expressions]

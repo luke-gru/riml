@@ -334,7 +334,15 @@ end
 # for variable in someFunction(1,2,3)
 #   echo variable
 # end
-class ForNode < Struct.new(:variable, :call, :expressions)
+#
+# OR
+#
+# for variable in [1,2,3]
+#   echo variable
+# end
+#
+# type: :list or :call
+class ForNode < Struct.new(:variable, :list_expression, :expressions)
   include Visitable
   include Enumerable
   include Indentable
@@ -345,6 +353,9 @@ class ForNode < Struct.new(:variable, :call, :expressions)
     expressions.each &block
   end
 end
+
+class ForNodeCall < ForNode; end
+class ForNodeList < ForNode; end
 
 # lines: [5, 6, 8, 9]
 # This means the continuation has 4 lines (line.size is 4) and each line

@@ -5,3 +5,7 @@ source :rubygems
 #
 # $ racc -o parser.rb grammar.y
 gem 'racc'
+
+group :development do
+  gem 'ruby-debug19', :require => 'ruby-debug'
+end

@@ -502,8 +502,8 @@ Viml
       private
       def _compile(node)
         node.compiled_output = "for #{node.variable} in "
-        node.call.parent_node = node
-        node.call.accept(CallNodeVisitor.new)
+        node.list_expression.parent_node = node
+        yield
         node.expressions.parent_node = node
         node.expressions.accept(DrillDownVisitor.new(:establish_scope => node))
         node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
@@ -512,6 +512,25 @@ Viml
           node.compiled_output << node.indent << line
         end
         @value = node.compiled_output << "endfor"
+      end
+    end
+
+    class ForNodeCallVisitor < ForNodeVisitor
+      private
+      def _compile(node)
+        super do
+          node.list_expression.accept(CallNodeVisitor.new)
+        end
+      end
+    end
+
+    class ForNodeListVisitor < ForNodeVisitor
+      private
+      def _compile(node)
+        super do
+          result = node.list_expression.accept(ListNodeVisitor.new)
+          result << "\n" unless result[-1] == "\n"
+        end
       end
     end
 

@@ -295,13 +295,36 @@ Viml
     riml2 = 'emptyList = []'
     expected2 = 'let s:emptyList = []' << "\n"
 
-    # list concatenation
-    riml3 = 'echo(alist + ["foo", "bar"])'
-    expected3 = 'echo s:alist + ["foo", "bar"]' << "\n"
 
   assert_equal expected, compile(riml)
   assert_equal expected2, compile(riml2)
-  assert_equal expected3, compile(riml3)
+  end
+
+  test "list-literal concatenation" do
+    riml = <<Riml
+alist = ["aap", "mies"] + ["noot"]
+Riml
+
+    expected = <<Viml
+let s:alist = ["aap", "mies"] + ["noot"]
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "var + literal list concatenation" do
+    riml = 'echo(alist + ["foo", "bar"])'
+    expected = 'echo s:alist + ["foo", "bar"]' << "\n"
+    assert_equal expected, compile(riml)
+  end
+
+  test "for var in list block" do
+    riml = <<Riml
+for var in [1, 2, 3]
+  echo var
+endfor
+Riml
+    expected = riml
+    assert_equal expected, compile(riml)
   end
 
   test "multi dimensional lists compile correctly" do
@@ -318,6 +341,7 @@ Viml
   assert_equal expected2, compile(riml2)
   assert_equal expected3, compile(riml3)
   end
+
 
   test "comparing strings is non ignorecase by default" do
     riml = <<Riml
@@ -455,4 +479,5 @@ Viml
     expected = riml + "\n"
     assert_equal expected, compile(riml)
   end
+
 end
