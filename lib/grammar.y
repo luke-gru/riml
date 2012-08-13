@@ -9,7 +9,7 @@ token NEWLINE
 token NUMBER
 token STRING_D STRING_S # single- and double-quoted
 token TRUE FALSE NIL
-token LET IDENTIFIER
+token LET IDENTIFIER DICT_VAL_REF
 token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
 token FINISH
 
@@ -48,6 +48,8 @@ rule
     Operator                              { result = val[0] }
   | Call                                  { result = val[0] }
   | Assign                                { result = val[0] }
+  | DictGet                               { result = val[0] }
+  | DictSet                               { result = val[0] }
   | Def                                   { result = val[0] }
   | Command                               { result = val[0] }
   | VariableRetrieval                     { result = val[0] }
@@ -117,6 +119,15 @@ rule
   # [key, value]
   DictItem:
     Literal ':' Literal                   { result = [val[0], val[2]] }
+  ;
+
+  DictGet:
+    VariableRetrieval '[' Literal ']'            { result = DictGetNodeBracket.new(val[0], val[2]) }
+  | VariableRetrieval DICT_VAL_REF               { result = DictGetNodeDot.new(val[0], val[1]) }
+  ;
+
+  DictSet:
+    Dictionary '.' IDENTIFIER '=' Literal     { result = DictSetNode.new(val[0], val[2], val[4]) }
   ;
 
   Call:

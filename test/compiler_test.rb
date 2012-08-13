@@ -480,4 +480,28 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "dictionary get value for key using bracket syntax" do
+    riml = <<Riml
+dict = {'key': 'value'}
+echo dict['key']
+Riml
+    expected = <<Viml
+let s:dict = {'key': 'value'}
+echo s:dict['key']
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "dictionary get value for key using dot syntax" do
+    riml = <<Riml
+dict = {'key': 'value'}
+echo dict.key
+Riml
+    expected = <<Viml
+let s:dict = {'key': 'value'}
+echo s:dict.key
+Viml
+    assert_equal expected, compile(riml)
+  end
+
 end

@@ -534,6 +534,34 @@ Viml
       end
     end
 
+    class DictGetNodeBracketVisitor < ScopedVisitor
+      private
+      def _compile(node)
+        node.dict.parent_node = node
+        node.key.parent_node = node
+        node.dict.accept(GetVariableNodeVisitor.new)
+        node.compiled_output << '['
+        node.key.accept(LiteralNodeVisitor.new)
+        @value = node.compiled_output << "]"
+      end
+    end
+
+    class DictGetNodeDotVisitor < ScopedVisitor
+      private
+      def _compile(node)
+        node.dict.parent_node = node
+        node.dict.accept(GetVariableNodeVisitor.new)
+        node.compiled_output << ".#{node.key}"
+        @value = node.compiled_output
+      end
+    end
+
+    class DictionarySetNodeVisitor < ScopedVisitor
+      private
+      def _compile(node)
+      end
+    end
+
 
     # compiles nodes into output code
     def compile(root_node)

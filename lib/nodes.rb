@@ -377,3 +377,17 @@ class LineContinuation < Struct.new(:lines)
     lines.each &block
   end
 end
+
+# dict['key']
+# dict.key
+class DictGetNode < Struct.new(:dict, :key)
+  include Visitable
+end
+
+class DictGetNodeBracket < DictGetNode; end
+class DictGetNodeDot < DictGetNode; end
+
+# dict.key = 'val'
+class DictSetNode < Struct.new(:dict, :key, :val)
+  include Visitable
+end

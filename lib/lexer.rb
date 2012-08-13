@@ -1,4 +1,5 @@
 require File.expand_path('../constants', __FILE__)
+require 'ruby-debug'
 
 module Riml
   class Lexer
@@ -36,6 +37,16 @@ module Riml
           @tokens << [:SPECIAL_VAR_PREFIX, special_var_prefix]
           @expecting_identifier = true
           @i += 1
+        # dict.key OR dict.key.other_key
+        elsif dict_value_reference = chunk[/\A[a-zA-Z_]+?\.[a-zA-z_]+/]
+          parts = dict_value_reference.split('.')
+          var = parts.shift
+          @tokens << [:IDENTIFIER, var]
+          @i += var.size
+          while key = parts.shift
+            @tokens << [:DICT_VAL_REF, key]
+            @i += key.size + 1
+          end
         elsif identifier = chunk[/\A[a-zA-Z_]\w*\??/]
           # keyword identifiers
           if KEYWORDS.include?(identifier)
