@@ -389,6 +389,7 @@ class DictGetNodeBracket < DictGetNode; end
 class DictGetNodeDot < DictGetNode; end
 
 # dict.key = 'val'
-class DictSetNode < Struct.new(:dict, :key, :val)
+# dict.key.key2 = 'val'
+class DictSetNode < Struct.new(:dict, :keys, :val)
   include Visitable
 end

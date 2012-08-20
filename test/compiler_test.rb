@@ -560,4 +560,16 @@ Viml
     assert_equal expected, compile(riml)
     assert_equal expected2, compile(riml2)
   end
+
+  test "dictionary set value for key with variable" do
+    riml = <<Riml
+dict = {'key': {'key2': 'value2'}}
+let dict.key = {'key3': 'value3'}
+Riml
+    expected = <<Viml
+let s:dict = {'key': {'key2': 'value2'}}
+let s:dict.key = {'key3': 'value3'}
+Viml
+    assert_equal expected, compile(riml)
+  end
 end

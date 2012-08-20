@@ -144,7 +144,7 @@ rule
   ;
 
   DictSet:
-    Dictionary '.' IDENTIFIER '=' Literal     { result = DictSetNode.new(val[0], val[2], val[4]) }
+    LET VariableRetrieval VariableDictGetWithDot '=' Literal { result = DictSetNode.new(val[1], val[2], val[4]) }
   ;
 
   Call:

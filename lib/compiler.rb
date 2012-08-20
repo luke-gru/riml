@@ -561,9 +561,16 @@ Viml
       end
     end
 
-    class DictionarySetNodeVisitor < ScopedVisitor
+    class DictSetNodeVisitor < ScopedVisitor
       private
       def _compile(node)
+        [node.dict, node.val].each {|n| n.parent_node = node}
+        node.compiled_output = "let "
+        node.dict.accept(visitor_for_node(node.dict))
+        node.keys.each {|k| node.compiled_output << ".#{k}"}
+        node.compiled_output << " = "
+        node.val.accept(visitor_for_node(node.val))
+        @value = node.compiled_output << "\n"
       end
     end
 
