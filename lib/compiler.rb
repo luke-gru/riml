@@ -538,11 +538,14 @@ Viml
       private
       def _compile(node)
         node.dict.parent_node = node
-        node.key.parent_node = node
-        node.dict.accept(GetVariableNodeVisitor.new)
-        node.compiled_output << '['
-        node.key.accept(LiteralNodeVisitor.new)
-        @value = node.compiled_output << "]"
+        node.keys.each {|k| k.parent_node = node}
+        node.dict.accept(visitor_for_node(node.dict))
+        node.keys.each do |key|
+          node.compiled_output << '['
+          key.accept(LiteralNodeVisitor.new)
+          node.compiled_output << "]"
+        end
+        @value = node.compiled_output
       end
     end
 
@@ -550,8 +553,10 @@ Viml
       private
       def _compile(node)
         node.dict.parent_node = node
-        node.dict.accept(GetVariableNodeVisitor.new)
-        node.compiled_output << ".#{node.key}"
+        node.dict.accept(visitor_for_node(node.dict))
+        node.keys.each do |key|
+          node.compiled_output << ".#{key}"
+        end
         @value = node.compiled_output
       end
     end

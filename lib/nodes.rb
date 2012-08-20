@@ -380,7 +380,8 @@ end
 
 # dict['key']
 # dict.key
-class DictGetNode < Struct.new(:dict, :key)
+# dict['key1']['key2']
+class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
 end
 

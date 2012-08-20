@@ -480,7 +480,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "dictionary get value for key using bracket syntax" do
+  test "dictionary get value for key using bracket syntax with variable" do
     riml = <<Riml
 dict = {'key': 'value'}
 echo dict['key']
@@ -489,10 +489,39 @@ Riml
 let s:dict = {'key': 'value'}
 echo s:dict['key']
 Viml
+
+  riml2 = <<Riml
+dict = {'key': {'key2': 'value2'}}
+echo dict['key']['key2']
+Riml
+
+  expected2 = <<Riml
+let s:dict = {'key': {'key2': 'value2'}}
+echo s:dict['key']['key2']
+Riml
     assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
   end
 
-  test "dictionary get value for key using dot syntax" do
+  test "dictionary get value for key using bracket syntax with literal" do
+    riml = <<Riml
+echo {'key': 'value'}['key']
+Riml
+    expected = <<Viml
+echo {'key': 'value'}['key']
+Viml
+
+    riml2 = <<Riml
+echo {'key': {'key2': 'value2'}}['key']['key2']
+Riml
+    expected2 = <<Viml
+echo {'key': {'key2': 'value2'}}['key']['key2']
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
+  end
+
+  test "dictionary get value for key using dot syntax with variable" do
     riml = <<Riml
 dict = {'key': 'value'}
 echo dict.key
@@ -501,7 +530,34 @@ Riml
 let s:dict = {'key': 'value'}
 echo s:dict.key
 Viml
+
+    riml2 = <<Riml
+dict = {'key': {'key2': 'value2'}}
+echo dict.key.key2
+Riml
+    expected2 = <<Viml
+let s:dict = {'key': {'key2': 'value2'}}
+echo s:dict.key.key2
+Viml
     assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
   end
 
+  test "dictionary get value for key using dot syntax with literal" do
+    riml = <<Riml
+echo {'key': 'value'}.key
+Riml
+   expected = <<Viml
+echo {'key': 'value'}.key
+Viml
+
+    riml2 = <<Riml
+echo {'key': {'key2': 'value2'}}.key.key2
+Riml
+   expected2 = <<Viml
+echo {'key': {'key2': 'value2'}}.key.key2
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
+  end
 end

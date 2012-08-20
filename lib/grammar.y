@@ -122,8 +122,25 @@ rule
   ;
 
   DictGet:
-    VariableRetrieval '[' Literal ']'            { result = DictGetNodeBracket.new(val[0], val[2]) }
-  | VariableRetrieval DICT_VAL_REF               { result = DictGetNodeDot.new(val[0], val[1]) }
+    VariableRetrieval DictGetWithBrackets        { result = DictGetNodeBracket.new(val[0], val[1]) }
+  | Dictionary DictGetWithBrackets               { result = DictGetNodeBracket.new(val[0], val[1]) }
+  | VariableRetrieval VariableDictGetWithDot     { result = DictGetNodeDot.new(val[0], val[1]) }
+  | Dictionary LiteralDictGetWithDot             { result = DictGetNodeDot.new(val[0], val[1]) }
+  ;
+
+  DictGetWithBrackets:
+   '['  Literal ']'                              { result = [val[1]] }
+  | DictGetWithBrackets '[' Literal ']'          { result = val[0] << val[2] }
+  ;
+
+  VariableDictGetWithDot:
+    DICT_VAL_REF                                 { result = [val[0]] }
+  | VariableDictGetWithDot DICT_VAL_REF          { result = val[0] << val[1] }
+  ;
+
+  LiteralDictGetWithDot:
+    '.' IDENTIFIER                               { result = [val[1]]}
+  | LiteralDictGetWithDot DICT_VAL_REF           { result = val[0] << val[1] }
   ;
 
   DictSet:
@@ -136,7 +153,6 @@ rule
   | BUILTIN_COMMAND          "(" ArgList ")"  { result = CallNode.new(nil, val[0], val[2]) }
   | BUILTIN_COMMAND              ArgList      { result = CallNode.new(nil, val[0], val[1]) }
   ;
-
 
   Scope:
     SCOPE_MODIFIER         { result = val[0] }

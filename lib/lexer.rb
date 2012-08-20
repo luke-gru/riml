@@ -37,16 +37,6 @@ module Riml
           @tokens << [:SPECIAL_VAR_PREFIX, special_var_prefix]
           @expecting_identifier = true
           @i += 1
-        # dict.key OR dict.key.other_key
-        elsif dict_value_reference = chunk[/\A[a-zA-Z_]+?\.[a-zA-z_]+/]
-          parts = dict_value_reference.split('.')
-          var = parts.shift
-          @tokens << [:IDENTIFIER, var]
-          @i += var.size
-          while key = parts.shift
-            @tokens << [:DICT_VAL_REF, key]
-            @i += key.size + 1
-          end
         elsif identifier = chunk[/\A[a-zA-Z_]\w*\??/]
           # keyword identifiers
           if KEYWORDS.include?(identifier)
@@ -71,8 +61,18 @@ module Riml
           end
 
           @i += identifier.size
-          @expecting_identifier = false
 
+          # dict.key OR dict.key.other_key
+          new_chunk = code[@i..-1]
+          if new_chunk[/\A\.([\w.]+)/]
+            parts = $1.split('.')
+            while key = parts.shift
+              @tokens << [:DICT_VAL_REF, key]
+              @i += key.size + 1
+            end
+          end
+
+          @expecting_identifier = false
         elsif @expecting_identifier
           raise SyntaxError, "expected identifier after scope modifier"
         elsif splat = chunk[/\A(\.{3}|\*[a-zA-Z_]\w*)/]
