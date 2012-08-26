@@ -385,11 +385,19 @@ class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
 end
 
-class DictGetNodeBracket < DictGetNode; end
-class DictGetNodeDot < DictGetNode; end
+class DictGetBracketNode < DictGetNode; end
+class DictGetDotNode < DictGetNode; end
 
 # dict.key = 'val'
 # dict.key.key2 = 'val'
 class DictSetNode < Struct.new(:dict, :keys, :val)
   include Visitable
+end
+
+# list_or_dict[0]
+# function()[identifier]
+class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
+  include Visitable
+  alias list list_or_dict
+  alias dict list_or_dict
 end

@@ -1,5 +1,4 @@
 require File.expand_path('../constants', __FILE__)
-require 'ruby-debug'
 
 module Riml
   class Lexer

@@ -49,6 +49,7 @@ rule
   | Call                                  { result = val[0] }
   | Assign                                { result = val[0] }
   | DictGet                               { result = val[0] }
+  | ListOrDictGet                         { result = val[0] }
   | DictSet                               { result = val[0] }
   | Def                                   { result = val[0] }
   | Command                               { result = val[0] }
@@ -70,7 +71,7 @@ rule
 
   # All hard-coded values
   Literal:
-    NUMBER                                { result = NumberNode.new(val[0]) }
+    Number                                { result = val[0] }
   | String                                { result = val[0] }
   | List                                  { result = val[0] }
   | Dictionary                            { result = val[0] }
@@ -79,17 +80,22 @@ rule
   | NIL                                   { result = NilNode.new }
   ;
 
+  Number:
+    NUMBER                                { result = NumberNode.new(val[0]) }
+  ;
+
+
   String:
     STRING_S                              { result = StringNode.new(val[0], :s) }
   | STRING_D                              { result = StringNode.new(val[0], :d) }
   ;
 
-  ListLiteral:
-    '[' ListItems ']'                     { result = val[1] }
-  ;
-
   List:
     ListLiteral                           { result = ListNode.new(val[0]) }
+  ;
+
+  ListLiteral:
+    '[' ListItems ']'                     { result = val[1] }
   ;
 
   ListItems:
@@ -100,13 +106,13 @@ rule
   | ListItems "," VariableRetrieval       { result = val[0] << val[2] }
   ;
 
+  Dictionary
+    DictionaryLiteral                     { result = DictionaryNode.new(val[0]) }
+  ;
+
   # {'key' => 'value', 'key' => 'value'}
   DictionaryLiteral:
     '{' DictItems '}'                     { result = Hash[val[1]] }
-  ;
-
-  Dictionary
-    DictionaryLiteral                     { result = DictionaryNode.new(val[0]) }
   ;
 
   # [[key, value], [key, value]]
@@ -122,15 +128,22 @@ rule
   ;
 
   DictGet:
-    VariableRetrieval DictGetWithBrackets        { result = DictGetNodeBracket.new(val[0], val[1]) }
-  | Dictionary DictGetWithBrackets               { result = DictGetNodeBracket.new(val[0], val[1]) }
-  | VariableRetrieval VariableDictGetWithDot     { result = DictGetNodeDot.new(val[0], val[1]) }
-  | Dictionary LiteralDictGetWithDot             { result = DictGetNodeDot.new(val[0], val[1]) }
+    Dictionary DictGetWithBrackets               { result = DictGetBracketNode.new(val[0], val[1]) }
+  | Dictionary LiteralDictGetWithDot             { result = DictGetDotNode.new(val[0], val[1]) }
+  | VariableRetrieval VariableDictGetWithDot     { result = DictGetDotNode.new(val[0], val[1]) }
+  | VariableRetrieval DictGetWithBracketsString  { result = DictGetBracketNode.new(val[0], val[1]) }
+  | DictGet DictGetWithBracketsString            { result = DictGetBracketNode.new(val[0], val[1]) }
+  | Call DictGetWithBracketsString               { result = DictGetBracketNode.new(val[0], val[1]) }
   ;
 
   DictGetWithBrackets:
    '['  Literal ']'                              { result = [val[1]] }
   | DictGetWithBrackets '[' Literal ']'          { result = val[0] << val[2] }
+  ;
+
+  DictGetWithBracketsString:
+   '[' String ']'                              { result = [val[1]] }
+  | DictGetWithBracketsString '[' String ']'   { result = val[0] << val[2] }
   ;
 
   VariableDictGetWithDot:
@@ -144,7 +157,26 @@ rule
   ;
 
   DictSet:
-    LET VariableRetrieval VariableDictGetWithDot '=' Literal { result = DictSetNode.new(val[1], val[2], val[4]) }
+    VariableRetrieval VariableDictGetWithDot '=' Literal     { result = DictSetNode.new(val[0], val[1], val[3]) }
+  | LET VariableRetrieval VariableDictGetWithDot '=' Literal { result = DictSetNode.new(val[1], val[2], val[4]) }
+  ;
+
+  # can only tell if the identifier is a list or dict at compile time
+  ListOrDictGet:
+    VariableRetrieval ListOrDictGetWithKey    { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | DictGet ListOrDictGetWithKey              { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | Call ListOrDictGetWithKey                 { result = ListOrDictGetNode.new(val[0], val[1]) }
+  ;
+
+  ListOrDictGetWithKey:
+    '[' ListOrDictKey ']'                      { result = [val[1]] }
+  | ListOrDictGetWithKey '[' ListOrDictKey ']' { result = val[0] << val[2] }
+  ;
+
+  ListOrDictKey:
+    VariableRetrieval { result = val[0] }
+  | DictGet           { result = val[0] }
+  | Number            { result = val[0] }
   ;
 
   Call:
@@ -193,10 +225,10 @@ rule
   # Assignment to a variable
   Assign:
     LET Scope IDENTIFIER '=' Expression                   { result = SetVariableNode.new(val[1], val[2], val[4]) }
-  | LET ListLiteral '=' Expression                        { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
-  | LET SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression      { result = SetSpecialVariableNode.new(val[1], val[2], val[4]) }
   | Scope IDENTIFIER '=' Expression                       { result = SetVariableNode.new(val[0], val[1], val[3]) }
+  | LET ListLiteral '=' Expression                        { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
   | ListLiteral '=' Expression                            { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
+  | LET SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression      { result = SetSpecialVariableNode.new(val[1], val[2], val[4]) }
   | SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression          { result = SetSpecialVariableNode.new(val[0], val[1], val[3]) }
   ;
 

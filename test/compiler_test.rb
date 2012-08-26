@@ -572,4 +572,22 @@ let s:dict.key = {'key3': 'value3'}
 Viml
     assert_equal expected, compile(riml)
   end
+
+  test "list or dict get with variable" do
+    riml = <<Riml
+val = list_or_dict[0]
+Riml
+    expected = <<Viml
+let s:val = s:list_or_dict[0]
+Viml
+
+    riml2 = <<Riml
+val = list_or_dict[0][2]
+Riml
+    expected2 = <<Viml
+let s:val = s:list_or_dict[0][2]
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
+  end
 end

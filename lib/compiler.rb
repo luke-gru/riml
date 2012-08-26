@@ -534,7 +534,7 @@ Viml
       end
     end
 
-    class DictGetNodeBracketVisitor < ScopedVisitor
+    class DictGetBracketNodeVisitor < ScopedVisitor
       private
       def _compile(node)
         node.dict.parent_node = node
@@ -542,14 +542,14 @@ Viml
         node.dict.accept(visitor_for_node(node.dict))
         node.keys.each do |key|
           node.compiled_output << '['
-          key.accept(LiteralNodeVisitor.new)
+          key.accept(visitor_for_node(key))
           node.compiled_output << "]"
         end
         @value = node.compiled_output
       end
     end
 
-    class DictGetNodeDotVisitor < ScopedVisitor
+    class DictGetDotNodeVisitor < ScopedVisitor
       private
       def _compile(node)
         node.dict.parent_node = node
@@ -574,6 +574,7 @@ Viml
       end
     end
 
+    class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end
 
     # compiles nodes into output code
     def compile(root_node)
