@@ -305,6 +305,8 @@ end
 
 class WhileNode < ControlStructure
 end
+class UntilNode < ControlStructure
+end
 
 class ElseNode < Struct.new(:expressions)
   include Visitable

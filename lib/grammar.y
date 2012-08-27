@@ -59,6 +59,7 @@ rule
   | Unless                                { result = val[0] }
   | Ternary                               { result = val[0] }
   | While                                 { result = val[0] }
+  | Until                                 { result = val[0] }
   | For                                   { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
@@ -285,6 +286,10 @@ rule
 
   While:
     WHILE Expression Block END                 { result = WhileNode.new(val[1], val[2]) }
+  ;
+
+  Until:
+    UNTIL Expression Block END                 { result = UntilNode.new(val[1], val[2]) }
   ;
 
   For:

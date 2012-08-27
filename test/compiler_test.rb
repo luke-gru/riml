@@ -283,6 +283,26 @@ Viml
   assert_equal expected, compile(riml)
   end
 
+  test "basic until conditional compiles correctly" do
+    riml = <<Riml
+i = 0
+until i == 5
+  echo("hi")
+  i += 1
+end
+Riml
+
+    expected = <<Viml
+let s:i = 0
+while (!s:i == 5)
+  echo "hi"
+  s:i += 1
+endwhile
+Viml
+
+  assert_equal expected, compile(riml)
+  end
+
   test "basic lists compile correctly" do
     riml = <<Riml
 alist = ["aap", "mies", "noot"]

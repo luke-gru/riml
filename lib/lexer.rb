@@ -152,7 +152,7 @@ module Riml
     private
     def track_indent_level(chunk, identifier)
       case identifier
-      when "def", "while", "for"
+      when "def", "while", "until", "for"
         @current_indent += 2
         @indent_pending = true
       when "if", "unless"

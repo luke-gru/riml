@@ -95,6 +95,7 @@ module Riml
         node.condition.parent_node = node
         node.body.parent_node = node
         node.compiled_output = "while ("
+        node.compiled_output << "!" if UntilNode === node
 
         node.condition.accept(cond_visitor)
         node.compiled_output << ")\n"
