@@ -22,7 +22,7 @@ Riml
     ])
 
     expected = <<Viml
-function s:A_method(a, b)
+function s:a_method(a, b)
   return 1
 endfunction
 Viml
@@ -49,7 +49,7 @@ Riml
     ])
 
     expected = <<Viml
-function b:Another_method(a, b)
+function b:another_method(a, b)
   if (hello())
     return 0
   else
@@ -90,7 +90,7 @@ end
 Riml
 
   expected = <<Viml
-function s:Splat(a, b, ...)
+function s:splat(a, b, ...)
   let var = a:000
 endfunction
 Viml
@@ -162,7 +162,7 @@ Riml
     expected = <<Viml
 let s:a = "should be script local"
 let b:a = "should be buffer local"
-function s:Script_local_function()
+function s:script_local_function()
   let a = "should be local to function"
 endfunction
 Viml
@@ -223,7 +223,7 @@ end
 Riml
 
     expected = <<Viml
-function s:Short_function()
+function s:short_function()
   echo "martin short"
 endfunction
 Viml

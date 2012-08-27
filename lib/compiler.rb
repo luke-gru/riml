@@ -391,7 +391,7 @@ module Riml
         modifier = node.scope_modifier || 's:'
         params = process_parameters!(node)
         declaration = <<Viml.chomp
-function #{modifier}#{node.name.capitalize}(#{params.join(', ')})
+function #{modifier}#{node.name}(#{params.join(', ')})
 Viml
         declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
         node.body.parent_node = node
