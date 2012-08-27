@@ -14,7 +14,7 @@ class BasicLexerTest < Riml::TestCase
     Riml
     expected =
     [
-      [:IF, "if"], [:NUMBER, 1], [:NEWLINE, "\n"],
+      [:IF, "if"], [:NUMBER, "1"], [:NEWLINE, "\n"],
         [:IDENTIFIER, "print"], [:STRING_S, '...'], [:NEWLINE, "\n"],
         [:IF, "if"], [:FALSE, 'false'], [:NEWLINE, "\n"],
         [:IDENTIFIER, "do_something"], [:NEWLINE, "\n"],
@@ -35,7 +35,7 @@ class BasicLexerTest < Riml::TestCase
       [:THEN, "then"],
       [:IDENTIFIER, "a"],
       ["=", "="],
-      [:NUMBER, 2],
+      [:NUMBER, "2"],
       [:END, "end"],
       [:NEWLINE, "\n"]
     ]
@@ -55,7 +55,7 @@ Riml
       [:SCOPE_MODIFIER, "b:"],
       [:IDENTIFIER, "salutation"],
       [:NEWLINE, "\n"],
-      [:FUNC_NO_PARENS_NECESSARY, "echo"],
+      [:BUILTIN_COMMAND, "echo"],
       [:STRING_D, "hi"],
       [";", ";"],
       [:NEWLINE, "\n"],

@@ -47,7 +47,7 @@ Viml
       IfNode.new(
         CallNode.new(nil, 'b', []),
         Nodes.new(
-          [SetVariableNode.new(nil, 'a', NumberNode.new(2))]
+          [SetVariableNode.new(nil, 'a', NumberNode.new("2"))]
         )
       )
     ])
