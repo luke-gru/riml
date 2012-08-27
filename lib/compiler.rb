@@ -323,7 +323,7 @@ module Riml
           check_for_splat_match!(node, splat)
         end
         if node.question_existence?
-          node.compiled_output = %Q{exists?("#{node.full_name}")}
+          node.compiled_output = %Q{exists("#{node.full_name}")}
         else
           node.compiled_output = "#{node.full_name}"
         end

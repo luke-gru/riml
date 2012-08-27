@@ -239,7 +239,7 @@ end
 Riml
 
     expected = <<Viml
-if (exists?("g:a"))
+if (exists("g:a"))
   return 1
 endif
 Viml
@@ -255,7 +255,7 @@ end
 Riml
 
     expected = <<Viml
-if (exists?("g:myplugin"))
+if (exists("g:myplugin"))
   finish
 endif
 Viml
