@@ -1,4 +1,5 @@
 require File.expand_path('../nodes', __FILE__)
+require 'ruby-debug'
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -267,18 +268,12 @@ module Riml
         associate_variable_name_with_type(node)
 
         value_visitor = visitor_for_node(node.value)
-        # didn't set parent node on purpose, no propagation
+        node.compiled_output = "let #{node.full_name} = "
+        node.value.parent_node = node
         node.value.accept(value_visitor)
+        node.compiled_output = "unlet! #{node.full_name}" if node.value.compiled_output == 'nil'
 
-        if node.value.compiled_output == 'nil'
-          node.compiled_output = "unlet! #{node.full_name}\n"
-        else
-          node.compiled_output = "let #{node.full_name} = "
-          node.value.compiled_output.clear
-          node.value.parent_node = node
-          node.value.accept(value_visitor)
-          node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
-        end
+        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
         @value = node.compiled_output
       end
     end
@@ -478,7 +473,9 @@ Viml
         end
         node.compiled_output << ")" unless node.no_parens_necessary?
 
-        unless node.descendant_of_control_structure? || node.descendant_of_call_node?
+        unless node.descendant_of_control_structure? ||
+               node.descendant_of_call_node? ||
+               node.descendant_of_list_or_dict_get_node?
           node.compiled_output << "\n"
         end
         @value = node.compiled_output

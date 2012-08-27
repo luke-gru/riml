@@ -171,12 +171,14 @@ rule
   ListOrDictGetWithKey:
     '[' ListOrDictKey ']'                      { result = [val[1]] }
   | ListOrDictGetWithKey '[' ListOrDictKey ']' { result = val[0] << val[2] }
+  | ListOrDictGetWithKey '[' String ']'        { result = val[0] << val[2] }
   ;
 
   ListOrDictKey:
     VariableRetrieval { result = val[0] }
   | DictGet           { result = val[0] }
   | Number            { result = val[0] }
+  | Call              { result = val[0] }
   ;
 
   Call:

@@ -587,7 +587,76 @@ Riml
     expected2 = <<Viml
 let s:val = s:list_or_dict[0][2]
 Viml
+
+    riml3 = <<Riml
+val = list_or_dict[method()]['key']
+Riml
+    expected3 = <<Viml
+let s:val = s:list_or_dict[s:method()]['key']
+Viml
+
+    riml4 = <<Riml
+val = list_or_dict[dict.key][2]
+Riml
+    expected4 = <<Viml
+let s:val = s:list_or_dict[s:dict.key][2]
+Viml
+
     assert_equal expected, compile(riml)
     assert_equal expected2, compile(riml2)
+    assert_equal expected3, compile(riml3)
+    assert_equal expected4, compile(riml4)
+  end
+
+  test "list or dict get with a dict get" do
+    riml = <<Riml
+val = dict.get[0]
+Riml
+    expected = <<Viml
+let s:val = s:dict.get[0]
+Viml
+
+    riml2 = <<Riml
+val = dict.get[dict.key]['key']
+Riml
+    expected2 = <<Viml
+let s:val = s:dict.get[s:dict.key]['key']
+Viml
+
+    riml3 = <<Riml
+val = dict.get[method()][2]
+Riml
+    expected3 = <<Viml
+let s:val = s:dict.get[s:method()][2]
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
+    assert_equal expected3, compile(riml3)
+  end
+
+  test "list or dict get with a call" do
+    riml = <<Riml
+val = method()[0]
+Riml
+    expected = <<Viml
+let s:val = s:method()[0]
+Viml
+
+    riml2 = <<Riml
+val = method()[dict.key]['key']
+Riml
+    expected2 = <<Viml
+let s:val = s:method()[s:dict.key]['key']
+Viml
+
+    riml3 = <<Riml
+val = method()[other_method()][2]
+Riml
+    expected3 = <<Viml
+let s:val = s:method()[s:other_method()][2]
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
+    assert_equal expected3, compile(riml3)
   end
 end
