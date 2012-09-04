@@ -183,10 +183,10 @@ rule
   ;
 
   Call:
-    Scope IDENTIFIER         "(" ArgList ")"  { result = CallNode.new(val[0], val[1], val[3]) }
-  | CALL Scope IDENTIFIER    "(" ArgList ")"  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
-  | BUILTIN_COMMAND          "(" ArgList ")"  { result = CallNode.new(nil, val[0], val[2]) }
-  | BUILTIN_COMMAND              ArgList      { result = CallNode.new(nil, val[0], val[1]) }
+    Scope DefCallIdentifier "(" ArgList ")"       { result = CallNode.new(val[0], val[1], val[3]) }
+  | CALL Scope DefCallIdentifier "(" ArgList ")"  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | BUILTIN_COMMAND "(" ArgList ")"               { result = CallNode.new(nil, val[0], val[2]) }
+  | BUILTIN_COMMAND ArgList                       { result = CallNode.new(nil, val[0], val[1]) }
   ;
 
   Scope:
@@ -223,6 +223,7 @@ rule
   | Expression '*' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '.=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   ;
 
   # Assignment to a variable
@@ -239,14 +240,26 @@ rule
   VariableRetrieval:
     Scope IDENTIFIER                            { result = GetVariableNode.new(val[0], val[1]) }
   | SPECIAL_VAR_PREFIX IDENTIFIER               { result = GetSpecialVariableNode.new(val[0], val[1]) }
+  | Scope CurlyBraceName                        { result = GetCurlyBraceNameNode.new(val[0], val[1])}
+  ;
+
+  CurlyBraceName:
+    IDENTIFIER '{' VariableRetrieval '}'               { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[0]), CurlyBracePart.new(val[2]) ]) }
+  | '{' VariableRetrieval '}' IDENTIFIER               { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[1]), CurlyBracePart.new(val[3]) ]) }
+  | CurlyBraceName IDENTIFIER                          { result = val[0] << CurlyBracePart.new(val[1]) }
   ;
 
   # Method definition
   # [scope_modifier, name, args, keyword, expressions]
   Def:
-    DEF Scope IDENTIFIER Keyword Block END                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
-  | DEF Scope IDENTIFIER "(" ParamList ")" Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
-  | DEF Scope IDENTIFIER "(" ParamList ',' SPLAT ")" Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    DEF Scope DefCallIdentifier Keyword Block END                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
+  | DEF Scope DefCallIdentifier "(" ParamList ")" Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
+  | DEF Scope DefCallIdentifier "(" ParamList ',' SPLAT ")" Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+  ;
+
+  DefCallIdentifier:
+    CurlyBraceName          { result = GetCurlyBraceNameNode.new('', val[0])}
+  | IDENTIFIER              { result = val[0] }
   ;
 
   # Example: 'range' after function definition

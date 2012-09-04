@@ -1,5 +1,4 @@
 require File.expand_path('../nodes', __FILE__)
-require 'ruby-debug'
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -34,7 +33,7 @@ module Riml
       end
 
       def visit(node)
-        _compile(node)
+        @value = compile(node)
         propagate_up_tree(node, @value)
       end
 
@@ -48,8 +47,7 @@ module Riml
     end
 
     class IfNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         condition_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
@@ -66,15 +64,13 @@ module Riml
         end
         node.compiled_output = output
         node.compiled_output << "endif\n"
-        @value = node.compiled_output
       end
     end
 
     UnlessNodeVisitor = IfNodeVisitor
 
     class TernaryOperatorNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         node.operands.each {|n| n.parent_node = node}
         cond_visitor = visitor_for_node(node.condition)
         node.condition.accept(cond_visitor)
@@ -84,13 +80,12 @@ module Riml
         node.compiled_output << ' : '
         else_expr_visitor =  visitor_for_node(node.else_expr)
         node.else_expr.accept(else_expr_visitor)
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     class WhileNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         cond_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
         node.body.parent_node = node
@@ -109,26 +104,23 @@ module Riml
         end
         node.compiled_output = output << "\n"
         node.compiled_output << "endwhile\n"
-        @value = node.compiled_output
       end
     end
 
     UntilNodeVisitor = WhileNodeVisitor
 
     class ElseNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         node.compiled_output = "else\n"
         expressions_visitor = NodesVisitor.new
         node.expressions.parent_node = node
         node.expressions.accept(expressions_visitor)
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     class NodesVisitor < Visitor
-      private
-      def _compile(nodes)
+      def compile(nodes)
         nodes.each_with_index do |node, i|
           begin
             visitor = visitor_for_node(node)
@@ -144,13 +136,12 @@ module Riml
             raise
           end
         end
-        @value = nodes.compiled_output
+        nodes.compiled_output
       end
     end
 
     class LiteralNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         value = case node.value
         when TrueClass
           1
@@ -162,15 +153,15 @@ module Riml
           StringNode === node ? escape(node) : node.value.dup
         when Array
           node.value.each {|n| n.parent_node = node}
-          '[' << node.value.map {|n| _compile(n)}.join(', ') << ']'
+          '[' << node.value.map {|n| compile(n)}.join(', ') << ']'
         when Hash
           node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = [node, node]}
-          '{' << node.value.map {|k,v| _compile(k) << ': ' << _compile(v)}.join(', ') << '}'
+          '{' << node.value.map {|k,v| compile(k) << ': ' << compile(v)}.join(', ') << '}'
         when Numeric
           node.value
         end.to_s
 
-        @value = node.compiled_output = begin
+        node.compiled_output = begin
           if node.explicit_return
             "return #{value}\n"
           else
@@ -180,10 +171,11 @@ module Riml
       rescue NoMethodError
         if GetVariableNode === node
           node.accept(GetVariableNodeVisitor.new)
-          @value = node.compiled_output
+          node.compiled_output
         else raise end
       end
 
+      private
       def escape(string_node)
         case string_node.type
         when :d
@@ -263,8 +255,7 @@ module Riml
     end
 
     class SetVariableNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         set_modifier(node)
         associate_variable_name_with_type(node)
 
@@ -275,46 +266,43 @@ module Riml
         node.compiled_output = "unlet! #{node.full_name}" if node.value.compiled_output == 'nil'
 
         node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     # list, expression
     class SetVariableNodeListVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         node.compiled_output = "let "
         node.list.parent_node = node
         node.list.accept(ListNodeVisitor.new)
         node.compiled_output << " = "
         node.expression.parent_node = node
         node.expression.accept(visitor_for_node(node.expression))
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     class SetSpecialVariableNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         associate_variable_name_with_type(node)
         node.compiled_output = "let #{node.full_name} = "
         value_visitor = visitor_for_node(node.value)
         node.value.parent_node = node
         node.value.accept(value_visitor)
         node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     # scope_modifier, name
     class GetVariableNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         # the variable is a ForNode variable
         scope = node.parent_node && node.parent_node.scope
         if scope && scope.respond_to?(:for_variable) &&
            scope.for_variable == node.name && node.scope_modifier.nil?
-          return @value = node.name
+          return node.name
         end
 
         set_modifier(node)
@@ -328,9 +316,9 @@ module Riml
         else
           node.compiled_output = "#{node.full_name}"
         end
-        @value = node.compiled_output
       end
 
+      private
       def check_for_splat_match!(node, splat)
         if node.name == splat[1..-1]
           @modifier = nil
@@ -340,18 +328,32 @@ module Riml
     end
 
     class GetSpecialVariableNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         type = get_type_for_node(node)
         node.node_type = type
-        @value = node.compiled_output = node.full_name
+        node.compiled_output = node.full_name
+      end
+    end
+
+    class GetCurlyBraceNameNodeVisitor < ScopedVisitor
+      def compile(node)
+        node.compiled_output = node.scope_modifier || 's:'
+        node.variable.parts.each do |part|
+          node.compiled_output <<
+          if part.interpolated?
+            part.value.accept(visitor_for_node(part.value))
+            "{#{part.value.compiled_output}}"
+          else
+            "#{part.value}"
+          end
+        end
+        node.compiled_output
       end
     end
 
     # operator, operands
     class BinaryOperatorNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         op1, op2 = node.operand1, node.operand2
         op1_visitor, op2_visitor = visitor_for_node(op1), visitor_for_node(op2)
         node.operands.each {|n| n.parent_node = node}
@@ -366,9 +368,10 @@ module Riml
         node.compiled_output << " #{node.operator}#{operator_suffix}"
         op2_visitor.propagate_up_tree = true
         op2.accept(op2_visitor)
-        @value = node.compiled_output
+        node.compiled_output
       end
 
+      private
       def operands_are_string_nodes? *nodes
         nodes.all? do |n|
           n.is_a?(StringNode) || (n.respond_to?(:node_type) && n.node_type == :StringNode)
@@ -387,13 +390,17 @@ module Riml
         super
       end
 
-      private
-      def _compile(node)
+      def compile(node)
         modifier = node.scope_modifier || 's:'
         params = process_parameters!(node)
-        declaration = <<Viml.chomp
-function #{modifier}#{node.name}(#{params.join(', ')})
-Viml
+        declaration = "function! #{modifier}"
+        declaration <<
+        if node.name.respond_to?(:variable)
+          node.name.accept(visitor_for_node(node.name))
+          node.name.compiled_output
+        else
+          node.name
+        end << "(#{params.join(', ')})"
         declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
         node.body.parent_node = node
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
@@ -405,9 +412,9 @@ Viml
           end
         end
         node.compiled_output = declaration << body << "endfunction\n"
-        @value = node.compiled_output
       end
 
+      private
       def setup_local_scope_for_descendants(node)
         node.body.accept(DrillDownVisitor.new(:establish_scope => node))
       end
@@ -461,10 +468,15 @@ Viml
     end
 
     class CallNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         set_modifier(node) unless node.builtin_function?
-        node.compiled_output = "#{node.full_name}"
+        node.compiled_output =
+        if node.name.respond_to?(:variable)
+          node.name.accept(visitor_for_node(node.name))
+          node.scope_modifier + node.name.compiled_output
+        else
+          "#{node.full_name}"
+        end
         node.compiled_output << (node.no_parens_necessary? ? " " : "(")
         node.arguments.each_with_index do |arg, i|
           arg.parent_node = node
@@ -479,26 +491,25 @@ Viml
                node.descendant_of_list_or_dict_get_node?
           node.compiled_output << "\n"
         end
-        @value = node.compiled_output
+        node.compiled_output
       end
 
+      private
       def last_arg?(args, i)
         args[i+1].nil?
       end
     end
 
     class ExplicitCallNodeVisitor < CallNodeVisitor
-      private
-      def _compile(node)
+      def compile(node)
         pre = "call "
         post = super
-        @value = node.compiled_output = pre << post
+        node.compiled_output = pre << post
       end
     end
 
     class ForNodeVisitor < Visitor
-      private
-      def _compile(node)
+      def compile(node)
         node.compiled_output = "for #{node.variable} in "
         node.list_expression.parent_node = node
         yield
@@ -509,13 +520,12 @@ Viml
         body.each_line do |line|
           node.compiled_output << node.indent << line
         end
-        @value = node.compiled_output << "endfor"
+        node.compiled_output << "endfor"
       end
     end
 
     class ForNodeCallVisitor < ForNodeVisitor
-      private
-      def _compile(node)
+      def compile(node)
         super do
           node.list_expression.accept(CallNodeVisitor.new)
         end
@@ -523,8 +533,7 @@ Viml
     end
 
     class ForNodeListVisitor < ForNodeVisitor
-      private
-      def _compile(node)
+      def compile(node)
         super do
           result = node.list_expression.accept(ListNodeVisitor.new)
           result << "\n" unless result[-1] == "\n"
@@ -533,8 +542,7 @@ Viml
     end
 
     class DictGetBracketNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         node.dict.parent_node = node
         node.keys.each {|k| k.parent_node = node}
         node.dict.accept(visitor_for_node(node.dict))
@@ -543,32 +551,30 @@ Viml
           key.accept(visitor_for_node(key))
           node.compiled_output << "]"
         end
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     class DictGetDotNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         node.dict.parent_node = node
         node.dict.accept(visitor_for_node(node.dict))
         node.keys.each do |key|
           node.compiled_output << ".#{key}"
         end
-        @value = node.compiled_output
+        node.compiled_output
       end
     end
 
     class DictSetNodeVisitor < ScopedVisitor
-      private
-      def _compile(node)
+      def compile(node)
         [node.dict, node.val].each {|n| n.parent_node = node}
         node.compiled_output = "let "
         node.dict.accept(visitor_for_node(node.dict))
         node.keys.each {|k| node.compiled_output << ".#{k}"}
         node.compiled_output << " = "
         node.val.accept(visitor_for_node(node.val))
-        @value = node.compiled_output << "\n"
+        node.compiled_output << "\n"
       end
     end
 

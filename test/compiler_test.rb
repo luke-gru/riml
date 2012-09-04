@@ -22,7 +22,7 @@ Riml
     ])
 
     expected = <<Viml
-function s:a_method(a, b)
+function! s:a_method(a, b)
   return 1
 endfunction
 Viml
@@ -33,7 +33,7 @@ Viml
 
   test "branching function compiles and returns on all branches" do
     riml = <<Riml
-function b:another_method(a, b)
+def b:another_method(a, b)
   if hello()
     false
   else
@@ -49,7 +49,7 @@ Riml
     ])
 
     expected = <<Viml
-function b:another_method(a, b)
+function! b:another_method(a, b)
   if (hello())
     return 0
   else
@@ -72,7 +72,7 @@ end
 Riml
 
   expected = <<Viml
-function s:A_method(a, b)
+function! s:A_method(a, b)
   if (a:a)
     echo a:a
   endif
@@ -90,7 +90,7 @@ end
 Riml
 
   expected = <<Viml
-function s:splat(a, b, ...)
+function! s:splat(a, b, ...)
   let var = a:000
 endfunction
 Viml
@@ -162,7 +162,7 @@ Riml
     expected = <<Viml
 let s:a = "should be script local"
 let b:a = "should be buffer local"
-function s:script_local_function()
+function! s:script_local_function()
   let a = "should be local to function"
 endfunction
 Viml
@@ -208,7 +208,7 @@ end
 Riml
 
     expected = <<Viml
-function s:My_function(a, b) range
+function! s:My_function(a, b) range
 endfunction
 Viml
 
@@ -223,7 +223,7 @@ end
 Riml
 
     expected = <<Viml
-function s:short_function()
+function! s:short_function()
   echo "martin short"
 endfunction
 Viml
@@ -678,5 +678,52 @@ Viml
     assert_equal expected, compile(riml)
     assert_equal expected2, compile(riml2)
     assert_equal expected3, compile(riml3)
+  end
+
+  test "curly-braces variable names" do
+    riml = <<Riml
+echo my_{background}_message
+Riml
+
+    expected = <<Viml
+echo s:my_{s:background}_message
+Viml
+
+riml2 = <<Riml
+echo my_{&background}_message
+Riml
+    expected2 = <<Viml
+echo s:my_{&background}_message
+Viml
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
+  end
+
+  test "curly-braces function definition" do
+    riml = <<Riml
+def my_{background}_message(param)
+  echo param
+end
+Riml
+
+    expected = <<Viml
+function! s:my_{s:background}_message(param)
+  echo a:param
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "curly-braces function call" do
+    riml = <<Riml
+n:param = 2
+call my_{background}_message(n:param)
+Riml
+
+    expected = <<Viml
+let param = 2
+call s:my_{s:background}_message(param)
+Viml
+    assert_equal expected, compile(riml)
   end
 end

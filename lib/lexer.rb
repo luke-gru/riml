@@ -85,7 +85,6 @@ module Riml
           @i += octal.size
         # integer (hex)
         elsif hex = chunk[/\A0[xX]\h+/]
-          STDERR.puts "here"
           @tokens << [:NUMBER, hex.to_s]
           @i += hex.size
         # integer or float (decimal)

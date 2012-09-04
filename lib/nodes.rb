@@ -108,16 +108,16 @@ module FullyNameable
   def self.included(base)
     base.class_eval do
       raise "#{base} must define method 'name'" unless method_defined?(:name)
-      if method_defined?(:scope_modifier)
-        def full_name
-          "#{scope_modifier}#{name}"
-        end
-      elsif method_defined?(:prefix)
-        def full_name
-          "#{prefix}#{name}"
-        end
+    end
+
+    def full_name
+      if respond_to?(:scope_modifier)
+        "#{scope_modifier}#{name}"
+      elsif respond_to?(:prefix)
+        "#{prefix}#{name}"
       end
     end
+
   end
 end
 
@@ -131,22 +131,13 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include FullyNameable
 
   def builtin_function?
-    (BUILTIN_FUNCTIONS + BUILTIN_COMMANDS).include?(name) and scope_modifier.nil?
-  end
-
-  #def builtin_range?
-  #  BUILTIN_FUNCTIONS.include?("range") and scope_modifier.nil?
-  #end
-  def method_missing(method, *args, &blk)
-    if method.to_s =~ /\Abuiltin_(.*?)\?\Z/
-      BUILTIN_FUNCTIONS.include?($1) and scope_modifier.nil?
-    else
-      super
-    end
+    return false unless name.is_a?(String)
+    scope_modifier.nil? and (BUILTIN_FUNCTIONS + BUILTIN_COMMANDS).include?(name)
   end
 
   def no_parens_necessary?
-    BUILTIN_COMMANDS.include?(name) and scope_modifier.nil?
+    return false unless name.is_a?(String)
+    scope_modifier.nil? and BUILTIN_COMMANDS.include?(name)
   end
 end
 
@@ -214,10 +205,10 @@ module QuestionVariableExistence
           end
         end
         alias name name_without_question_mark
+      end
 
-        def question_existence?
-          name_with_question_mark[-1] == ??
-        end
+      def question_existence?
+        name_with_question_mark[-1] == ??
       end
   end
 end
@@ -231,12 +222,32 @@ class GetVariableNode < Struct.new(:scope_modifier, :name)
   attr_accessor :node_type
 end
 
+
 # &autoindent
 # @q
 class GetSpecialVariableNode < Struct.new(:prefix, :name)
   include Visitable
   include FullyNameable
   attr_accessor :node_type
+end
+
+class CurlyBracePart < Struct.new(:value)
+  def interpolated?
+    GetVariableNode === value || GetSpecialVariableNode === value
+  end
+
+  def regular?
+    not interpolated?
+  end
+end
+class CurlyBraceVariable < Struct.new(:parts)
+  def <<(part)
+    parts << part
+    self
+  end
+end
+class GetCurlyBraceNameNode < Struct.new(:scope_modifier, :variable)
+  include Visitable
 end
 
 # Method definition.
