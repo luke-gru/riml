@@ -5,7 +5,8 @@ module Riml
     include Riml::Constants
 
     def tokenize(code)
-      code.chomp!
+      @code = code
+      @code.chomp!
       @i = 0 # number of characters consumed
       @tokens = []
       @current_indent = 0
@@ -15,8 +16,8 @@ module Riml
       @one_line_conditional_END_pending = false
       @splat_allowed = false
 
-      while @i < code.size
-        chunk = code[@i..-1]
+      while @i < @code.size
+        chunk = @code[@i..-1]
 
         # deal with line continuations
         if cont = chunk[/\A\\/]
@@ -52,9 +53,10 @@ module Riml
             end
             # strip out '?' for token names
             token_name = identifier[-1] == ?? ? identifier[0..-2] : identifier
-            @tokens << [token_name.upcase.intern, identifier]
 
             track_indent_level(chunk, identifier)
+            @tokens << [token_name.upcase.intern, identifier]
+
           elsif BUILTIN_COMMANDS.include? identifier
             @tokens << [:BUILTIN_COMMAND, identifier]
           # method names and variable names
@@ -65,7 +67,7 @@ module Riml
           @i += identifier.size
 
           # dict.key OR dict.key.other_key
-          new_chunk = code[@i..-1]
+          new_chunk = @code[@i..-1]
           if new_chunk[/\A\.([\w.]+)/]
             parts = $1.split('.')
             while key = parts.shift
@@ -164,6 +166,7 @@ module Riml
       when :if, :unless
         if one_line_conditional?(chunk)
           @one_line_conditional_END_pending = true
+        elsif statement_modifier?(chunk) # do nothing
         else
           @current_indent += 2
           @indent_pending = true
@@ -177,7 +180,16 @@ module Riml
     end
 
     def one_line_conditional?(chunk)
-      res = chunk[/^(if|unless).*?(else)?.*?end$/]
+      chunk[/^(if|unless).*?(else)?.*?end$/]
+    end
+
+    def statement_modifier?(chunk)
+      old_i = @i
+      @i -= 1 while @code[@i-1] =~ /[^\n\r]/ && !@code[@i-1].empty?
+      new_chunk = @code[@i..-1]
+      new_chunk[/^(.*?)(if|unless).+$/] && !$1.strip.empty?
+    ensure
+      @i = old_i
     end
   end
 end

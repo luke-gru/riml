@@ -6,11 +6,11 @@ module Riml
     end
 
     def rewrite
-      VariableEqBinaryOpMatch.new(ast).rewrite
+      VariableEqBinaryOp.new(ast).rewrite
       ast
     end
 
-    class VariableEqBinaryOpMatch < AST_Rewriter
+    class VariableEqBinaryOp < AST_Rewriter
       BINARY_OPERATOR_REWRITE_MATCH = /(==|=~|!=|!~)#?/
       def rewrite(nodes = ast)
         case nodes
@@ -31,13 +31,12 @@ module Riml
       def replace(node)
         old_binary_op = node.nodes[0].value
         old_set_var = node.nodes[0]
-        old_set_var.value = nil
-        old_set_var1 = old_set_var.clone.tap {|sv_1| sv_1.value = TrueNode.new }
-        old_set_var0 = old_set_var.clone.tap {|sv_2| sv_2.value = FalseNode.new }
+        set_var_true  = old_set_var.clone.tap {|sv_t| sv_t.value = TrueNode.new }
+        set_var_false = old_set_var.clone.tap {|sv_f| sv_f.value = FalseNode.new }
         node.nodes = [
           IfNode.new(old_binary_op, Nodes.new([
-            old_set_var1, ElseNode.new(Nodes.new([
-            old_set_var0
+            set_var_true, ElseNode.new(Nodes.new([
+            set_var_false
             ]))
           ]))
         ]

@@ -633,10 +633,10 @@ module Riml
 
     # compiles nodes into output code
     def compile(root_node)
-      rewritten_ast = AST_Rewriter.new(root_node).rewrite
+      AST_Rewriter.new(root_node).rewrite
       root_visitor = NodesVisitor.new
-      rewritten_ast.accept(root_visitor)
-      rewritten_ast.compiled_output
+      root_node.accept(root_visitor)
+      root_node.compiled_output
     end
 
   end

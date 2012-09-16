@@ -119,6 +119,20 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "if statement modifier" do
+    riml = <<Riml
+a = 3 if a == 0
+Riml
+
+    expected = <<Viml
+if (s:a == 0)
+  let s:a = 3
+endif
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
   test "override riml default scipt-local scoping for variables/functions" do
     riml     =   "n:a = 'no default scoping! Hooray!'"
     expected = "let a = 'no default scoping! Hooray!'\n"

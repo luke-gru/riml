@@ -27,6 +27,7 @@ prechigh
   right '?'
   right '='
   left ','
+  left IF UNLESS
 preclow
 
 # All rules
@@ -294,12 +295,14 @@ rule
   # [expression, expressions]
   If:
     IF Expression IfBlock END               { result = IfNode.new(val[1], val[2]) }
-  | IF Expression THEN Expression END       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
+  | IF Expression THEN Expression END       { result = IfNode.new(val[1], Nodes.new([val[3]])) }
+  | Expression IF Expression                { result = IfNode.new(val[2], Nodes.new([val[0]])) }
   ;
 
   Unless:
     UNLESS Expression IfBlock END           { result = UnlessNode.new(val[1], val[2]) }
-  | UNLESS Expression THEN Expression END   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
+  | UNLESS Expression THEN Expression END   { result = UnlessNode.new(val[1], Nodes.new([val[3]])) }
+  | Expression UNLESS Expression            { result = UnlessNode.new(val[2], Nodes.new([val[0]])) }
   ;
 
   Ternary:
