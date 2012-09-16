@@ -1,4 +1,5 @@
 require File.expand_path('../nodes', __FILE__)
+require File.expand_path('../ast_rewriter', __FILE__)
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -63,6 +64,7 @@ module Riml
           line =~ /else\n\Z/ ? output << line : output << node.indent + line
         end
         node.compiled_output = output
+        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
         node.compiled_output << "endif\n"
       end
     end
@@ -125,7 +127,7 @@ module Riml
           begin
             visitor = visitor_for_node(node)
             next_node = nodes.nodes[i+1]
-            if LiteralNode === node &&
+            if node.scope && LiteralNode === node &&
               !(node.respond_to?(:omit_return) && node.omit_return) &&
               (node == nodes.last || ElseNode === next_node)
               node.explicit_return = true
@@ -631,9 +633,10 @@ module Riml
 
     # compiles nodes into output code
     def compile(root_node)
+      rewritten_ast = AST_Rewriter.new(root_node).rewrite
       root_visitor = NodesVisitor.new
-      root_node.accept(root_visitor)
-      root_node.compiled_output
+      rewritten_ast.accept(root_visitor)
+      rewritten_ast.compiled_output
     end
 
   end

@@ -240,7 +240,7 @@ Riml
 
     expected = <<Viml
 if (exists("g:a"))
-  return 1
+  1
 endif
 Viml
 
@@ -758,6 +758,36 @@ catch /E484:/
 finally
   echo "always"
 endtry
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "set variable to value of binary == expression" do
+    riml = <<Riml
+a = "hi" == "hi"
+Riml
+
+    expected = <<Viml
+if ("hi" ==# "hi")
+  let s:a = 1
+else
+  let s:a = 0
+endif
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "set variable to value of binary =~ expression" do
+    riml = <<Riml
+b = "hi" =~ /hi/
+Riml
+
+    expected = <<Viml
+if ("hi" =~ /hi/)
+  let s:b = 1
+else
+  let s:b = 0
+endif
 Viml
     assert_equal expected, compile(riml)
   end

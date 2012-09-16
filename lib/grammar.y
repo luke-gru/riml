@@ -21,7 +21,7 @@ prechigh
   left '+' '+=' '-' '-='
   left '.'
   left '>' '>=' '<' '<='
-  left '=='
+  left '==' '==#' '=~' '!~' '!=' '!=#'
   left '&&'
   left '||'
   right '?'
@@ -78,6 +78,7 @@ rule
   Literal:
     Number                                { result = val[0] }
   | String                                { result = val[0] }
+  | Regexp                                { result = val[0] }
   | List                                  { result = val[0] }
   | Dictionary                            { result = val[0] }
   | TRUE                                  { result = TrueNode.new }
@@ -93,6 +94,10 @@ rule
   String:
     STRING_S                              { result = StringNode.new(val[0], :s) }
   | STRING_D                              { result = StringNode.new(val[0], :d) }
+  ;
+
+  Regexp:
+    REGEXP                                { result = RegexpNode.new(val[0]) }
   ;
 
   List:
@@ -328,9 +333,9 @@ rule
   Catch:
     /* nothing */                              { result = nil }
   | CATCH Block                                { result = [ CatchNode.new(nil, val[1]) ] }
-  | CATCH REGEXP Block                         { result = [ CatchNode.new(RegexpNode.new(val[1]), val[2]) ] }
+  | CATCH Regexp Block                         { result = [ CatchNode.new(val[1], val[2]) ] }
   | Catch CATCH Block                          { result = val[0] << CatchNode.new(nil, val[2]) }
-  | Catch CATCH REGEXP Block                   { result = val[0] << CatchNode.new(RegexpNode.new(val[2]), val[3]) }
+  | Catch CATCH Regexp Block                   { result = val[0] << CatchNode.new(val[2], val[3]) }
   ;
 
   # [expressions]

@@ -125,9 +125,10 @@ module Riml
 
           @i += newlines.size
         # operators of more than 1 char
-        elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=)}, 1]
+        elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=|=~)}, 1]
           @tokens << [operator, operator]
           @i += operator.size
+        # TODO: fix this to deal with escaped forward slashes in the regexp
         elsif regexp = chunk[%r{\A/[^/]+/}]
           @tokens << [:REGEXP, regexp]
           @i += regexp.size
@@ -156,18 +157,18 @@ module Riml
 
     private
     def track_indent_level(chunk, identifier)
-      case identifier
-      when "def", "while", "until", "for", "try"
+      case identifier.to_sym
+      when :def, :while, :until, :for, :try
         @current_indent += 2
         @indent_pending = true
-      when "if", "unless"
+      when :if, :unless
         if one_line_conditional?(chunk)
           @one_line_conditional_END_pending = true
         else
           @current_indent += 2
           @indent_pending = true
         end
-      when "end"
+      when :end
         unless @one_line_conditional_END_pending
           @current_indent -= 2
           @dedent_pending = true
