@@ -1,13 +1,15 @@
 class Riml::Parser
 
 token IF ELSE ELSEIF THEN UNLESS END
-token WHILE UNTIL
+token WHILE UNTIL BREAK CONTINUE
+token TRY CATCH ENSURE
 token FOR IN
 token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
 token COMMAND NARGS
 token NEWLINE
 token NUMBER
 token STRING_D STRING_S # single- and double-quoted
+token REGEXP
 token TRUE FALSE NIL
 token LET IDENTIFIER DICT_VAL_REF
 token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
@@ -61,8 +63,10 @@ rule
   | While                                 { result = val[0] }
   | Until                                 { result = val[0] }
   | For                                   { result = val[0] }
+  | Try                                   { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
+  | LoopConstruct                         { result = val[0] }
   ;
 
   Terminator:
@@ -284,12 +288,12 @@ rule
 
   # [expression, expressions]
   If:
-    IF Expression Block END                 { result = IfNode.new(val[1], val[2]) }
+    IF Expression IfBlock END               { result = IfNode.new(val[1], val[2]) }
   | IF Expression THEN Expression END       { result = IfNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
   Unless:
-    UNLESS Expression Block END             { result = UnlessNode.new(val[1], val[2]) }
+    UNLESS Expression IfBlock END           { result = UnlessNode.new(val[1], val[2]) }
   | UNLESS Expression THEN Expression END   { result = UnlessNode.new( val[1], Nodes.new([val[3]]) ) }
   ;
 
@@ -301,6 +305,11 @@ rule
     WHILE Expression Block END                 { result = WhileNode.new(val[1], val[2]) }
   ;
 
+  LoopConstruct:
+    BREAK                                      { result = BreakNode.new }
+  | CONTINUE                                   { result = ContinueNode.new }
+  ;
+
   Until:
     UNTIL Expression Block END                 { result = UntilNode.new(val[1], val[2]) }
   ;
@@ -310,13 +319,31 @@ rule
   | FOR IDENTIFIER IN List Block END           { result = ForNodeList.new(val[1], val[3], val[4]) }
   ;
 
+  Try:
+    TRY Block END                              { result = TryNode.new(val[1], nil, nil) }
+  | TRY Block Catch END                        { result = TryNode.new(val[1], val[2], nil) }
+  | TRY Block Catch ENSURE Block END           { result = TryNode.new(val[1], val[2], val[4]) }
+  ;
+
+  Catch:
+    /* nothing */                              { result = nil }
+  | CATCH Block                                { result = [ CatchNode.new(nil, val[1]) ] }
+  | CATCH REGEXP Block                         { result = [ CatchNode.new(val[1], val[2]) ] }
+  | Catch CATCH Block                          { result = val[0] << CatchNode.new(nil, val[2]) }
+  | Catch CATCH REGEXP Block                   { result = val[0] << CatchNode.new(val[2], val[3]) }
+  ;
+
   # [expressions]
   # expressions list could contain an ElseNode, which contains expressions
   # itself
   Block:
-    NEWLINE Expressions ELSE NEWLINE Expressions { result = val[1] << ElseNode.new(val[4]) }
-  | NEWLINE Expressions                          { result = val[1] }
+    NEWLINE Expressions                          { result = val[1] }
   | NEWLINE                                      { result = Nodes.new([]) }
+  ;
+
+  IfBlock:
+    Block                                        { result = val[0] }
+  | NEWLINE Expressions ELSE NEWLINE Expressions { result = val[1] << ElseNode.new(val[4]) }
   ;
 end
 

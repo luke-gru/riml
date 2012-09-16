@@ -41,8 +41,8 @@ module Riml
         node.parent_node.compiled_output << output.to_s unless @propagate_up_tree == false || node.parent_node.nil?
       end
 
-      def visitor_for_node(node)
-        Compiler.const_get("#{node.class.name}Visitor").new
+      def visitor_for_node(node, params={})
+        Compiler.const_get("#{node.class.name}Visitor").new(params)
       end
     end
 
@@ -125,8 +125,9 @@ module Riml
           begin
             visitor = visitor_for_node(node)
             next_node = nodes.nodes[i+1]
-            if LiteralNode === node && !(FinishNode === node) &&
-               (node == nodes.last || ElseNode === next_node)
+            if LiteralNode === node &&
+              !(node.respond_to?(:omit_return) && node.omit_return) &&
+              (node == nodes.last || ElseNode === next_node)
               node.explicit_return = true
             end
             node.parent_node = nodes
@@ -192,12 +193,15 @@ module Riml
 
     NumberNodeVisitor = LiteralNodeVisitor
     StringNodeVisitor = LiteralNodeVisitor
+    RegexpNodeVisitor = LiteralNodeVisitor
 
     ListNodeVisitor = LiteralNodeVisitor
     DictionaryNodeVisitor = LiteralNodeVisitor
 
     ReturnNodeVisitor = LiteralNodeVisitor
     FinishNodeVisitor = LiteralNodeVisitor
+    ContinueNodeVisitor = LiteralNodeVisitor
+    BreakNodeVisitor = LiteralNodeVisitor
 
     # common visiting methods for nodes that are scope modified with prefixes
     class ScopedVisitor < Visitor
@@ -538,6 +542,44 @@ module Riml
           result = node.list_expression.accept(ListNodeVisitor.new)
           result << "\n" unless result[-1] == "\n"
         end
+      end
+    end
+
+    class TryNodeVisitor < Visitor
+      # try_block, catch_nodes, ensure_block
+      def compile(node)
+        try, catches, _ensure = node.try_block, node.catch_nodes, node.ensure_block
+        _ensure.parent_node = node if _ensure
+        node.compiled_output = "try\n"
+        try.accept(visitor_for_node(try))
+        try.compiled_output.each_line do |line|
+          node.compiled_output << node.indent << line
+        end
+
+        catches.each do |c|
+          c.accept(visitor_for_node(c))
+          c.compiled_output.each_line do |line|
+            node.compiled_output << ( line =~ /\A\s*catch/ ? line : node.indent << line )
+          end
+        end if catches
+
+        _ensure.accept(visitor_for_node(_ensure)) if _ensure
+        node.compiled_output << "endtry\n"
+      end
+    end
+
+    class CatchNodeVisitor < Visitor
+      # regexp, block
+      def compile(node)
+        regexp, block = node.regexp, node.block
+        node.compiled_output = "catch\n"
+        block.parent_node = node
+        if regexp
+          regexp.parent_node = node
+          regexp.accept(visitor_for_node(regexp))
+        end
+        block.accept(visitor_for_node(block))
+        node.compiled_output
       end
     end
 

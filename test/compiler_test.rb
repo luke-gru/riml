@@ -267,6 +267,12 @@ Viml
     riml = <<Riml
 i = 0
 while i < 5
+  if skip_flag
+    continue
+  end
+  if finished_flag
+    break
+  end
   echo("hi")
   i += 1
 end
@@ -275,6 +281,12 @@ Riml
     expected = <<Viml
 let s:i = 0
 while (s:i < 5)
+  if (s:skip_flag)
+    continue
+  endif
+  if (s:finished_flag)
+    break
+  endif
   echo "hi"
   s:i += 1
 endwhile
@@ -723,6 +735,25 @@ Riml
     expected = <<Viml
 let param = 2
 call s:my_{s:background}_message(param)
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "basic try block" do
+    riml = <<Riml
+try
+  a = 2
+catch
+  echo "error"
+end
+Riml
+
+    expected = <<Viml
+try
+  let s:a = 2
+catch
+  echo "error"
+endtry
 Viml
     assert_equal expected, compile(riml)
   end

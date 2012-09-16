@@ -77,31 +77,39 @@ class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or sin
   attr_accessor :explicit_return
 end
 
+class RegexpNode < LiteralNode; end
 class ListNode < LiteralNode; end
 class DictionaryNode < LiteralNode; end
 
 class TrueNode < LiteralNode
-  def initialize
-    super(true)
-  end
+  def initialize() super(true) end
 end
 
 class FalseNode < LiteralNode
-  def initialize
-    super(false)
-  end
+  def initialize() super(false) end
 end
 
 class NilNode < LiteralNode
-  def initialize
-    super(nil)
-  end
+  def initialize() super(nil) end
+end
+
+module NonReturnable
+  def omit_return() true end
 end
 
 class FinishNode < LiteralNode
-  def initialize
-    super("finish\n")
-  end
+  include NonReturnable
+  def initialize() super("finish\n") end
+end
+
+class BreakNode < LiteralNode
+  include NonReturnable
+  def initialize() super("break\n") end
+end
+
+class ContinueNode < LiteralNode
+  include NonReturnable
+  def initialize() super("continue\n") end
 end
 
 module FullyNameable
@@ -145,8 +153,7 @@ end
 #
 #   call Method()
 #   call s:Method(argument1, argument2)
-class ExplicitCallNode < CallNode
-end
+class ExplicitCallNode < CallNode; end
 
 class OperatorNode < Struct.new(:operator, :operands)
   include Visitable
@@ -308,16 +315,11 @@ class ControlStructure < Struct.new(:condition, :body)
   end
 end
 
-class IfNode < ControlStructure
-end
+class IfNode < ControlStructure; end
+class UnlessNode < ControlStructure; end
 
-class UnlessNode < ControlStructure
-end
-
-class WhileNode < ControlStructure
-end
-class UntilNode < ControlStructure
-end
+class WhileNode < ControlStructure; end
+class UntilNode < ControlStructure; end
 
 class ElseNode < Struct.new(:expressions)
   include Visitable
@@ -341,8 +343,7 @@ class ElseNode < Struct.new(:expressions)
   end
 end
 
-class ElsifNode < ElseNode
-end
+class ElsifNode < ElseNode; end
 
 # for variable in someFunction(1,2,3)
 #   echo variable
@@ -413,4 +414,13 @@ class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   include Visitable
   alias list list_or_dict
   alias dict list_or_dict
+end
+
+class TryNode < Struct.new(:try_block, :catch_nodes, :ensure_block)
+  include Visitable
+  include Indentable
+end
+
+class CatchNode < Struct.new(:regexp, :block)
+  include Visitable
 end

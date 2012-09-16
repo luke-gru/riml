@@ -42,6 +42,9 @@ module Riml
             if identifier == 'function'
               identifier = 'def'
               @i += 5
+            elsif identifier == 'finally'
+              identifier = 'ensure'
+              @i += 1
             elsif VIML_END_KEYWORDS.include? identifier
               old_identifier = identifier.dup
               identifier = 'end'
@@ -151,7 +154,7 @@ module Riml
     private
     def track_indent_level(chunk, identifier)
       case identifier
-      when "def", "while", "until", "for"
+      when "def", "while", "until", "for", "try"
         @current_indent += 2
         @indent_pending = true
       when "if", "unless"
