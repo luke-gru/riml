@@ -328,9 +328,9 @@ rule
   Catch:
     /* nothing */                              { result = nil }
   | CATCH Block                                { result = [ CatchNode.new(nil, val[1]) ] }
-  | CATCH REGEXP Block                         { result = [ CatchNode.new(val[1], val[2]) ] }
+  | CATCH REGEXP Block                         { result = [ CatchNode.new(RegexpNode.new(val[1]), val[2]) ] }
   | Catch CATCH Block                          { result = val[0] << CatchNode.new(nil, val[2]) }
-  | Catch CATCH REGEXP Block                   { result = val[0] << CatchNode.new(val[2], val[3]) }
+  | Catch CATCH REGEXP Block                   { result = val[0] << CatchNode.new(RegexpNode.new(val[2]), val[3]) }
   ;
 
   # [expressions]

@@ -128,11 +128,14 @@ module Riml
         elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=)}, 1]
           @tokens << [operator, operator]
           @i += operator.size
+        elsif regexp = chunk[%r{\A/[^/]+/}]
+          @tokens << [:REGEXP, regexp]
+          @i += regexp.size
         elsif whitespaces = chunk[/\A +/]
           @i += whitespaces.size
         elsif single_line_comment = chunk[/\A\s*#.*$/]
           @i += single_line_comment.size
-        # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < >
+        # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < > /
         else
           value = chunk[0, 1]
           if value == '|'

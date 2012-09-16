@@ -739,12 +739,12 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "basic try block" do
+  test "try block with catch (regexp) and ensure" do
     riml = <<Riml
 try
   a = 2
-catch
-  echo "error"
+catch /E484:/
+  echo "error 484"
 ensure
   echo "always"
 end
@@ -753,8 +753,8 @@ Riml
     expected = <<Viml
 try
   let s:a = 2
-catch
-  echo "error"
+catch /E484:/
+  echo "error 484"
 finally
   echo "always"
 endtry
