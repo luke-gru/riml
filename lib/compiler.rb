@@ -60,7 +60,7 @@ module Riml
         node.body.accept(NodesVisitor.new)
 
         node.compiled_output.each_line do |line|
-          line =~ /else\n\Z/ ? output << line : output << node.indent << line
+          line =~ /else\n\Z/ ? output << line : output << node.indent + line
         end
         node.compiled_output = output
         node.compiled_output << "endif\n"
@@ -100,7 +100,7 @@ module Riml
 
         node.body.accept(NodesVisitor.new)
         node.compiled_output.each_line do |line|
-          output << node.indent << line
+          output << node.indent + line
         end
         node.compiled_output = output << "\n"
         node.compiled_output << "endwhile\n"
@@ -412,7 +412,7 @@ module Riml
         body = ""
         unless node.body.compiled_output.empty?
           node.body.compiled_output.each_line do |line|
-            body << node.indent << line
+            body << node.indent + line
           end
         end
         node.compiled_output = declaration << body << "endfunction\n"
@@ -522,7 +522,7 @@ module Riml
         node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
         body = node.expressions.compiled_output
         body.each_line do |line|
-          node.compiled_output << node.indent << line
+          node.compiled_output << node.indent + line
         end
         node.compiled_output << "endfor"
       end
@@ -549,21 +549,26 @@ module Riml
       # try_block, catch_nodes, ensure_block
       def compile(node)
         try, catches, _ensure = node.try_block, node.catch_nodes, node.ensure_block
-        _ensure.parent_node = node if _ensure
         node.compiled_output = "try\n"
         try.accept(visitor_for_node(try))
         try.compiled_output.each_line do |line|
-          node.compiled_output << node.indent << line
+          node.compiled_output << node.indent + line
         end
 
         catches.each do |c|
           c.accept(visitor_for_node(c))
           c.compiled_output.each_line do |line|
-            node.compiled_output << ( line =~ /\A\s*catch/ ? line : node.indent << line )
+            node.compiled_output << ( line =~ /\A\s*catch/ ? line : node.indent + line )
           end
         end if catches
 
-        _ensure.accept(visitor_for_node(_ensure)) if _ensure
+        if _ensure
+          node.compiled_output << "finally\n"
+          _ensure.accept(visitor_for_node(_ensure))
+          _ensure.compiled_output.each_line do |line|
+            node.compiled_output << node.indent + line
+          end
+        end
         node.compiled_output << "endtry\n"
       end
     end

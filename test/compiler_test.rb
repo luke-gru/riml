@@ -745,6 +745,8 @@ try
   a = 2
 catch
   echo "error"
+ensure
+  echo "always"
 end
 Riml
 
@@ -753,6 +755,8 @@ try
   let s:a = 2
 catch
   echo "error"
+finally
+  echo "always"
 endtry
 Viml
     assert_equal expected, compile(riml)
