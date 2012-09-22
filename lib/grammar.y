@@ -5,10 +5,10 @@ token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH ENSURE
 token FOR IN
 token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
-token COMMAND NARGS
 token NEWLINE
 token NUMBER
 token STRING_D STRING_S # single- and double-quoted
+token HEREDOC
 token REGEXP
 token TRUE FALSE NIL
 token LET IDENTIFIER DICT_VAL_REF
@@ -55,9 +55,9 @@ rule
   | ListOrDictGet                         { result = val[0] }
   | DictSet                               { result = val[0] }
   | Def                                   { result = val[0] }
-  | Command                               { result = val[0] }
   | VariableRetrieval                     { result = val[0] }
   | Literal                               { result = val[0] }
+  | Heredoc                               { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
   | Ternary                               { result = val[0] }
@@ -95,6 +95,10 @@ rule
   String:
     STRING_S                              { result = StringNode.new(val[0], :s) }
   | STRING_D                              { result = StringNode.new(val[0], :d) }
+  ;
+
+  Heredoc:
+    HEREDOC String                        { result = HeredocNode.new(val[0], val[1]) }
   ;
 
   Regexp:
@@ -276,10 +280,6 @@ rule
   Keyword:
     IDENTIFIER            { result = val[0] }
   | /* nothing */         { result = nil }
-  ;
-
-  Command:
-    COMMAND NARGS IDENTIFIER {}
   ;
 
   EndScript:

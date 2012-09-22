@@ -424,3 +424,7 @@ end
 class CatchNode < Struct.new(:regexp, :block)
   include Visitable
 end
+
+class HeredocNode < Struct.new(:pattern, :string_node)
+  include Visitable
+end

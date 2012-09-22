@@ -129,7 +129,6 @@ if (s:a == 0)
   let s:a = 3
 endif
 Viml
-
     assert_equal expected, compile(riml)
   end
 
@@ -803,6 +802,15 @@ else
   let s:b = 0
 endif
 Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "heredoc string" do
+    riml = "heredoc = <<EOS\n" +
+           "omg this is a heredoc\t\n" +
+           "EOS"
+
+    expected = "let s:heredoc = \"omg this is a heredoc\t\n\"" + "\n"
     assert_equal expected, compile(riml)
   end
 end

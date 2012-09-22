@@ -205,6 +205,14 @@ module Riml
     ContinueNodeVisitor = LiteralNodeVisitor
     BreakNodeVisitor = LiteralNodeVisitor
 
+    class HeredocNodeVisitor < Visitor
+      def compile(node)
+        node.string_node.parent_node = node
+        node.string_node.accept(StringNodeVisitor.new)
+        node.compiled_output
+      end
+    end
+
     # common visiting methods for nodes that are scope modified with prefixes
     class ScopedVisitor < Visitor
       private

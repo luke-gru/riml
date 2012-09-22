@@ -42,10 +42,10 @@ module Riml
           if KEYWORDS.include?(identifier)
             if identifier == 'function'
               identifier = 'def'
-              @i += 5
+              @i += 5 # diff b/t the two string lengths
             elsif identifier == 'finally'
               identifier = 'ensure'
-              @i += 1
+              @i += 1 # diff b/t the two string lengths
             elsif VIML_END_KEYWORDS.include? identifier
               old_identifier = identifier.dup
               identifier = 'end'
@@ -130,14 +130,23 @@ module Riml
         elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=|=~)}, 1]
           @tokens << [operator, operator]
           @i += operator.size
-        # TODO: fix this to deal with escaped forward slashes in the regexp
-        elsif regexp = chunk[%r{\A/[^/]+/}]
+        # TODO: test if this actually escapes forward slashes in the regular
+        # expression
+        elsif regexp = chunk[%r{\A/[^/]+?[^\\]/}]
           @tokens << [:REGEXP, regexp]
           @i += regexp.size
-        elsif whitespaces = chunk[/\A +/]
+        elsif whitespaces = chunk[/\A\s+/]
           @i += whitespaces.size
         elsif single_line_comment = chunk[/\A\s*#.*$/]
           @i += single_line_comment.size
+        elsif heredoc_pattern = chunk[%r{\A<<(.+?)\r?\n}]
+          pattern = $1
+          @i += heredoc_pattern.size
+          @tokens << [:HEREDOC, pattern]
+          new_chunk = @code[@i..-1]
+          heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|]
+          @i += heredoc_string.size + $2.size
+          @tokens << [:STRING_D, $1]
         # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < > /
         else
           value = chunk[0, 1]
@@ -180,14 +189,15 @@ module Riml
     end
 
     def one_line_conditional?(chunk)
-      chunk[/^(if|unless).*?(else)?.*?end$/]
+      chunk[/^(if|unless).+?(else)?.+?end$/]
     end
 
     def statement_modifier?(chunk)
       old_i = @i
+      # backtrack until the beginning of the line
       @i -= 1 while @code[@i-1] =~ /[^\n\r]/ && !@code[@i-1].empty?
       new_chunk = @code[@i..-1]
-      new_chunk[/^(.*?)(if|unless).+$/] && !$1.strip.empty?
+      new_chunk[/^(.+?)(if|unless).+$/] && !$1.strip.empty?
     ensure
       @i = old_i
     end
