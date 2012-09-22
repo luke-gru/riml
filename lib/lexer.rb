@@ -130,9 +130,8 @@ module Riml
         elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=|=~)}, 1]
           @tokens << [operator, operator]
           @i += operator.size
-        # TODO: test if this actually escapes forward slashes in the regular
-        # expression
-        elsif regexp = chunk[%r{\A/[^/]+?[^\\]/}]
+        # FIXME: this doesn't work well enough
+        elsif regexp = chunk[%r{\A/.*?[^\\]/}]
           @tokens << [:REGEXP, regexp]
           @i += regexp.size
         elsif whitespaces = chunk[/\A\s+/]

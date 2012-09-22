@@ -29,12 +29,12 @@ module Riml
       end
 
       def replace(node)
-        old_binary_op = node.nodes[0].value
+        binary_op = node.nodes[0].value
         old_set_var = node.nodes[0]
         set_var_true  = old_set_var.clone.tap {|sv_t| sv_t.value = TrueNode.new }
         set_var_false = old_set_var.clone.tap {|sv_f| sv_f.value = FalseNode.new }
         node.nodes = [
-          IfNode.new(old_binary_op, Nodes.new([
+          IfNode.new(binary_op, Nodes.new([
             set_var_true, ElseNode.new(Nodes.new([
             set_var_false
             ]))

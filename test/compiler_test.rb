@@ -752,6 +752,28 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "basic regular expression" do
+    riml = <<Riml
+regex = /(.*)/
+Riml
+
+    expected = <<Viml
+let s:regex = /(.*)/
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "regular expression with simple forward-slash escape" do
+    riml = <<Riml
+regex = /\/\(.*\)/
+Riml
+
+    expected = <<Viml
+let s:regex = /\/\(.*\)/
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "try block with catch (regexp) and ensure" do
     riml = <<Riml
 try
