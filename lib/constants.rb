@@ -6,12 +6,15 @@ module Riml
     VIML_END_KEYWORDS =
       %w(endfunction endif endwhile endfor endtry)
     RIML_KEYWORDS =
-      %w(def def! end then unless until true false nil ensure command?)
+      %w(def end then unless until true false nil ensure)
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
     SPECIAL_VARIABLE_PREFIXES =
       %w(& @ $)
     BUILTIN_COMMANDS  =
       %w(echo echon echohl execute sleep)
+    IGNORECASE_CAPABLE_BINARY_OPERATORS =
+      %w(== != > >= < <= =~ !~)
+    COMPARISON_BINARY_OPERATORS = IGNORECASE_CAPABLE_BINARY_OPERATORS.map {|o| [o, o + '#']}.flatten
     # :h function-list
     BUILTIN_FUNCTIONS =
     %w(

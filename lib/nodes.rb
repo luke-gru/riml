@@ -117,15 +117,14 @@ module FullyNameable
     base.class_eval do
       raise "#{base} must define method 'name'" unless method_defined?(:name)
     end
+  end
 
-    def full_name
-      if respond_to?(:scope_modifier)
-        "#{scope_modifier}#{name}"
-      elsif respond_to?(:prefix)
-        "#{prefix}#{name}"
-      end
+  def full_name
+    if respond_to?(:scope_modifier)
+      "#{scope_modifier}#{name}"
+    elsif respond_to?(:prefix)
+      "#{prefix}#{name}"
     end
-
   end
 end
 
@@ -156,13 +155,19 @@ end
 class ExplicitCallNode < CallNode; end
 
 class OperatorNode < Struct.new(:operator, :operands)
+  include Riml::Constants
   include Visitable
 end
 
 class BinaryOperatorNode < OperatorNode
+  attr_accessor :strict_equals
   def operand1() operands.first end
 
   def operand2() operands[1] end
+
+  def ignorecase_capable_operator?(operator)
+    IGNORECASE_CAPABLE_BINARY_OPERATORS.include?(operator)
+  end
 end
 
 # operator = :ternary

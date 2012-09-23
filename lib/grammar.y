@@ -18,10 +18,10 @@ token FINISH
 prechigh
   right '!'
   left '*' '/' '%'
-  left '+' '+=' '-' '-='
-  left '.'
-  left '>' '>=' '<' '<='
-  left '==' '==#' '=~' '!~' '!=' '!=#'
+  left '+' '+=' '-' '-=' '.'
+  left '>' '>#' '>?' '<' '<#' '<?' '>=' '>=#' '>=?'  '<=' '<=#' '<=?'
+  left '==' '==?' '==#' '=~' '=~?' '=~#' '!~' '!~?' '!~#' '!=' '!=?' '!=#'
+  left 'is' 'isnot'
   left '&&'
   left '||'
   right '?'
@@ -90,7 +90,6 @@ rule
   Number:
     NUMBER                                { result = NumberNode.new(val[0]) }
   ;
-
 
   String:
     STRING_S                              { result = StringNode.new(val[0], :s) }
@@ -218,18 +217,43 @@ rule
   Operator:
     Expression '||' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '&&' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '==' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '==#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '==?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
+  # added by riml
+  | Expression '===' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]);
+                                            result.strict_equals = true; result }
+
   | Expression '!=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '!=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '!=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '=~' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '=~#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '=~?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '!~' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '!~#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '!~?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '>' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>#' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>?' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '>=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '<' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<#' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<?' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '<=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
   | Expression '+' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '+=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '-' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
@@ -238,6 +262,9 @@ rule
   | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '.=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+
+  | List 'is'    List                     { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | List 'isnot' List                     { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   ;
 
   # Assignment to a variable

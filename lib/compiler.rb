@@ -374,7 +374,7 @@ module Riml
         op1.accept(op1_visitor)
         op2_visitor.propagate_up_tree = false
         op2.accept(op2_visitor)
-        if ignorecase_capable?(node.operator) && operands_are_string_nodes?(op1, op2)
+        if node.ignorecase_capable_operator?(node.operator)
           operator_suffix = "# "
         else
           operator_suffix = " "
@@ -383,17 +383,6 @@ module Riml
         op2_visitor.propagate_up_tree = true
         op2.accept(op2_visitor)
         node.compiled_output
-      end
-
-      private
-      def operands_are_string_nodes? *nodes
-        nodes.all? do |n|
-          n.is_a?(StringNode) || (n.respond_to?(:node_type) && n.node_type == :StringNode)
-        end
-      end
-
-      def ignorecase_capable? operator
-        %w(== !=).include? operator
       end
     end
 

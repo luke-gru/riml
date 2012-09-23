@@ -1,3 +1,5 @@
+require File.expand_path(__FILE__, "../constants")
+
 module Riml
   class AST_Rewriter
     attr_reader :ast
@@ -6,12 +8,14 @@ module Riml
     end
 
     def rewrite
-      VariableEqBinaryOp.new(ast).rewrite
+      VarEqualsComparisonOperator.new(ast).rewrite
       ast
     end
 
-    class VariableEqBinaryOp < AST_Rewriter
-      BINARY_OPERATOR_REWRITE_MATCH = /(==|=~|!=|!~)#?/
+    class VarEqualsComparisonOperator < AST_Rewriter
+      include Riml::Constants
+      BINARY_OPERATOR_REWRITE_MATCH = Regexp.union(COMPARISON_BINARY_OPERATORS)
+
       def rewrite(nodes = ast)
         case nodes
         when Nodes

@@ -37,7 +37,7 @@ module Riml
           @tokens << [:SPECIAL_VAR_PREFIX, special_var_prefix]
           @expecting_identifier = true
           @i += 1
-        elsif identifier = chunk[/\A[a-zA-Z_]\w*\??/]
+        elsif identifier = chunk[/\A[a-zA-Z_][\w#]*\??/]
           # keyword identifiers
           if KEYWORDS.include?(identifier)
             if identifier == 'function'

@@ -125,7 +125,7 @@ a = 3 if a == 0
 Riml
 
     expected = <<Viml
-if (s:a == 0)
+if (s:a ==# 0)
   let s:a = 3
 endif
 Viml
@@ -293,7 +293,7 @@ Riml
 
     expected = <<Viml
 let s:i = 0
-while (s:i < 5)
+while (s:i <# 5)
   if (s:skip_flag)
     continue
   endif
@@ -319,7 +319,7 @@ Riml
 
     expected = <<Viml
 let s:i = 0
-while (!s:i == 5)
+while (!s:i ==# 5)
   echo "hi"
   s:i += 1
 endwhile
@@ -388,7 +388,7 @@ Riml
   end
 
 
-  test "comparing strings is non ignorecase by default" do
+  test "comparing literals is non ignorecase by default" do
     riml = <<Riml
 string1 = "meet"
 string2 = "moot"
@@ -410,7 +410,7 @@ Riml2
   expected2 = <<Viml.chomp
 let s:string = "meet"
 let s:number = 2
-s:string == s:number
+s:string ==# s:number
 Viml
 
   assert_equal expected, compile(riml)
@@ -514,7 +514,7 @@ echo lnum == 1
 Riml
 
 expected = <<Viml
-echo s:lnum == 1 ? "top" : s:lnum == 1000 ? "last" : s:lnum
+echo s:lnum ==# 1 ? "top" : s:lnum ==# 1000 ? "last" : s:lnum
 Viml
     assert_equal expected, compile(riml)
   end
@@ -818,7 +818,7 @@ b = "hi" =~ /hi/
 Riml
 
     expected = <<Viml
-if ("hi" =~ /hi/)
+if ("hi" =~# /hi/)
   let s:b = 1
 else
   let s:b = 0
@@ -833,6 +833,17 @@ Viml
            "EOS"
 
     expected = "let s:heredoc = \"omg this is a heredoc\t\n\"" + "\n"
+    assert_equal expected, compile(riml)
+  end
+
+  test "autoloadable variables" do
+    riml = <<Riml
+l = some#path#to#var
+Riml
+
+    expected = <<Viml
+let s:l = s:some#path#to#var
+Viml
     assert_equal expected, compile(riml)
   end
 end
