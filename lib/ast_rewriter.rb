@@ -2,27 +2,48 @@ require File.expand_path(__FILE__, "../constants")
 
 module Riml
   class AST_Rewriter
+    include Riml::Constants
+
     attr_reader :ast
     def initialize(ast)
       @ast = ast
     end
 
     def rewrite
-      VarEqualsComparisonOperator.new(ast).rewrite
+      StrictEqualsComparisonOperator.new(ast).rewrite_on_match
+      VarEqualsComparisonOperator.new(ast).rewrite_on_match
       ast
     end
 
+    def rewrite_on_match(node = ast)
+      if matched_base_node === node
+        match(node) && replace(node)
+      elsif node.respond_to?(:each)
+        node.each {|n| rewrite_on_match n }
+      end
+    end
+
+    class StrictEqualsComparisonOperator < AST_Rewriter
+      def matched_base_node
+        BinaryOperatorNode
+      end
+
+      def match(node)
+        BinaryOperatorNode === node && node.operator == '==='
+      end
+
+      def replace(node)
+        node.operator = '=='
+        node.operand1 = ListNode.wrap(node.operand1)
+        node.operand2 = ListNode.wrap(node.operand2)
+      end
+    end
+
     class VarEqualsComparisonOperator < AST_Rewriter
-      include Riml::Constants
       BINARY_OPERATOR_REWRITE_MATCH = Regexp.union(COMPARISON_BINARY_OPERATORS)
 
-      def rewrite(nodes = ast)
-        case nodes
-        when Nodes
-          match(nodes) && replace(nodes)
-        when ElseNode, ControlStructure, DefNode, ForNode
-          nodes.each {|n| rewrite n }
-        end
+      def matched_base_node
+        Nodes
       end
 
       def match(node)

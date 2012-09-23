@@ -450,21 +450,11 @@ module Riml
       def establish_scope(node)
         node.scope = @scope
 
-        case node
-        when Nodes, ElseNode
+        if node.respond_to?(:accept) && node.respond_to?(:each)
           node.each do |expr|
-            expr.accept(self)
+            expr.accept(self) if expr.respond_to?(:accept)
           end
-        when ControlStructure
-          node.condition.scope = @scope
-          node.each do |body_expr|
-            body_expr.accept(self)
-          end
-        when CallNode
-          node.arguments.each do |arg|
-            arg.accept(self)
-          end
-        when SetVariableNode
+        elsif SetVariableNode === node
           node.value.accept(self)
         end
       end

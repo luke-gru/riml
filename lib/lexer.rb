@@ -127,7 +127,7 @@ module Riml
 
           @i += newlines.size
         # operators of more than 1 char
-        elsif operator = chunk[%r{\A(\|\||&&|==|!=|<=|>=|\+=|-=|=~)}, 1]
+        elsif operator = chunk[%r{\A(\|\||&&|===|==|!=|<=|>=|\+=|-=|=~)}, 1]
           @tokens << [operator, operator]
           @i += operator.size
         # FIXME: this doesn't work well enough

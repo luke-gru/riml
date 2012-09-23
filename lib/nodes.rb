@@ -78,7 +78,12 @@ class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or sin
 end
 
 class RegexpNode < LiteralNode; end
-class ListNode < LiteralNode; end
+class ListNode < LiteralNode
+  def self.wrap(value)
+    val = Array === value ? value : [value]
+    new(val)
+  end
+end
 class DictionaryNode < LiteralNode; end
 
 class TrueNode < LiteralNode
@@ -146,6 +151,10 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
     return false unless name.is_a?(String)
     scope_modifier.nil? and BUILTIN_COMMANDS.include?(name)
   end
+
+  def each &block
+    arguments.each &block
+  end
 end
 
 # Node of an explicitly called method, can take any of these forms:
@@ -160,10 +169,16 @@ class OperatorNode < Struct.new(:operator, :operands)
 end
 
 class BinaryOperatorNode < OperatorNode
-  attr_accessor :strict_equals
+
   def operand1() operands.first end
+  def operand1=(val) operands[0] = val end
 
   def operand2() operands[1] end
+  def operand2=(val) operands[1] = val end
+
+  def each &block
+    operands.each &block
+  end
 
   def ignorecase_capable_operator?(operator)
     IGNORECASE_CAPABLE_BINARY_OPERATORS.include?(operator)
@@ -316,6 +331,7 @@ class ControlStructure < Struct.new(:condition, :body)
   include Indentable
 
   def each(&block)
+    [condition].each &block
     body.each &block
   end
 end

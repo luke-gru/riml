@@ -846,4 +846,19 @@ let s:l = s:some#path#to#var
 Viml
     assert_equal expected, compile(riml)
   end
+
+  test "strict equals comparison" do
+    riml = <<Riml
+if ("string" === 0)
+  echo "never get here"
+end
+Riml
+
+    expected = <<Viml
+if (["string"] ==# [0])
+  echo "never get here"
+endif
+Viml
+    assert_equal expected, compile(riml)
+  end
 end
