@@ -16,18 +16,14 @@ module Riml
     end
 
     def rewrite_on_match(node = ast)
-      if matched_base_node === node
-        match(node) && replace(node)
+      if match(node)
+        replace(node)
       elsif node.respond_to?(:each)
         node.each {|n| rewrite_on_match n }
       end
     end
 
     class StrictEqualsComparisonOperator < AST_Rewriter
-      def matched_base_node
-        BinaryOperatorNode
-      end
-
       def match(node)
         BinaryOperatorNode === node && node.operator == '==='
       end
@@ -40,17 +36,13 @@ module Riml
     end
 
     class VarEqualsComparisonOperator < AST_Rewriter
-      BINARY_OPERATOR_REWRITE_MATCH = Regexp.union(COMPARISON_BINARY_OPERATORS)
-
-      def matched_base_node
-        Nodes
-      end
+      COMPARISON_OPERATOR_MATCH = Regexp.union(COMPARISON_OPERATORS)
 
       def match(node)
         Nodes === node &&
         SetVariableNode === node.nodes[0] &&
         BinaryOperatorNode === (op = node.nodes[0].value) &&
-        op.operator =~ BINARY_OPERATOR_REWRITE_MATCH
+        op.operator =~ COMPARISON_OPERATOR_MATCH
       end
 
       def replace(node)

@@ -21,14 +21,27 @@ module Visitable
   # def descendant_of_call_node?
   #   CallNode === self.parent_node
   # end
+  DESCENDANT_OF_REGEX = /\Adescendant_of_(.*?)\?/
   def method_missing(method, *args, &blk)
-    if method.to_s =~ /descendant_of_(.*?)\?/
+    if method =~ DESCENDANT_OF_REGEX
       parent_node_name = $1.split('_').map(&:capitalize).join
       parent_node = self.class.const_get parent_node_name
       parent_node === self.parent_node
     else
       super
     end
+  end
+  def respond_to_missing?(method, include_private = false)
+    return true if method =~ DESCENDANT_OF_REGEX
+    super
+  end
+end
+
+module Walkable
+  include Enumerable
+
+  def each &block
+    children.each &block
   end
 end
 
@@ -41,7 +54,7 @@ end
 # Collection of nodes each one representing an expression.
 class Nodes < Struct.new(:nodes)
   include Visitable
-  include Enumerable
+  include Walkable
 
   def <<(node)
     nodes << node
@@ -56,8 +69,8 @@ class Nodes < Struct.new(:nodes)
     nodes.last
   end
 
-  def each(&block)
-    nodes.each &block
+  def children
+    nodes
   end
 end
 
@@ -141,6 +154,7 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Riml::Constants
   include Visitable
   include FullyNameable
+  include Walkable
 
   def builtin_function?
     return false unless name.is_a?(String)
@@ -152,8 +166,8 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
     scope_modifier.nil? and BUILTIN_COMMANDS.include?(name)
   end
 
-  def each &block
-    arguments.each &block
+  def children
+    arguments
   end
 end
 
@@ -166,19 +180,20 @@ class ExplicitCallNode < CallNode; end
 class OperatorNode < Struct.new(:operator, :operands)
   include Riml::Constants
   include Visitable
+  include Walkable
+
+  def children
+    operands
+  end
 end
 
 class BinaryOperatorNode < OperatorNode
 
-  def operand1() operands.first end
+  def operand1() operands[0] end
   def operand1=(val) operands[0] = val end
 
   def operand2() operands[1] end
   def operand2=(val) operands[1] = val end
-
-  def each &block
-    operands.each &block
-  end
 
   def ignorecase_capable_operator?(operator)
     IGNORECASE_CAPABLE_BINARY_OPERATORS.include?(operator)
@@ -192,7 +207,7 @@ class TernaryOperatorNode < OperatorNode
     super(operator, operands)
   end
 
-  def condition() operands.first end
+  def condition() operands[0] end
 
   def if_expr() operands[1] end
 
@@ -204,6 +219,11 @@ end
 class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
   include FullyNameable
+  include Walkable
+
+  def children
+    [value]
+  end
 end
 
 # let &compatible = 1
@@ -212,31 +232,41 @@ end
 class SetSpecialVariableNode < Struct.new(:prefix, :name, :value)
   include Visitable
   include FullyNameable
+  include Walkable
+
+  def children
+    [value]
+  end
 end
 
 # let [var1, var2] = expression()
 class SetVariableNodeList < Struct.new(:list, :expression)
   include Visitable
+  include Walkable
+
+  def children
+    [list, expression]
+  end
 end
 
 module QuestionVariableExistence
   def self.included(base)
-      base.class_eval do
-        raise "#{base} must define method 'name'" unless method_defined?(:name)
-        alias name_with_question_mark name
-        def name_without_question_mark
-          if question_existence?
-            name_with_question_mark[0...-1]
-          else
-            name_with_question_mark
-          end
+    base.class_eval do
+      raise "#{base} must define method 'name'" unless method_defined?(:name)
+      alias name_with_question_mark name
+      def name_without_question_mark
+        if question_existence?
+          name_with_question_mark[0...-1]
+        else
+          name_with_question_mark
         end
-        alias name name_without_question_mark
       end
+      alias name name_without_question_mark
+    end
+  end
 
-      def question_existence?
-        name_with_question_mark[-1] == ??
-      end
+  def question_existence?
+    name_with_question_mark[-1] == ??
   end
 end
 
@@ -275,21 +305,26 @@ class CurlyBraceVariable < Struct.new(:parts)
 end
 class GetCurlyBraceNameNode < Struct.new(:scope_modifier, :variable)
   include Visitable
+  include Walkable
+
+  def children
+    [variable]
+  end
 end
 
 # Method definition.
 class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
   include Visitable
-  include Enumerable
   include Indentable
   include FullyNameable
+  include Walkable
 
   def initialize(*args)
     super
     # max number of arguments in viml
-    raise ArgumentError,
-      "can't have more than 20 parameters for #{full_name}" if
-      parameters.size > 20
+    if parameters.size > 20
+      raise ArgumentError, "can't have more than 20 parameters for #{full_name}"
+    end
   end
 
   SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}
@@ -304,8 +339,9 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
 
   # {"a:arg1" => :Argument0, "a:arg2" => :Argument1}
   def arg_variables
-    @arg_variables ||=
-      Hash[parameters.delete_if(&SPLAT).map.with_index {|p, i| ["a:#{p}", :"Argument#{i}"] }]
+    @arg_variables ||= Hash[parameters.delete_if(&SPLAT).map.with_index do |p,i|
+      ["a:#{p}", :"Argument#{i}"]
+    end]
   end
 
   # returns the splat argument or nil
@@ -315,24 +351,19 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
     end
   end
 
-  def each(&block)
-    body.each &block
+  def children
+    [parameters, body]
   end
-end
-
-# command? -nargs=1 Correct :call s:Add(<q-args>, 0)
-class CommandNode < Struct.new(:command, :nargs, :name, :body)
 end
 
 # abstract control structure
 class ControlStructure < Struct.new(:condition, :body)
   include Visitable
-  include Enumerable
   include Indentable
+  include Walkable
 
-  def each(&block)
-    [condition].each &block
-    body.each &block
+  def children
+    [condition, body]
   end
 end
 
@@ -344,11 +375,7 @@ class UntilNode < ControlStructure; end
 
 class ElseNode < Struct.new(:expressions)
   include Visitable
-  include Enumerable
-
-  def each(&block)
-    expressions.each &block
-  end
+  include Walkable
 
   def <<(expr)
     expressions << expr
@@ -361,6 +388,10 @@ class ElseNode < Struct.new(:expressions)
 
   def last
     expressions.last
+  end
+
+  def children
+    [expressions]
   end
 end
 
@@ -375,17 +406,15 @@ class ElsifNode < ElseNode; end
 # for variable in [1,2,3]
 #   echo variable
 # end
-#
-# type: :list or :call
 class ForNode < Struct.new(:variable, :list_expression, :expressions)
   include Visitable
-  include Enumerable
   include Indentable
+  include Walkable
 
   alias for_variable variable
 
-  def each(&block)
-    expressions.each &block
+  def children
+    [variable, list_expression, expressions]
   end
 end
 
@@ -398,7 +427,6 @@ class ForNodeList < ForNode; end
 # Ex: 1st line preserves 5 spaces, 2nd line preserves 6 spaces, etc...
 class LineContinuation < Struct.new(:lines)
   include Visitable
-  include Enumerable
 
   def size
     lines.size
@@ -406,10 +434,6 @@ class LineContinuation < Struct.new(:lines)
 
   def [](idx)
     lines[idx]
-  end
-
-  def each(&block)
-    lines.each &block
   end
 end
 
@@ -440,12 +464,27 @@ end
 class TryNode < Struct.new(:try_block, :catch_nodes, :ensure_block)
   include Visitable
   include Indentable
+  include Walkable
+
+  def children
+    [try_block, catch_nodes, ensure_block]
+  end
 end
 
-class CatchNode < Struct.new(:regexp, :block)
+class CatchNode < Struct.new(:regexp, :expressions)
   include Visitable
+  include Walkable
+
+  def children
+    [expressions]
+  end
 end
 
 class HeredocNode < Struct.new(:pattern, :string_node)
   include Visitable
+  include Walkable
+
+  def children
+    [string_node]
+  end
 end

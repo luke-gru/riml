@@ -14,7 +14,7 @@ module Riml
       %w(echo echon echohl execute sleep)
     IGNORECASE_CAPABLE_BINARY_OPERATORS =
       %w(== != > >= < <= =~ !~)
-    COMPARISON_BINARY_OPERATORS = IGNORECASE_CAPABLE_BINARY_OPERATORS.map {|o| [o, o + '#']}.flatten
+    COMPARISON_OPERATORS = IGNORECASE_CAPABLE_BINARY_OPERATORS.map {|o| [o, o + '#']}.flatten
     # :h function-list
     BUILTIN_FUNCTIONS =
     %w(

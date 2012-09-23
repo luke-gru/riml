@@ -565,16 +565,16 @@ module Riml
     class CatchNodeVisitor < Visitor
       # regexp, block
       def compile(node)
-        regexp, block = node.regexp, node.block
+        regexp, exprs = node.regexp, node.expressions
         node.compiled_output = "catch"
-        block.parent_node = node
+        exprs.parent_node = node
         if regexp
           regexp.parent_node = node
           node.compiled_output << " "
           regexp.accept(visitor_for_node(regexp))
         end
         node.compiled_output << "\n"
-        block.accept(visitor_for_node(block))
+        exprs.accept(visitor_for_node(exprs))
         node.compiled_output
       end
     end
