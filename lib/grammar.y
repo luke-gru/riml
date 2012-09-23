@@ -72,7 +72,7 @@ rule
 
   Terminator:
     NEWLINE
-  | ";"
+  | ';'
   ;
 
   # All hard-coded values
@@ -110,30 +110,32 @@ rule
 
   ListLiteral:
     '[' ListItems ']'                     { result = val[1] }
+  | '[' ListItems ',' ']'                 { result = val[1] }
   ;
 
   ListItems:
     /* nothing */                         { result = [] }
   | Literal                               { result = val }
   | VariableRetrieval                     { result = val }
-  | ListItems "," Literal                 { result = val[0] << val[2] }
-  | ListItems "," VariableRetrieval       { result = val[0] << val[2] }
+  | ListItems ',' Literal                 { result = val[0] << val[2] }
+  | ListItems ',' VariableRetrieval       { result = val[0] << val[2] }
   ;
 
   Dictionary
     DictionaryLiteral                     { result = DictionaryNode.new(val[0]) }
   ;
 
-  # {'key' => 'value', 'key' => 'value'}
+  # {'key': 'value', 'key': 'value'}
   DictionaryLiteral:
     '{' DictItems '}'                     { result = Hash[val[1]] }
+  | '{' DictItems ',' '}'                 { result = Hash[val[1]] }
   ;
 
   # [[key, value], [key, value]]
   DictItems:
     /* nothing */                         { result = [] }
   | DictItem                              { result = val }
-  | DictItems "," DictItem                { result = val[0] << val[2] }
+  | DictItems ',' DictItem                { result = val[0] << val[2] }
   ;
 
   # [key, value]
@@ -196,9 +198,9 @@ rule
   ;
 
   Call:
-    Scope DefCallIdentifier "(" ArgList ")"       { result = CallNode.new(val[0], val[1], val[3]) }
-  | CALL Scope DefCallIdentifier "(" ArgList ")"  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
-  | BUILTIN_COMMAND "(" ArgList ")"               { result = CallNode.new(nil, val[0], val[2]) }
+    Scope DefCallIdentifier '(' ArgList ')'       { result = CallNode.new(val[0], val[1], val[3]) }
+  | CALL Scope DefCallIdentifier '(' ArgList ')'  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | BUILTIN_COMMAND '(' ArgList ')'               { result = CallNode.new(nil, val[0], val[2]) }
   | BUILTIN_COMMAND ArgList                       { result = CallNode.new(nil, val[0], val[1]) }
   ;
 
@@ -293,8 +295,8 @@ rule
   # [scope_modifier, name, args, keyword, expressions]
   Def:
     DEF Scope DefCallIdentifier Keyword Block END                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
-  | DEF Scope DefCallIdentifier "(" ParamList ")" Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
-  | DEF Scope DefCallIdentifier "(" ParamList ',' SPLAT ")" Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+  | DEF Scope DefCallIdentifier '(' ParamList ')' Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
+  | DEF Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   DefCallIdentifier:

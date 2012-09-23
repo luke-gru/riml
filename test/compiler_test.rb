@@ -345,6 +345,17 @@ Viml
   assert_equal expected2, compile(riml2)
   end
 
+  test "lists can take optional comma at end if not empty" do
+    riml = <<Riml
+alist = ["aap", "mies", "noot",]
+Riml
+
+    expected = <<Viml
+let s:alist = ["aap", "mies", "noot"]
+Viml
+  assert_equal expected, compile(riml)
+  end
+
   test "list-literal concatenation" do
     riml = <<Riml
 alist = ["aap", "mies"] + ["noot"]
@@ -424,7 +435,8 @@ Viml
     riml2 = 'emptyDict = {}'
     expected2 = 'let s:emptyDict = {}' << "\n"
 
-    riml3 = 'dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}'
+    # dictionary with optional comma at the end
+    riml3 = 'dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow",},}'
     expected3 = 'let s:dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}' << "\n"
 
     assert_equal expected, compile(riml)
