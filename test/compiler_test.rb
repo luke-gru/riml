@@ -39,26 +39,63 @@ def b:another_method(a, b)
   else
     true
   end
+  call SomeFunction()
 end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new(
-        [IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))]))]
-      ))
+      DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new([
+        IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([
+          FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))])),
+        ExplicitCallNode.new(nil, "SomeFunction", [])
+        ])
+      )
     ])
 
     expected = <<Viml
 function! b:another_method(a, b)
   if (hello())
-    return 0
+    0
   else
-    return 1
+    1
   endif
+  return call SomeFunction()
 endfunction
 Viml
 
     assert_equal expected, compile(nodes)
+    assert_equal expected, compile(riml)
+  end
+
+  test "branches and returning (more advanced)" do
+    riml = <<Riml
+def method(a,b,c)
+  if (some_var)
+    var = false
+  else
+    var = true
+    call SomeFunction()
+  end
+  if another_var
+    call SomeOtherFunction()
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:method(a, b, c)
+  if (some_var)
+    let var = 0
+  else
+    let var = 1
+    return call SomeFunction()
+  endif
+  if (another_var)
+    return call SomeOtherFunction()
+  endif
+endfunction
+Viml
+
     assert_equal expected, compile(riml)
   end
 

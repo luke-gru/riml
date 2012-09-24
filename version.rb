@@ -1,4 +1,4 @@
 module Riml
-  # 0.0.9 since Sept. 3, 2012
-  VERSION = [0,0,9]
+  # 0.1.0 since Sept 23, 2012
+  VERSION = [0,1,0]
 end

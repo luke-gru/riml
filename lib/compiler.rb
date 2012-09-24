@@ -1,5 +1,6 @@
 require File.expand_path('../nodes', __FILE__)
 require File.expand_path('../ast_rewriter', __FILE__)
+require 'set'
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -35,6 +36,10 @@ module Riml
 
       def visit(node)
         @value = compile(node)
+        if node.explicit_return
+          @value = "return #{@value}"
+        end
+        @value << "\n" if node.add_newline and @value[-1] != "\n"
         propagate_up_tree(node, @value)
       end
 
@@ -57,13 +62,11 @@ module Riml
 
         node.condition.accept(condition_visitor)
         node.compiled_output << ")\n"
-        output = node.compiled_output; node.compiled_output = ''
-        node.body.accept(NodesVisitor.new)
+        node.body.accept(NodesVisitor.new(:propagate_up_tree => false))
 
-        node.compiled_output.each_line do |line|
-          line =~ /else\n\Z/ ? output << line : output << node.indent + line
+        node.body.compiled_output.each_line do |line|
+          node.compiled_output << (line =~ /else\n\Z/ ? line : node.indent + line)
         end
-        node.compiled_output = output
         node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
         node.compiled_output << "endif\n"
       end
@@ -127,12 +130,13 @@ module Riml
           begin
             visitor = visitor_for_node(node)
             next_node = nodes.nodes[i+1]
-            if node.scope && LiteralNode === node &&
-              !(node.respond_to?(:omit_return) && node.omit_return) &&
-              (node == nodes.last || ElseNode === next_node)
-              node.explicit_return = true
-            end
             node.parent_node = nodes
+            if DefNode === node
+              node.accept(DrillDownVisitor.new(:establish_tree_hierarchy => true))
+              node.accept(DrillDownVisitor.new(:establish_returns => true))
+            elsif ElseNode === next_node
+              node.add_newline = true
+            end
             node.accept(visitor)
           rescue
             STDERR.puts "Bad Node: #{node.inspect}" if Compiler.debug?
@@ -164,13 +168,7 @@ module Riml
           node.value
         end.to_s
 
-        node.compiled_output = begin
-          if node.explicit_return
-            "return #{value}\n"
-          else
-            value
-          end
-        end
+        node.compiled_output = value
       rescue NoMethodError
         if GetVariableNode === node
           node.accept(GetVariableNodeVisitor.new)
@@ -436,6 +434,10 @@ module Riml
       def initialize(options={})
         if options[:establish_scope]
           @scope = @establish_scope = options[:establish_scope]
+        elsif options[:establish_returns]
+          @establish_returns = true
+        elsif options[:establish_tree_hierarchy]
+          @establish_tree_hierarchy = true
         end
         super
       end
@@ -443,19 +445,64 @@ module Riml
       def visit(node)
         if @establish_scope
           establish_scope(node)
+        elsif @establish_returns
+          @defnode ||= node
+          establish_returns(@defnode.body.last)
+        elsif @establish_tree_hierarchy
+          establish_tree_hierarchy(node)
+        end
+      end
+
+      def establish_scope(node)
+        node.scope = @scope
+        walk_node!(node) if node.respond_to?(:each)
+      end
+
+      def establish_tree_hierarchy(node)
+        if node.respond_to?(:children)
+          node.children.each do |child|
+            child.parent_node = node
+          end
+        end
+        walk_node!(node) if node.respond_to?(:each)
+      end
+
+      def establish_returns(node)
+        return unless node
+
+        visited = Set.new
+        until node == @defnode
+          visited << node
+
+          if node.returnable?
+            node.explicit_return = true
+            node.add_newline = true
+            # what if it's a nested if block?
+          elsif node.respond_to?(:body) && !visited.include?(node.body.last)
+            node = node.body.last
+            next
+          # look for previous if block
+          elsif node.is_a?(IfNode) &&
+                (prev_if_node = node.parent.previous_to(node)).is_a?(IfNode) &&
+                !visited.include?(prev_if_node)
+
+            # node = preceding if node
+            node = prev_if_node
+            next
+          end
+
+          if node.respond_to?(:previous) && node.previous
+            node = node.previous
+          elsif node.parent
+            node = node.parent
+          end
         end
       end
 
       private
-      def establish_scope(node)
-        node.scope = @scope
-
-        if node.respond_to?(:accept) && node.respond_to?(:each)
-          node.each do |expr|
-            expr.accept(self) if expr.respond_to?(:accept)
-          end
-        elsif SetVariableNode === node
-          node.value.accept(self)
+      def walk_node!(node)
+        node.each do |expr|
+          expr.accept(self) if expr.respond_to?(:accept)
         end
       end
     end
