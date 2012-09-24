@@ -48,28 +48,38 @@ module Walkable
   alias walk each
 
   def previous
-    return unless index
-    children[index - 1]
+    idx = index
+    return unless idx
+    children[idx - 1]
   end
-  alias previous_node previous
 
-  def previous_to(node)
-    index = children.index(node)
-    return unless index
-    children[index - 1]
+  def child_previous_to(node)
+    idx = children.index(node)
+    return unless idx
+    children[idx - 1]
+  end
+
+  def previous_sibling
+    return unless parent
+    parent.child_previous_to(self)
   end
 
   def next
-    return unless index
-    children[index + 1]
+    idx = index
+    return unless idx
+    children[idx + 1]
   end
-  alias next_node next
 
-  # opposite of `previous_to`
-  def after(node)
-    index = children.index(node)
-    return unless index
-    children[index + 1]
+  # opposite of `child_previous_to`
+  def child_after(node)
+    idx = children.index(node)
+    return unless idx
+    children[idx + 1]
+  end
+
+  def next_sibling
+    return unless parent
+    parent.child_after(self)
   end
 
   def index

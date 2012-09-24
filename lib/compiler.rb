@@ -483,7 +483,7 @@ module Riml
             next
           # look for previous if block
           elsif node.is_a?(IfNode) &&
-                (prev_if_node = node.parent.previous_to(node)).is_a?(IfNode) &&
+                (prev_if_node = node.previous_sibling).is_a?(IfNode) &&
                 !visited.include?(prev_if_node)
 
             # node = preceding if node
