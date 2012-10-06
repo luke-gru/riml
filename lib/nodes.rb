@@ -5,18 +5,13 @@ module Visitable
     visitor.visit(self)
   end
 
-  attr_accessor :parent_node, :scope, :add_newline
+  attr_accessor :parent_node, :scope, :force_newline
   alias parent parent_node
   alias parent= parent_node=
 
-  attr_reader :explicit_return
   attr_writer :compiled_output
   def compiled_output
     @compiled_output ||= ''
-  end
-
-  def returnable?
-    respond_to?(:explicit_return=)
   end
 
   # catches "descendant_of_#{some_class}?" methods
@@ -88,10 +83,6 @@ module Walkable
 
 end
 
-module Returnable
-  attr_writer :explicit_return
-end
-
 module Indentable
   def indent
     @indent ||= " " * 2
@@ -108,12 +99,18 @@ class Nodes < Struct.new(:nodes)
     self
   end
 
-  def pop
-    nodes.pop
+  # forward missing methods to `nodes` array
+  def method_missing(method, *args, &block)
+    if nodes.respond_to?(method)
+      nodes.send(method, *args, &block)
+    else
+      super
+    end
   end
 
-  def last
-    nodes.last
+  def respond_to_missing?(method, include_private = false)
+    return true if nodes.respond_to?(method)
+    super
   end
 
   def children
@@ -125,7 +122,6 @@ end
 # true, false, nil, etc.
 class LiteralNode < Struct.new(:value)
   include Visitable
-  include Returnable
 end
 
 class KeywordNode < Struct.new(:value)
@@ -136,7 +132,6 @@ class NumberNode < LiteralNode; end
 
 class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or single-quoted
   include Visitable
-  include Returnable
 end
 
 class RegexpNode < LiteralNode; end
@@ -172,6 +167,15 @@ class ContinueNode < KeywordNode
   def initialize() super("continue\n") end
 end
 
+class ReturnNode < Struct.new(:expression)
+  include Visitable
+  include Walkable
+
+  def children
+    [expression]
+  end
+end
+
 module FullyNameable
   def self.included(base)
     base.class_eval do
@@ -196,7 +200,6 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include Riml::Constants
   include Visitable
   include FullyNameable
-  include Returnable
   include Walkable
 
   def builtin_function?
@@ -209,15 +212,6 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
     scope_modifier.nil? and BUILTIN_COMMANDS.include?(name)
   end
   alias no_parens_necessary? builtin_command?
-
-  # override explicit_return= for builtin_commands, which
-  # can't be returned from functions
-  # Ex: return echo "hi" is WRONG
-  def respond_to?(method, include_private = false)
-    return super unless method == :explicit_return=
-    return false if builtin_command?
-    true
-  end
 
   def children
     arguments
@@ -234,7 +228,6 @@ class OperatorNode < Struct.new(:operator, :operands)
   include Riml::Constants
   include Visitable
   include Walkable
-  include Returnable
 
   def children
     operands
@@ -274,7 +267,6 @@ class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
   include Visitable
   include FullyNameable
   include Walkable
-  #include Returnable TODO: implement this in the AST_Rewriter
 
   def children
     [value]
@@ -288,7 +280,6 @@ class SetSpecialVariableNode < Struct.new(:prefix, :name, :value)
   include Visitable
   include FullyNameable
   include Walkable
-  include Returnable
 
   def children
     [value]
@@ -299,7 +290,6 @@ end
 class SetVariableNodeList < Struct.new(:list, :expression)
   include Visitable
   include Walkable
-  include Returnable
 
   def children
     [list, expression]
@@ -333,17 +323,14 @@ class GetVariableNode < Struct.new(:scope_modifier, :name)
   include Visitable
   include FullyNameable
   include QuestionVariableExistence
-  include Returnable
   attr_accessor :node_type
 end
-
 
 # &autoindent
 # @q
 class GetSpecialVariableNode < Struct.new(:prefix, :name)
   include Visitable
   include FullyNameable
-  include Returnable
   attr_accessor :node_type
 end
 
@@ -365,15 +352,28 @@ end
 class GetCurlyBraceNameNode < Struct.new(:scope_modifier, :variable)
   include Visitable
   include Walkable
-  include Returnable
 
   def children
     [variable]
   end
 end
 
+class UnletVariableNode < Struct.new(:variables)
+  include Visitable
+  include Walkable
+
+  def <<(variable)
+    variables << variable
+    self
+  end
+
+  def children
+    variables
+  end
+end
+
 # Method definition.
-class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
+class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :expressions)
   include Visitable
   include Indentable
   include FullyNameable
@@ -412,7 +412,7 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :body)
   end
 
   def children
-    [body]
+    expressions
   end
 end
 
@@ -452,7 +452,7 @@ class ElseNode < Struct.new(:expressions)
   end
 
   def children
-    [expressions]
+    expressions
   end
 end
 
@@ -503,7 +503,6 @@ end
 # dict['key1']['key2']
 class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
-  include Returnable
 end
 
 class DictGetBracketNode < DictGetNode; end
@@ -513,14 +512,12 @@ class DictGetDotNode < DictGetNode; end
 # dict.key.key2 = 'val'
 class DictSetNode < Struct.new(:dict, :keys, :val)
   include Visitable
-  include Returnable
 end
 
 # list_or_dict[0]
 # function()[identifier]
 class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   include Visitable
-  include Returnable
   alias list list_or_dict
   alias dict list_or_dict
 end
@@ -540,16 +537,28 @@ class CatchNode < Struct.new(:regexp, :expressions)
   include Walkable
 
   def children
-    [expressions]
+    expressions
   end
 end
 
 class HeredocNode < Struct.new(:pattern, :string_node)
   include Visitable
   include Walkable
-  include Returnable
 
   def children
     [string_node]
+  end
+end
+
+class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
+  include Visitable
+  include Walkable
+
+  def superclass?
+    not superclass_name.nil?
+  end
+
+  def children
+    expressions
   end
 end

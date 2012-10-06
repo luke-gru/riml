@@ -168,7 +168,7 @@ module Riml
     private
     def track_indent_level(chunk, identifier)
       case identifier.to_sym
-      when :def, :while, :until, :for, :try
+      when :def, :while, :until, :for, :try, :class
         @current_indent += 2
         @indent_pending = true
       when :if, :unless

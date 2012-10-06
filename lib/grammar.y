@@ -5,15 +5,17 @@ token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH ENSURE
 token FOR IN
 token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
+token RETURN
 token NEWLINE
 token NUMBER
 token STRING_D STRING_S # single- and double-quoted
 token HEREDOC
 token REGEXP
 token TRUE FALSE NIL
-token LET IDENTIFIER DICT_VAL_REF
+token LET UNLET IDENTIFIER DICT_VAL_REF
 token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
 token FINISH
+token CLASS
 
 prechigh
   right '!'
@@ -55,7 +57,9 @@ rule
   | ListOrDictGet                         { result = val[0] }
   | DictSet                               { result = val[0] }
   | Def                                   { result = val[0] }
+  | Return                                { result = val[0] }
   | VariableRetrieval                     { result = val[0] }
+  | UnletVariable                         { result = val[0] }
   | Literal                               { result = val[0] }
   | Heredoc                               { result = val[0] }
   | If                                    { result = val[0] }
@@ -65,6 +69,7 @@ rule
   | Until                                 { result = val[0] }
   | For                                   { result = val[0] }
   | Try                                   { result = val[0] }
+  | ClassDefinition                       { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
   | LoopConstruct                         { result = val[0] }
@@ -173,8 +178,8 @@ rule
   ;
 
   DictSet:
-    VariableRetrieval VariableDictGetWithDot '=' Literal     { result = DictSetNode.new(val[0], val[1], val[3]) }
-  | LET VariableRetrieval VariableDictGetWithDot '=' Literal { result = DictSetNode.new(val[1], val[2], val[4]) }
+    VariableRetrieval VariableDictGetWithDot '=' Expression     { result = DictSetNode.new(val[0], val[1], val[3]) }
+  | LET VariableRetrieval VariableDictGetWithDot '=' Expression { result = DictSetNode.new(val[1], val[2], val[4]) }
   ;
 
   # can only tell if the identifier is a list or dict at compile time
@@ -285,6 +290,11 @@ rule
   | Scope CurlyBraceName                        { result = GetCurlyBraceNameNode.new(val[0], val[1])}
   ;
 
+  UnletVariable:
+    UNLET VariableRetrieval                               { result = UnletVariableNode.new([ val[1] ]) }
+  | UnletVariable VariableRetrieval                       { result = val[0] << val[1] }
+  ;
+
   CurlyBraceName:
     IDENTIFIER '{' VariableRetrieval '}'               { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[0]), CurlyBracePart.new(val[2]) ]) }
   | '{' VariableRetrieval '}' IDENTIFIER               { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[1]), CurlyBracePart.new(val[3]) ]) }
@@ -297,6 +307,10 @@ rule
     DEF Scope DefCallIdentifier Keyword Block END                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
   | DEF Scope DefCallIdentifier '(' ParamList ')' Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
   | DEF Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+  ;
+
+  Return:
+    RETURN Expression       { result = ReturnNode.new(val[1]) }
   ;
 
   DefCallIdentifier:
@@ -381,25 +395,30 @@ rule
     Block                                        { result = val[0] }
   | NEWLINE Expressions ELSE NEWLINE Expressions { result = val[1] << ElseNode.new(val[4]) }
   ;
+
+  ClassDefinition:
+    CLASS IDENTIFIER Block END                   { result = ClassDefinitionNode.new(val[1], nil, val[2]) }
+  | CLASS IDENTIFIER '<' IDENTIFIER Block END    { result = ClassDefinitionNode.new(val[1], val[3], val[4]) }
+  ;
 end
 
 ---- header
   require File.expand_path("../lexer", __FILE__)
   require File.expand_path("../nodes", __FILE__)
-  require 'pp'
-
+  require File.expand_path("../ast_rewriter", __FILE__)
 ---- inner
   # This code will be put as-is in the parser class
 
   # parses tokens or code into output nodes
-  def parse(object)
+  def parse(object, options = {})
     @tokens = if tokens?(object)
       object
     elsif code?(object)
       Riml::Lexer.new.tokenize(object)
     end
-    pp(@tokens) unless ENV["RIML_DEBUG"].nil?
-    do_parse
+    ast = do_parse
+    return ast if options[:rewrite_ast] == false
+    AST_Rewriter.new(ast).rewrite
   end
 
   def next_token
@@ -407,9 +426,8 @@ end
   end
 
   private
-  # is an array of arrays and first five inner arrays are all doubles
   def tokens?(object)
-    Array === object and object[0..4].all? {|e| e.respond_to?(:size) and e.size == 2}
+    Array === object
   end
 
   def code?(object)

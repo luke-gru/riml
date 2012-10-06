@@ -35,11 +35,11 @@ module Riml
     end
 
     # parse code (or tokens) into nodes
-    def parse(object)
+    def parse(object, options={})
       unless tokens?(object) || code?(object)
         raise ArgumentError, "object must be tokens or code, is #{object}"
       end
-      parser.parse(object)
+      parser.parse(object, options)
     end
 
     # compile nodes (or tokens or code) into output code
@@ -55,9 +55,8 @@ module Riml
     end
 
     private
-    # is an array of arrays and first five inner arrays are all doubles
     def tokens?(object)
-      Array === object and object[0..4].all? {|e| e.respond_to?(:size) and e.size == 2}
+      Array === object
     end
 
     def code?(object)

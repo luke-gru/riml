@@ -11,13 +11,13 @@ class BasicCompilerTest < Riml::TestCase
   test "basic function compiles" do
     riml = <<Riml
 def a_method(a, b)
-  true
+  return true
 end
 Riml
 
     nodes = Nodes.new([
       DefNode.new(nil, "a_method", ['a', 'b'], nil,
-        Nodes.new([TrueNode.new])
+        Nodes.new([ ReturnNode.new(TrueNode.new) ])
       )
     ])
 
@@ -31,7 +31,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "branching function compiles and returns on all branches" do
+  test "branching function compiles" do
     riml = <<Riml
 def b:another_method(a, b)
   if hello()
@@ -39,7 +39,7 @@ def b:another_method(a, b)
   else
     true
   end
-  call SomeFunction()
+  return call SomeFunction()
 end
 Riml
 
@@ -47,7 +47,7 @@ Riml
       DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new([
         IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([
           FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))])),
-        ExplicitCallNode.new(nil, "SomeFunction", [])
+        ReturnNode.new(ExplicitCallNode.new(nil, "SomeFunction", []))
         ])
       )
     ])
@@ -64,38 +64,6 @@ endfunction
 Viml
 
     assert_equal expected, compile(nodes)
-    assert_equal expected, compile(riml)
-  end
-
-  test "branches and returning (more advanced)" do
-    riml = <<Riml
-def method(a,b,c)
-  if (some_var)
-    var = false
-  else
-    var = true
-    call SomeFunction()
-  end
-  if another_var
-    call SomeOtherFunction()
-  end
-end
-Riml
-
-    expected = <<Viml
-function! s:method(a, b, c)
-  if (some_var)
-    let var = 0
-  else
-    let var = 1
-    return call SomeFunction()
-  endif
-  if (another_var)
-    return call SomeOtherFunction()
-  endif
-endfunction
-Viml
-
     assert_equal expected, compile(riml)
   end
 
@@ -173,6 +141,17 @@ Viml
     riml     =   "n:a = 'no default scoping! Hooray!'"
     expected = "let a = 'no default scoping! Hooray!'\n"
     assert_equal expected, compile(riml)
+  end
+
+  test "unlet works" do
+    riml = "unlet b:a"
+    expected = "unlet! b:a"
+
+    riml2 = "unlet b:a b:b b:c"
+    expected2 = "unlet! b:a b:b b:c"
+
+    assert_equal expected, compile(riml)
+    assert_equal expected2, compile(riml2)
   end
 
   test "setting variable to nil frees its memory" do
@@ -907,6 +886,48 @@ Riml
 if (["string"] ==# [0])
   echo "never get here"
 endif
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "basic class definition" do
+    riml = <<Riml
+class MyClass
+  def initialize(arg1, arg2, *args)
+  end
+end
+Riml
+
+    expected = <<Viml
+function! g:MyClassConstructor(arg1, arg2, ...)
+  let myClassObj = {}
+  return myClassObj
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "class definition with initialize function" do
+    riml = <<Riml
+class MyClass
+  def initialize(arg1, arg2, *args)
+    self.name = arg1
+    self.country = arg2
+    self.lastArg = args[0] if args[0]
+  end
+end
+Riml
+
+    expected = <<Viml
+function! g:MyClassConstructor(arg1, arg2, ...)
+  let myClassObj = {}
+  let myClassObj.name = a:arg1
+  let myClassObj.country = a:arg2
+  if (a:000[0])
+    let myClassObj.lastArg = a:000[0]
+  endif
+  return myClassObj
+endfunction
 Viml
     assert_equal expected, compile(riml)
   end

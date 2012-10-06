@@ -12,6 +12,7 @@ module Riml
     def rewrite
       StrictEqualsComparisonOperator.new(ast).rewrite_on_match
       VarEqualsComparisonOperator.new(ast).rewrite_on_match
+      ClassDefinitionToFunctions.new(ast).rewrite_on_match
       ast
     end
 
@@ -59,5 +60,43 @@ module Riml
         ]
       end
     end
+
+    class ClassDefinitionToFunctions < AST_Rewriter
+      def match(node)
+        ClassDefinitionNode === node
+      end
+
+      def replace(node)
+        name, expressions = node.name, node.expressions
+        constructor = expressions.detect {|e| DefNode === e && e.name == 'initialize'}
+        constructor.scope_modifier = 'g:' unless constructor.scope_modifier
+        constructor.name = "#{name}Constructor"
+        # set up dictionary variable at top of function
+        dict_name = name[0].downcase + name[1..-1] + "Obj"
+        constructor.expressions.unshift(
+          SetVariableNode.new(nil, dict_name, DictionaryNode.new({}))
+        )
+        constructor.expressions.push(
+          ReturnNode.new(GetVariableNode.new(nil, dict_name))
+        )
+        ConstructorSelfReferencesToVarName.new(dict_name).rewrite_on_match(constructor)
+      end
+
+      class ConstructorSelfReferencesToVarName < AST_Rewriter
+        attr_reader :dict_name
+        def initialize(dict_name)
+          @dict_name = dict_name
+        end
+
+        def match(node)
+          DictSetNode === node && node.dict.name == "self"
+        end
+
+        def replace(node)
+          node.dict.name = dict_name
+        end
+      end
+    end
+
   end
 end

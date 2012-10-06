@@ -1,6 +1,5 @@
 require File.expand_path('../nodes', __FILE__)
 require File.expand_path('../ast_rewriter', __FILE__)
-require 'set'
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -36,10 +35,7 @@ module Riml
 
       def visit(node)
         @value = compile(node)
-        if node.explicit_return
-          @value = "return #{@value}"
-        end
-        @value << "\n" if node.add_newline and @value[-1] != "\n"
+        @value << "\n" if node.force_newline and @value[-1] != "\n"
         propagate_up_tree(node, @value)
       end
 
@@ -131,11 +127,8 @@ module Riml
             visitor = visitor_for_node(node)
             next_node = nodes.nodes[i+1]
             node.parent_node = nodes
-            if DefNode === node
-              node.accept(DrillDownVisitor.new(:establish_tree_hierarchy => true))
-              node.accept(DrillDownVisitor.new(:establish_returns => true))
-            elsif ElseNode === next_node
-              node.add_newline = true
+            if ElseNode === next_node
+              node.force_newline = true
             end
             node.accept(visitor)
           rescue
@@ -198,7 +191,6 @@ module Riml
     ListNodeVisitor = LiteralNodeVisitor
     DictionaryNodeVisitor = LiteralNodeVisitor
 
-    ReturnNodeVisitor = LiteralNodeVisitor
     FinishNodeVisitor = LiteralNodeVisitor
     ContinueNodeVisitor = LiteralNodeVisitor
     BreakNodeVisitor = LiteralNodeVisitor
@@ -211,13 +203,23 @@ module Riml
       end
     end
 
+    class ReturnNodeVisitor < Visitor
+      def compile(node)
+        node.expression.parent_node = node
+        node.compiled_output = "return "
+        node.expression.accept(visitor_for_node(node.expression))
+        node.force_newline = true
+        node.compiled_output
+      end
+    end
+
     # common visiting methods for nodes that are scope modified with prefixes
     class ScopedVisitor < Visitor
       private
       def set_modifier(node)
         # Ex: n:myVariable = "override riml default scoping" compiles into:
         #       myVariable = "override riml default scoping"
-        return node.scope_modifier = "" if node.scope_modifier == "n:"
+        node.scope_modifier = "" if node.scope_modifier == "n:"
         return node.scope_modifier if node.scope_modifier
         node.scope_modifier = get_scope_modifier_for_variable_name(node)
       end
@@ -276,8 +278,7 @@ module Riml
         node.value.parent_node = node
         node.value.accept(value_visitor)
         node.compiled_output = "unlet! #{node.full_name}" if node.value.compiled_output == 'nil'
-
-        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
+        node.force_newline = true
         node.compiled_output
       end
     end
@@ -302,7 +303,7 @@ module Riml
         value_visitor = visitor_for_node(node.value)
         node.value.parent_node = node
         node.value.accept(value_visitor)
-        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
+        node.force_newline = true
         node.compiled_output
       end
     end
@@ -363,6 +364,18 @@ module Riml
       end
     end
 
+    class UnletVariableNodeVisitor < Visitor
+      def compile(node)
+        node.variables.each {|v| v.parent_node = node}
+        node.compiled_output = "unlet!"
+        node.variables.each do |var|
+          node.compiled_output << " "
+          var.accept(visitor_for_node(var))
+        end
+        node.compiled_output
+      end
+    end
+
     # operator, operands
     class BinaryOperatorNodeVisitor < Visitor
       def compile(node)
@@ -384,7 +397,6 @@ module Riml
       end
     end
 
-    # scope_modifier, name, parameters, keyword, body
     class DefNodeVisitor < Visitor
       def visit(node)
         setup_local_scope_for_descendants(node)
@@ -403,12 +415,12 @@ module Riml
           node.name
         end << "(#{params.join(', ')})"
         declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
-        node.body.parent_node = node
-        node.body.accept NodesVisitor.new(:propagate_up_tree => false)
+        node.expressions.parent_node = node
+        node.expressions.accept NodesVisitor.new(:propagate_up_tree => false)
 
         body = ""
-        unless node.body.compiled_output.empty?
-          node.body.compiled_output.each_line do |line|
+        unless node.expressions.compiled_output.empty?
+          node.expressions.compiled_output.each_line do |line|
             body << node.indent + line
           end
         end
@@ -417,7 +429,7 @@ module Riml
 
       private
       def setup_local_scope_for_descendants(node)
-        node.body.accept(DrillDownVisitor.new(:establish_scope => node))
+        node.expressions.accept(EstablishScopeVisitor.new(:scope => node))
       end
 
       def process_parameters!(node)
@@ -430,80 +442,27 @@ module Riml
     # helper to drill down to all descendants of a certain node and do
     # something to all or a set of them
     class DrillDownVisitor < Visitor
-
-      def initialize(options={})
-        if options[:establish_scope]
-          @scope = @establish_scope = options[:establish_scope]
-        elsif options[:establish_returns]
-          @establish_returns = true
-        elsif options[:establish_tree_hierarchy]
-          @establish_tree_hierarchy = true
+      def walk_node!(node)
+        node.each do |expr|
+          expr.accept(self) if expr.respond_to?(:accept)
         end
+      end
+    end
+
+    class EstablishScopeVisitor < DrillDownVisitor
+      def initialize(options)
+        options[:propagate_up_tree] = false
+        @scope = options[:scope]
         super
       end
 
       def visit(node)
-        if @establish_scope
-          establish_scope(node)
-        elsif @establish_returns
-          @defnode ||= node
-          establish_returns(@defnode.body.last)
-        elsif @establish_tree_hierarchy
-          establish_tree_hierarchy(node)
-        end
+        establish_scope(node)
       end
 
       def establish_scope(node)
         node.scope = @scope
         walk_node!(node) if node.respond_to?(:each)
-      end
-
-      def establish_tree_hierarchy(node)
-        if node.respond_to?(:children)
-          node.children.each do |child|
-            child.parent_node = node
-          end
-        end
-        walk_node!(node) if node.respond_to?(:each)
-      end
-
-      def establish_returns(node)
-        return unless node
-
-        visited = Set.new
-        until node == @defnode
-          visited << node
-
-          if node.returnable?
-            node.explicit_return = true
-            node.add_newline = true
-            # what if it's a nested if block?
-          elsif node.respond_to?(:body) && !visited.include?(node.body.last)
-            node = node.body.last
-            next
-          # look for previous if block
-          elsif node.is_a?(IfNode) &&
-                (prev_if_node = node.previous_sibling).is_a?(IfNode) &&
-                !visited.include?(prev_if_node)
-
-            # node = preceding if node
-            node = prev_if_node
-            next
-          end
-
-          if node.respond_to?(:previous) && node.previous
-            node = node.previous
-          elsif node.parent
-            node = node.parent
-          end
-        end
-      end
-
-      private
-      def walk_node!(node)
-        node.each do |expr|
-          expr.accept(self) if expr.respond_to?(:accept)
-        end
       end
     end
 
@@ -554,7 +513,7 @@ module Riml
         node.list_expression.parent_node = node
         yield
         node.expressions.parent_node = node
-        node.expressions.accept(DrillDownVisitor.new(:establish_scope => node))
+        node.expressions.accept(EstablishScopeVisitor.new(:scope => node))
         node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
         body = node.expressions.compiled_output
         body.each_line do |line|
@@ -665,9 +624,16 @@ module Riml
 
     class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end
 
+    class ClassDefinitionNodeVisitor < ScopedVisitor
+      def compile(node)
+        node.expressions.parent_node = node
+        node.expressions.accept(NodesVisitor.new)
+        node.compiled_output
+      end
+    end
+
     # compiles nodes into output code
     def compile(root_node)
-      AST_Rewriter.new(root_node).rewrite
       root_visitor = NodesVisitor.new
       root_node.accept(root_visitor)
       root_node.compiled_output
