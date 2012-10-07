@@ -183,7 +183,7 @@ Viml
     riml = <<Riml
 a = "should be script local"
 b:a = "should be buffer local"
-def script_local_function
+def script_local_function()
   a = "should be local to function"
 end
 Riml
@@ -767,6 +767,23 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "define dictionary method" do
+    riml = <<Riml
+myDict = {'msg': 'hey'}
+def myDict.echoMsg()
+  echo self.msg
+end
+Riml
+
+    expected = <<Viml
+let s:myDict = {'msg': 'hey'}
+function! s:myDict.echoMsg() dict
+  echo self.msg
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "curly-braces function call" do
     riml = <<Riml
 n:param = 2
@@ -929,6 +946,38 @@ function! g:MyClassConstructor(arg1, arg2, ...)
   return myClassObj
 endfunction
 Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "classes with methods" do
+    riml = <<Riml
+class MyClass
+  def initialize(arg1, arg2, *args)
+  end
+
+  defm getData
+    return self.data
+  end
+
+  defm getOtherData
+    return self.otherData
+  end
+end
+Riml
+
+    expected = <<Viml
+function! g:MyClassConstructor(arg1, arg2, ...)
+  let myClassObj = {}
+  function! myClassObj.getData() dict
+    return self.data
+  endfunction
+  function! myClassObj.getOtherData() dict
+    return self.otherData
+  endfunction
+  return myClassObj
+endfunction
+Viml
+
     assert_equal expected, compile(riml)
   end
 end

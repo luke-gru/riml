@@ -2,7 +2,7 @@ require File.expand_path('../test_helper', __FILE__)
 
 class BasicLexerTest < Riml::TestCase
 
-  test "basic lexing" do
+  test "if statement" do
     riml = <<-Riml
     if 1 #### comment
       print '...'
@@ -25,7 +25,7 @@ class BasicLexerTest < Riml::TestCase
     assert_equal expected, lex(riml)
   end
 
-  test "lexing a ruby-like if this then that end expression" do
+  test "ruby-like if this then that end expression" do
     riml = <<-Riml
     if b then a = 2 end\n
     Riml
@@ -43,7 +43,7 @@ class BasicLexerTest < Riml::TestCase
   end
 
 
-  test "lexing an unless expression" do
+  test "unless expression" do
     riml = <<Riml
 unless b:salutation
   echo "hi";
@@ -62,6 +62,29 @@ Riml
       [:END, "end"]
      ]
 
+    assert_equal expected, lex(riml)
+  end
+
+  test "method definition on dictionary" do
+    riml = <<Riml
+myDict = {'msg': 'hey'}
+def myDict.echoMsg
+  echo self.msg
+end
+Riml
+
+    expected = [
+      [:IDENTIFIER, "myDict"], ["=", "="],
+        ["{", "{"],
+          [:STRING_S, "msg"],
+      [":", ":"],
+          [:STRING_S, "hey"],
+        ["}", "}"], [:NEWLINE, "\n"],
+      [:DEF, "def"], [:IDENTIFIER, "myDict.echoMsg"], [:NEWLINE, "\n"],
+        [:BUILTIN_COMMAND, "echo"],
+          [:IDENTIFIER, "self"], [:DICT_VAL, "msg"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
     assert_equal expected, lex(riml)
   end
 end

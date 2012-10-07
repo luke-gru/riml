@@ -62,7 +62,7 @@ module Walkable
   def next
     idx = index
     return unless idx
-    children[idx + 1]
+    parent.children[idx + 1]
   end
 
   # opposite of `child_previous_to`
@@ -78,7 +78,12 @@ module Walkable
   end
 
   def index
-    children.index(self)
+    parent.children.index(self)
+  end
+
+  def remove
+    idx = index
+    parent.children.slice!(idx)
   end
 
 end
@@ -243,7 +248,7 @@ class BinaryOperatorNode < OperatorNode
   def operand2=(val) operands[1] = val end
 
   def ignorecase_capable_operator?(operator)
-    IGNORECASE_CAPABLE_BINARY_OPERATORS.include?(operator)
+    IGNORECASE_CAPABLE_OPERATORS.include?(operator)
   end
 end
 
@@ -411,8 +416,19 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :expre
     end
   end
 
+  def keyword
+    return super unless name.include?(".")
+    "dict"
+  end
+
   def children
-    expressions
+    expressions.each.to_a
+  end
+end
+
+class DefMethodNode < DefNode
+  def to_def_node
+    DefNode.new(scope_modifier, name, parameters, keyword, expressions)
   end
 end
 
@@ -452,7 +468,7 @@ class ElseNode < Struct.new(:expressions)
   end
 
   def children
-    expressions
+    expressions.each.to_a
   end
 end
 
@@ -537,7 +553,7 @@ class CatchNode < Struct.new(:regexp, :expressions)
   include Walkable
 
   def children
-    expressions
+    expressions.each.to_a
   end
 end
 
@@ -559,6 +575,6 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
   end
 
   def children
-    expressions
+    expressions.each.to_a
   end
 end

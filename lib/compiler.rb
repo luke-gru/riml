@@ -1,5 +1,4 @@
 require File.expand_path('../nodes', __FILE__)
-require File.expand_path('../ast_rewriter', __FILE__)
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -123,18 +122,13 @@ module Riml
     class NodesVisitor < Visitor
       def compile(nodes)
         nodes.each_with_index do |node, i|
-          begin
-            visitor = visitor_for_node(node)
-            next_node = nodes.nodes[i+1]
-            node.parent_node = nodes
-            if ElseNode === next_node
-              node.force_newline = true
-            end
-            node.accept(visitor)
-          rescue
-            STDERR.puts "Bad Node: #{node.inspect}" if Compiler.debug?
-            raise
+          visitor = visitor_for_node(node)
+          next_node = nodes.nodes[i+1]
+          node.parent_node = nodes
+          if ElseNode === next_node
+            node.force_newline = true
           end
+          node.accept(visitor)
         end
         nodes.compiled_output
       end
@@ -404,7 +398,7 @@ module Riml
       end
 
       def compile(node)
-        modifier = node.scope_modifier || 's:'
+        modifier = node.scope ? nil : node.scope_modifier || 's:'
         params = process_parameters!(node)
         declaration = "function! #{modifier}"
         declaration <<
@@ -436,6 +430,12 @@ module Riml
         splat = node.splat
         return node.parameters unless splat
         node.parameters.map {|p| p == splat ? '...' : p}
+      end
+    end
+
+    class DefMethodNodeVisitor
+      def compile(node)
+        ""
       end
     end
 

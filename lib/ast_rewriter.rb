@@ -76,13 +76,36 @@ module Riml
         constructor.expressions.unshift(
           SetVariableNode.new(nil, dict_name, DictionaryNode.new({}))
         )
+
+        MethodToNestedFunction.new(node, constructor, dict_name).rewrite_on_match
+        SelfToDictName.new(dict_name).rewrite_on_match(constructor)
+
         constructor.expressions.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
         )
-        ConstructorSelfReferencesToVarName.new(dict_name).rewrite_on_match(constructor)
       end
 
-      class ConstructorSelfReferencesToVarName < AST_Rewriter
+      class MethodToNestedFunction < AST_Rewriter
+        attr_reader :constructor, :dict_name
+        def initialize(class_node, constructor, dict_name)
+          super(class_node)
+          @dict_name, @constructor = dict_name, constructor
+        end
+
+        def match(node)
+          DefMethodNode === node
+        end
+
+        def replace(node)
+          def_node = node.to_def_node
+          node.parent_node = ast.expressions
+          node.remove
+          def_node.name.insert(0, "#{dict_name}.")
+          constructor.expressions << def_node
+        end
+      end
+
+      class SelfToDictName < AST_Rewriter
         attr_reader :dict_name
         def initialize(dict_name)
           @dict_name = dict_name

@@ -51,6 +51,11 @@ module Riml
               identifier = 'end'
               @i += old_identifier.size - identifier.size
             end
+
+            if DEFINE_KEYWORDS.include?(identifier)
+              @in_function_declaration = true
+            end
+
             # strip out '?' for token names
             token_name = identifier[-1] == ?? ? identifier[0..-2] : identifier
 
@@ -70,12 +75,17 @@ module Riml
           new_chunk = @code[@i..-1]
           if new_chunk[/\A\.([\w.]+)/]
             parts = $1.split('.')
-            while key = parts.shift
-              @tokens << [:DICT_VAL_REF, key]
-              @i += key.size + 1
+            @i += $1.size + 1
+            if @in_function_declaration
+              @tokens.last[1] << ".#{$1}"
+            else
+              while key = parts.shift
+                @tokens << [:DICT_VAL, key]
+              end
             end
           end
 
+          @in_function_declaration = false unless @tokens.last[0] == :DEF
           @expecting_identifier = false
         elsif @expecting_identifier
           raise SyntaxError, "expected identifier after scope modifier"
@@ -168,7 +178,7 @@ module Riml
     private
     def track_indent_level(chunk, identifier)
       case identifier.to_sym
-      when :def, :while, :until, :for, :try, :class
+      when :def, :defm, :while, :until, :for, :try, :class
         @current_indent += 2
         @indent_pending = true
       when :if, :unless

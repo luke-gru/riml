@@ -5,6 +5,7 @@ token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH ENSURE
 token FOR IN
 token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
+token CLASS DEFM
 token RETURN
 token NEWLINE
 token NUMBER
@@ -12,10 +13,10 @@ token STRING_D STRING_S # single- and double-quoted
 token HEREDOC
 token REGEXP
 token TRUE FALSE NIL
-token LET UNLET IDENTIFIER DICT_VAL_REF
+token LET UNLET IDENTIFIER
+token DICT_VAL # like dict.key, 'key' is a DICT_VAL
 token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
 token FINISH
-token CLASS
 
 prechigh
   right '!'
@@ -150,8 +151,8 @@ rule
 
   DictGet:
     Dictionary DictGetWithBrackets               { result = DictGetBracketNode.new(val[0], val[1]) }
-  | Dictionary LiteralDictGetWithDot             { result = DictGetDotNode.new(val[0], val[1]) }
-  | VariableRetrieval VariableDictGetWithDot     { result = DictGetDotNode.new(val[0], val[1]) }
+  | Dictionary DictGetWithDotLiteral             { result = DictGetDotNode.new(val[0], val[1]) }
+  | VariableRetrieval DictGetWithDot             { result = DictGetDotNode.new(val[0], val[1]) }
   | VariableRetrieval DictGetWithBracketsString  { result = DictGetBracketNode.new(val[0], val[1]) }
   | DictGet DictGetWithBracketsString            { result = DictGetBracketNode.new(val[0], val[1]) }
   | Call DictGetWithBracketsString               { result = DictGetBracketNode.new(val[0], val[1]) }
@@ -167,19 +168,18 @@ rule
   | DictGetWithBracketsString '[' String ']'   { result = val[0] << val[2] }
   ;
 
-  VariableDictGetWithDot:
-    DICT_VAL_REF                                 { result = [val[0]] }
-  | VariableDictGetWithDot DICT_VAL_REF          { result = val[0] << val[1] }
+  DictGetWithDot:
+    DICT_VAL                        { result = [val[0]]}
+  | DictGetWithDot DICT_VAL         { result = val[0] << val[1] }
   ;
 
-  LiteralDictGetWithDot:
-    '.' IDENTIFIER                               { result = [val[1]]}
-  | LiteralDictGetWithDot DICT_VAL_REF           { result = val[0] << val[1] }
-  ;
+  DictGetWithDotLiteral:
+    '.' IDENTIFIER                  { result = [val[1]] }
+  | DictGetWithDotLiteral DICT_VAL  { result = val[0] << val[1] }
 
   DictSet:
-    VariableRetrieval VariableDictGetWithDot '=' Expression     { result = DictSetNode.new(val[0], val[1], val[3]) }
-  | LET VariableRetrieval VariableDictGetWithDot '=' Expression { result = DictSetNode.new(val[1], val[2], val[4]) }
+    VariableRetrieval DictGetWithDot '=' Expression     { result = DictSetNode.new(val[0], val[1], val[3]) }
+  | LET VariableRetrieval DictGetWithDot '=' Expression { result = DictSetNode.new(val[1], val[2], val[4]) }
   ;
 
   # can only tell if the identifier is a list or dict at compile time
@@ -302,36 +302,40 @@ rule
   ;
 
   # Method definition
-  # [scope_modifier, name, args, keyword, expressions]
+  # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    DEF Scope DefCallIdentifier Keyword Block END                                { result = DefNode.new(val[1], val[2], [],     val[3], val[4]) }
-  | DEF Scope DefCallIdentifier '(' ParamList ')' Keyword Block END              { result = DefNode.new(val[1], val[2], val[4], val[6], val[7]) }
-  | DEF Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END    { result = DefNode.new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new(val[1], val[2], [], val[3], val[4]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new(val[1], val[2], val[4], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
-  Return:
-    RETURN Expression       { result = ReturnNode.new(val[1]) }
-  ;
+  FunctionType:
+    DEF  { result = "DefNode" }
+  | DEFM { result = "DefMethodNode" }
 
   DefCallIdentifier:
     CurlyBraceName          { result = GetCurlyBraceNameNode.new('', val[0])}
   | IDENTIFIER              { result = val[0] }
   ;
 
-  # Example: 'range' after function definition
+  # Example: 'range' or 'dict' after function definition
   Keyword:
     IDENTIFIER            { result = val[0] }
   | /* nothing */         { result = nil }
-  ;
-
-  EndScript:
-    FINISH                                { result = FinishNode.new }
   ;
 
   ParamList:
     /* nothing */                         { result = [] }
   | IDENTIFIER                            { result = val }
   | ParamList ',' IDENTIFIER              { result = val[0] << val[2] }
+  ;
+
+  Return:
+    RETURN Expression       { result = ReturnNode.new(val[1]) }
+  ;
+
+  EndScript:
+    FINISH                                { result = FinishNode.new }
   ;
 
   # [expression, expressions]
