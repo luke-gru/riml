@@ -123,8 +123,7 @@ module Riml
           @tokens << [:"STRING_#{type}", string]
           @i += string.size + 2
         elsif newlines = chunk[/\A(\n+)/, 1]
-          # just push 1 newline
-          @tokens << [:NEWLINE, "\n"]
+          newlines.size.times {@tokens << [:NEWLINE, "\n"]}
 
           # pending indents/dedents
           if @one_line_conditional_END_pending

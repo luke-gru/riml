@@ -6,6 +6,7 @@ class BasicCompilerTest < Riml::TestCase
   def setup
     Compiler.global_variables.clear
     Compiler.special_variables.clear
+    Compiler.classes.clear
   end
 
   test "basic function compiles" do
@@ -976,6 +977,54 @@ function! g:MyClassConstructor(arg1, arg2, ...)
   endfunction
   return myClassObj
 endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "classes that inherit" do
+    riml = <<Riml
+class Translation
+  def initialize(input)
+    self.input = input
+  end
+end
+
+class FrenchToEnglishTranslation < Translation
+  defm translate
+    if (self.input == "Bonjour!")
+      echo "Hello!"
+    else
+      echo "Sorry, I don't know that word."
+    end
+  end
+end
+
+translation = new FrenchToEnglishTranslation("Bonjour!")
+translation.translate()
+Riml
+
+    expected = <<Viml
+function! g:TranslationConstructor(input)
+  let translationObj = {}
+  let translationObj.input = a:input
+  return translationObj
+endfunction
+function! g:FrenchToEnglishTranslationConstructor(input)
+  let frenchToEnglishTranslationObj = {}
+  let translationObj = g:TranslationConstructor(a:input)
+  call extend(frenchToEnglishTranslationObj, translationObj)
+  function! frenchToEnglishTranslationObj.translate() dict
+    if (self.input ==# "Bonjour!")
+      echo "Hello!"
+    else
+      echo "Sorry, I don't know that word."
+    endif
+  endfunction
+  return frenchToEnglishTranslationObj
+endfunction
+let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
+s:translation.translate()
 Viml
 
     assert_equal expected, compile(riml)

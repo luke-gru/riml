@@ -45,47 +45,54 @@ module Walkable
   def previous
     idx = index
     return unless idx
-    children[idx - 1]
+    parent.children.fetch(idx - 1)
   end
 
   def child_previous_to(node)
-    idx = children.index(node)
+    idx = children.find_index(node)
     return unless idx
-    children[idx - 1]
+    children.fetch(idx - 1)
   end
 
-  def previous_sibling
-    return unless parent
-    parent.child_previous_to(self)
+  def insert_before(node, new_node)
+    idx = children.find_index(node)
+    return unless idx
+    children.insert(idx-1, new_node)
   end
 
   def next
     idx = index
     return unless idx
-    parent.children[idx + 1]
+    parent.children.fetch(idx + 1)
   end
 
-  # opposite of `child_previous_to`
   def child_after(node)
-    idx = children.index(node)
+    idx = children.find_index(node)
     return unless idx
-    children[idx + 1]
+    children.fetch(idx + 1)
   end
 
-  def next_sibling
-    return unless parent
-    parent.child_after(self)
+  def insert_after(node, new_node)
+    idx = children.find_index(node)
+    return unless idx
+    children.insert(idx+1, new_node)
   end
 
   def index
-    parent.children.index(self)
+    parent.children.find_index(self)
   end
 
   def remove
     idx = index
-    parent.children.slice!(idx)
+    parent.children.slice!(idx) if idx
   end
 
+  def replace_with(new_node)
+    idx = index
+    return unless idx
+    parent.children.insert(idx, new_node)
+    parent.children.slice!(idx+1)
+  end
 end
 
 module Indentable
@@ -160,6 +167,10 @@ class NilNode < LiteralNode
   def initialize() super(nil) end
 end
 
+class NewlineNode < LiteralNode
+  def initialize() super("\n") end
+end
+
 class FinishNode < KeywordNode
   def initialize() super("finish\n") end
 end
@@ -171,6 +182,7 @@ end
 class ContinueNode < KeywordNode
   def initialize() super("continue\n") end
 end
+
 
 class ReturnNode < Struct.new(:expression)
   include Visitable
@@ -421,8 +433,20 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :expre
     "dict"
   end
 
+  def super_node
+    expressions.detect {|n| SuperNode === n}
+  end
+
   def children
-    expressions.each.to_a
+    expressions
+  end
+
+  def method_missing(method, *args, &blk)
+    if children.respond_to?(method)
+      children.send(method, *args &blk)
+    else
+      super
+    end
   end
 end
 
@@ -468,7 +492,7 @@ class ElseNode < Struct.new(:expressions)
   end
 
   def children
-    expressions.each.to_a
+    expressions
   end
 end
 
@@ -553,7 +577,7 @@ class CatchNode < Struct.new(:regexp, :expressions)
   include Walkable
 
   def children
-    expressions.each.to_a
+    expressions
   end
 end
 
@@ -574,7 +598,44 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
     not superclass_name.nil?
   end
 
+  def constructor
+    expressions.detect do |n|
+      DefNode === n && (n.name == 'initialize' || n.name.match(/Constructor\Z/))
+    end
+  end
+  alias constructor? constructor
+
+  def constructor_name
+    "#{name}Constructor"
+  end
+
+  def constructor_obj_name
+    name[0].downcase + name[1..-1] + "Obj"
+  end
+
   def children
-    expressions.each.to_a
+    expressions
+  end
+end
+
+class SuperNode < Struct.new(:arguments, :with_parens)
+  include Visitable
+  include Walkable
+
+  def use_all_arguments?
+    arguments.empty? && !with_parens
+  end
+
+  def children
+    arguments
+  end
+end
+
+class ObjectInstantiationNode < Struct.new(:call_node)
+  include Visitable
+  include Walkable
+
+  def children
+    [call_node]
   end
 end

@@ -5,7 +5,7 @@ token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH ENSURE
 token FOR IN
 token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
-token CLASS DEFM
+token CLASS NEW DEFM SUPER
 token RETURN
 token NEWLINE
 token NUMBER
@@ -71,14 +71,16 @@ rule
   | For                                   { result = val[0] }
   | Try                                   { result = val[0] }
   | ClassDefinition                       { result = val[0] }
+  | ObjectInstantiation                   { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
   | LoopConstruct                         { result = val[0] }
   ;
 
   Terminator:
-    NEWLINE
-  | ';'
+    NEWLINE                               { result = NewlineNode.new }
+  | ';'                                   { result = nil }
+  | '|'                                   { result = nil }
   ;
 
   # All hard-coded values
@@ -204,7 +206,9 @@ rule
 
   Call:
     Scope DefCallIdentifier '(' ArgList ')'       { result = CallNode.new(val[0], val[1], val[3]) }
+  | DictGet '(' ArgList ')'                       { result = CallNode.new(nil, val[0], val[2]) }
   | CALL Scope DefCallIdentifier '(' ArgList ')'  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | CALL DictGet '(' ArgList ')'                  { result = ExplicitCallNode.new(nil, val[1], val[3]) }
   | BUILTIN_COMMAND '(' ArgList ')'               { result = CallNode.new(nil, val[0], val[2]) }
   | BUILTIN_COMMAND ArgList                       { result = CallNode.new(nil, val[0], val[1]) }
   ;
@@ -404,6 +408,15 @@ rule
     CLASS IDENTIFIER Block END                   { result = ClassDefinitionNode.new(val[1], nil, val[2]) }
   | CLASS IDENTIFIER '<' IDENTIFIER Block END    { result = ClassDefinitionNode.new(val[1], val[3], val[4]) }
   ;
+
+  ObjectInstantiation:
+    NEW Call                  { result = ObjectInstantiationNode.new(val[1]) }
+  ;
+
+  Super:
+    SUPER '(' ArgList ')'     { result = SuperNode.new(val[2], true) }
+  | SUPER                     { result = SuperNode.new([], false) }
+  ;
 end
 
 ---- header
@@ -414,14 +427,14 @@ end
   # This code will be put as-is in the parser class
 
   # parses tokens or code into output nodes
-  def parse(object, options = {})
+  def parse(object, rewrite_ast = true)
     @tokens = if tokens?(object)
       object
     elsif code?(object)
       Riml::Lexer.new.tokenize(object)
     end
     ast = do_parse
-    return ast if options[:rewrite_ast] == false
+    return ast if rewrite_ast == false
     AST_Rewriter.new(ast).rewrite
   end
 

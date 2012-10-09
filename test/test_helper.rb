@@ -35,11 +35,11 @@ module Riml
     end
 
     # parse code (or tokens) into nodes
-    def parse(object, options={})
+    def parse(object, rewrite_ast = true)
       unless tokens?(object) || code?(object)
         raise ArgumentError, "object must be tokens or code, is #{object}"
       end
-      parser.parse(object, options)
+      parser.parse(object, rewrite_ast)
     end
 
     # compile nodes (or tokens or code) into output code

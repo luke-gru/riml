@@ -1,12 +1,9 @@
 require File.expand_path('../nodes', __FILE__)
+require File.expand_path('../class_map', __FILE__)
 
 # visits AST nodes and translates them into VimL
 module Riml
   class Compiler
-
-    def self.debug?
-      not ENV["RIML_DEBUG"].nil?
-    end
 
     # Map of compiled global variable names to the type of node that they represent.
     #
@@ -21,6 +18,14 @@ module Riml
     # Ex: {"$SOME_VAR" => :NumberNode, "&Another" => :StringNode}
     def self.special_variables
       @special_variables ||= {}
+    end
+
+    # Map of {"ClassName" => ClassDefinitionNode}
+    # Can also query object for superclass of a named class, etc...
+    #
+    # Ex : Compiler.classes["SomeClass"].superclass_name => "SomeClassBase"
+    def self.classes
+      @classes ||= ClassMap.new
     end
 
     # Base abstract visitor
@@ -250,7 +255,6 @@ module Riml
         get_variable_map_for_node(node)
         # ex: {"b:a" => :NilNode}
         @variable_map[node.full_name] = node.value.class.name.to_sym
-        STDERR.puts @variable_map.inspect if Compiler.debug?
       end
 
       def get_type_for_node(node)
@@ -433,12 +437,6 @@ module Riml
       end
     end
 
-    class DefMethodNodeVisitor
-      def compile(node)
-        ""
-      end
-    end
-
     # helper to drill down to all descendants of a certain node and do
     # something to all or a set of them
     class DrillDownVisitor < Visitor
@@ -473,6 +471,9 @@ module Riml
         if node.name.respond_to?(:variable)
           node.name.accept(visitor_for_node(node.name))
           node.scope_modifier + node.name.compiled_output
+        elsif DictGetDotNode === node.name
+          node.name.accept(visitor_for_node(node.name))
+          node.name.compiled_output
         else
           "#{node.full_name}"
         end
@@ -624,10 +625,18 @@ module Riml
 
     class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end
 
-    class ClassDefinitionNodeVisitor < ScopedVisitor
+    class ClassDefinitionNodeVisitor < Visitor
       def compile(node)
         node.expressions.parent_node = node
         node.expressions.accept(NodesVisitor.new)
+        node.compiled_output
+      end
+    end
+
+    class ObjectInstantiationNodeVisitor < Visitor
+      def compile(node)
+        node.call_node.parent_node = node
+        node.call_node.accept(visitor_for_node(node.call_node))
         node.compiled_output
       end
     end

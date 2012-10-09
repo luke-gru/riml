@@ -1,4 +1,5 @@
 require File.expand_path(__FILE__, "../constants")
+require File.expand_path(__FILE__, "../compiler")
 
 module Riml
   class AST_Rewriter
@@ -13,19 +14,31 @@ module Riml
       StrictEqualsComparisonOperator.new(ast).rewrite_on_match
       VarEqualsComparisonOperator.new(ast).rewrite_on_match
       ClassDefinitionToFunctions.new(ast).rewrite_on_match
+      ObjectInstantiationToCall.new(ast).rewrite_on_match
       ast
     end
 
     def rewrite_on_match(node = ast)
-      if match(node)
-        replace(node)
-      elsif node.respond_to?(:each)
-        node.each {|n| rewrite_on_match n }
+      to_visit = [node]
+      while to_visit.length > 0
+        cur_node = to_visit.shift
+        cur_node.children.each do |child|
+          to_visit << child
+        end if cur_node.respond_to?(:children) && repeatable?
+        do_rewrite_on_match(cur_node)
       end
     end
 
+    def do_rewrite_on_match(node)
+      replace node if match?(node)
+    end
+
+    def repeatable?
+      true
+    end
+
     class StrictEqualsComparisonOperator < AST_Rewriter
-      def match(node)
+      def match?(node)
         BinaryOperatorNode === node && node.operator == '==='
       end
 
@@ -39,7 +52,7 @@ module Riml
     class VarEqualsComparisonOperator < AST_Rewriter
       COMPARISON_OPERATOR_MATCH = Regexp.union(COMPARISON_OPERATORS)
 
-      def match(node)
+      def match?(node)
         Nodes === node &&
         SetVariableNode === node.nodes[0] &&
         BinaryOperatorNode === (op = node.nodes[0].value) &&
@@ -62,21 +75,25 @@ module Riml
     end
 
     class ClassDefinitionToFunctions < AST_Rewriter
-      def match(node)
+      def match?(node)
         ClassDefinitionNode === node
       end
 
       def replace(node)
+        Compiler.classes[node.name] = node
+
         name, expressions = node.name, node.expressions
-        constructor = expressions.detect {|e| DefNode === e && e.name == 'initialize'}
+        InsertInitializeMethod.new(node).rewrite_on_match
+        constructor = node.constructor
         constructor.scope_modifier = 'g:' unless constructor.scope_modifier
-        constructor.name = "#{name}Constructor"
+        constructor.name = node.constructor_name
         # set up dictionary variable at top of function
-        dict_name = name[0].downcase + name[1..-1] + "Obj"
+        dict_name = node.constructor_obj_name
         constructor.expressions.unshift(
           SetVariableNode.new(nil, dict_name, DictionaryNode.new({}))
         )
 
+        SuperToObjectExtension.new(constructor, node).rewrite_on_match
         MethodToNestedFunction.new(node, constructor, dict_name).rewrite_on_match
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
 
@@ -92,7 +109,7 @@ module Riml
           @dict_name, @constructor = dict_name, constructor
         end
 
-        def match(node)
+        def match?(node)
           DefMethodNode === node
         end
 
@@ -111,13 +128,106 @@ module Riml
           @dict_name = dict_name
         end
 
-        def match(node)
+        def match?(node)
           DictSetNode === node && node.dict.name == "self"
         end
 
         def replace(node)
           node.dict.name = dict_name
         end
+      end
+
+      class InsertInitializeMethod < AST_Rewriter
+        # if doesn't have an initialize method, put one at the beginning
+        # of the class definition
+        def match?(class_node)
+          ClassDefinitionNode === class_node && class_node.constructor.nil?
+        end
+
+        def replace(class_node)
+          if class_node.superclass?
+            def_node = DefNode.new(
+              nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
+            )
+          else
+            def_node = DefNode.new(
+              nil, "initialize", [], nil, Nodes.new([])
+            )
+          end
+          class_node.expressions.unshift(def_node)
+        end
+
+        def superclass_params
+          Compiler.classes.superclass(ast.name).constructor.parameters
+        end
+
+        def repeatable?
+          false
+        end
+      end
+
+      class SuperToObjectExtension < AST_Rewriter
+        attr_reader :class_node
+        def initialize(constructor, class_node)
+          super(constructor)
+          @class_node = class_node
+        end
+
+        def match?(constructor)
+          DefNode === constructor && constructor.super_node
+        end
+
+        def replace(constructor)
+          constructor.super_node.parent_node = constructor
+          superclass = Compiler.classes.superclass(class_node.name)
+          super_constructor = superclass.constructor
+
+          set_var_node = SetVariableNode.new(nil, superclass.constructor_obj_name,
+            CallNode.new(
+              super_constructor.scope_modifier,
+              super_constructor.name,
+              super_arguments(constructor.super_node)
+            )
+          )
+
+          constructor.super_node.replace_with(set_var_node)
+          constructor.insert_after(set_var_node,
+            ExplicitCallNode.new(
+              nil,
+              "extend",
+              [
+                GetVariableNode.new(nil, class_node.constructor_obj_name),
+                GetVariableNode.new(nil, superclass.constructor_obj_name)
+              ]
+            )
+          )
+        end
+
+        def super_arguments(super_node)
+          if super_node.use_all_arguments?
+            # here, ast is 'constructor'
+            ast.parameters.map {|p| GetVariableNode.new(nil, p)}
+          else
+            super_node.arguments
+          end
+        end
+
+        def repeatable?
+          false
+        end
+      end
+    end # ClassDefinitionToFunctions
+
+    class ObjectInstantiationToCall < AST_Rewriter
+      def match?(node)
+        ObjectInstantiationNode === node
+      end
+
+      def replace(node)
+        constructor_name = node.call_node.name
+        class_node = Compiler.classes[constructor_name]
+        node.call_node.name = class_node.constructor_name
+        node.call_node.scope_modifier = class_node.constructor.scope_modifier
       end
     end
 
