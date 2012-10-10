@@ -2,13 +2,12 @@ Riml, a relaxed version of Vimscript
 ====================================
 
 Riml aims to be a superset of VimL that includes some nice features that I
-enjoy in other scripting languages, including string interpolation, default
-case-sensitive string comparison and other things most programmers take for
-granted. Also, Riml takes some liberties and provides some syntactic sugar for
-lots of VimL constructs. Check out the test/compiler\_test.rb file to see how
-Riml constructs are compiled into VimL, or just take a look in this README.
-The left side is Riml, and the right side is the equivalent VimL after
-compilation.
+enjoy in other scripting languages, including classes, string interpolation,
+heredocs, default case-sensitive string comparison and other things most
+programmers take for granted. Also, Riml takes some liberties and provides
+some syntactic sugar for lots of VimL constructs. To see how Riml constructs
+are compiled into VimL, just take a look in this README. The left side is Riml,
+and the right side is the equivalent VimL after compilation.
 
 Variables
 ---------
@@ -35,28 +34,107 @@ old local variables.
 
     a = nil                       unlet! a
 
-Checking for existence
-----------------------
-
-###Variables
+###Checking for existence
 
     unless s:callcount?                    if !exists("s:callcount")
       callcount = 0                         let s:callcount = 0
     end                                    endif
     callcount += 1                         let s:callcount += 1
-    puts "called #{callcount} times"       echo "called" s:callcount "times"
+    puts "called #{callcount} times"       echo "called " . s:callcount . " times"
+
+Comparisons
+-----------
+
+    a = "hi" == "hi"                      if ("hi" ==# "hi")
+                                            let s:a = 1
+                                          else
+                                            let s:a = 0
+                                          endif
+
+Heredocs
+--------
+
+    msg = <<EOS                           let s:msg = "a vim heredoc!\n"
+    a vim heredoc!
+    EOS
+
+Classes
+-------
+
+###Riml example 1
+
+    class MyClass
+      def initialize(arg1, arg2, *args)
+      end
+
+      defm getData
+        return self.data
+      end
+
+      defm getOtherData
+        return self.otherData
+      end
+    end
+
+###Viml example 1
 
 
-    if b:didftplugin?                      if exists("b:didftplugin")
-      finish                                 finish
-    end                                    endif
-    didftplugin = true                     let b:didftplugin = 1
+    function! g:MyClassConstructor(arg1, arg2, ...)
+      let myClassObj = {}
+      function! myClassObj.getData() dict
+        return self.data
+      endfunction
+      function! myClassObj.getOtherData() dict
+        return self.otherData
+      endfunction
+      return myClassObj
+    endfunction
 
-###Commands
+###Riml example 2
 
-    command? -nargs=1 Correct :call s:Add(<q-args>, 0)          if !exists(":Correct")
-                                                                  command -nargs=1 Correct :call s:Add(<q-args>, 0)
-                                                                end
+    class Translation
+      def initialize(input)
+        self.input = input
+      end
+    end
+
+    class FrenchToEnglishTranslation < Translation
+      defm translate
+        if (self.input == "Bonjour!")
+          echo "Hello!"
+        else
+          echo "Sorry, I don't know that word."
+        end
+      end
+    end
+
+    translation = new FrenchToEnglishTranslation("Bonjour!")
+    translation.translate()
+
+###VimL example 2
+
+    function! g:TranslationConstructor(input)
+      let translationObj = {}
+      let translationObj.input = a:input
+      return translationObj
+    endfunction
+
+    function! g:FrenchToEnglishTranslationConstructor(input)
+      let frenchToEnglishTranslationObj = {}
+      let translationObj = g:TranslationConstructor(a:input)
+      call extend(frenchToEnglishTranslationObj, translationObj)
+      function! frenchToEnglishTranslationObj.translate() dict
+        if (self.input ==# "Bonjour!")
+          echo "Hello!"
+        else
+          echo "Sorry, I don't know that word."
+        endif
+      endfunction
+      return frenchToEnglishTranslationObj
+    endfunction
+
+    let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
+    call s:translation.translate()
 
 Hacking
 -------
