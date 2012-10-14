@@ -1017,4 +1017,97 @@ Viml
 
     assert_equal expected, compile(riml)
   end
+
+  test "super with parens in initialize method" do
+    riml = <<Riml
+class Car
+  def initialize(make, model, color)
+    self.make = make
+    self.model = model
+    self.color = color
+  end
+end
+
+class HotRod < Car
+  def initialize(make, model, color, topSpeed)
+    self.topSpeed = topSpeed
+    super(make, model, color)
+  end
+
+  defm drive
+    if self.topSpeed > 140
+      echo "Ahhhhhhh!"
+    else
+      echo "Nice"
+    end
+  end
+end
+
+newCar = new HotRod("chevy", "mustang", "red", 160)
+newCar.drive()
+Riml
+
+    expected = <<Viml
+function! g:CarConstructor(make, model, color)
+  let carObj = {}
+  let carObj.make = a:make
+  let carObj.model = a:model
+  let carObj.color = a:color
+  return carObj
+endfunction
+function! g:HotRodConstructor(make, model, color, topSpeed)
+  let hotRodObj = {}
+  let hotRodObj.topSpeed = a:topSpeed
+  let carObj = g:CarConstructor(a:make, a:model, a:color)
+  call extend(hotRodObj, carObj)
+  function! hotRodObj.drive() dict
+    if (self.topSpeed ># 140)
+      echo "Ahhhhhhh!"
+    else
+      echo "Nice"
+    endif
+  endfunction
+  return hotRodObj
+endfunction
+let s:newCar = g:HotRodConstructor("chevy", "mustang", "red", 160)
+call s:newCar.drive()
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "super without parens passes all arguments" do
+    riml = <<Riml
+class A
+  def initialize(foo, bar)
+    self.foo = foo
+    self.bar = bar
+  end
+end
+
+class B < A
+  def initialize(foo, bar)
+    super
+    self.other = other
+  end
+end
+Riml
+
+    expected = <<Viml
+function! g:AConstructor(foo, bar)
+  let aObj = {}
+  let aObj.foo = a:foo
+  let aObj.bar = a:bar
+  return aObj
+endfunction
+function! g:BConstructor(foo, bar)
+  let bObj = {}
+  let aObj = g:AConstructor(a:foo, a:bar)
+  call extend(bObj, aObj)
+  let bObj.other = other
+  return bObj
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
 end

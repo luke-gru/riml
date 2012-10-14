@@ -6,7 +6,7 @@ module Riml
     VIML_END_KEYWORDS =
       %w(endfunction endif endwhile endfor endtry)
     RIML_KEYWORDS =
-      %w(def defm end then unless until true false nil ensure class new)
+      %w(def defm super end then unless until true false nil ensure class new)
     DEFINE_KEYWORDS = %w(def defm function function!)
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
     SPECIAL_VARIABLE_PREFIXES =
