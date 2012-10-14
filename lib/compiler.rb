@@ -388,9 +388,7 @@ module Riml
 
     class EstablishScopeVisitor < DrillDownVisitor
       def initialize(options)
-        options[:propagate_up_tree] = false
         @scope = options[:scope]
-        super
       end
 
       def visit(node)
@@ -485,13 +483,13 @@ module Riml
       def compile(node)
         try, catches, _ensure = node.try_block, node.catch_nodes, node.ensure_block
         node.compiled_output = "try\n"
-        try.accept(visitor_for_node(try))
+        try.accept(visitor_for_node(try, :propagate_up_tree => false))
         try.compiled_output.each_line do |line|
           node.compiled_output << node.indent + line
         end
 
         catches.each do |c|
-          c.accept(visitor_for_node(c))
+          c.accept(visitor_for_node(c, :propagate_up_tree => false))
           c.compiled_output.each_line do |line|
             node.compiled_output << ( line =~ /\A\s*catch/ ? line : node.indent + line )
           end
@@ -499,7 +497,7 @@ module Riml
 
         if _ensure
           node.compiled_output << "finally\n"
-          _ensure.accept(visitor_for_node(_ensure))
+          _ensure.accept(visitor_for_node(_ensure, :propagate_up_tree => false))
           _ensure.compiled_output.each_line do |line|
             node.compiled_output << node.indent + line
           end

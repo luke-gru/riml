@@ -1,5 +1,6 @@
 require File.expand_path("../constants", __FILE__)
 require File.expand_path("../class_map", __FILE__)
+require File.expand_path("../walker", __FILE__)
 
 module Riml
   class AST_Rewriter
@@ -19,6 +20,7 @@ module Riml
     end
 
     def rewrite
+      establish_parents(ast)
       StrictEqualsComparisonOperator.new(ast).rewrite_on_match
       VarEqualsComparisonOperator.new(ast).rewrite_on_match
       ClassDefinitionToFunctions.new(ast).rewrite_on_match
@@ -26,21 +28,24 @@ module Riml
       ast
     end
 
+    def establish_parents(node)
+      Walker.walk_node(node, method(:do_establish_parents))
+    end
+    alias reestablish_parents establish_parents
+
+    def do_establish_parents(node)
+      node.children.each do |child|
+        child.parent_node = node if child.respond_to?(:parent_node=)
+      end if node.respond_to?(:children)
+    end
+
     def rewrite_on_match(node = ast)
-      to_visit = [node]
-      while to_visit.length > 0
-        cur_node = to_visit.shift
-        cur_node.children.each do |child|
-          to_visit << child
-        end if cur_node.respond_to?(:children) && repeatable?
-        do_rewrite_on_match(cur_node)
-      end
+      Walker.walk_node(node, method(:do_rewrite_on_match), lambda {|_| repeatable?})
     end
 
     def do_rewrite_on_match(node)
       replace node if match?(node)
     end
-
 
     def repeatable?
       true
@@ -55,6 +60,7 @@ module Riml
         node.operator = '=='
         node.operand1 = ListNode.wrap(node.operand1)
         node.operand2 = ListNode.wrap(node.operand2)
+        reestablish_parents(node)
       end
     end
 
@@ -80,6 +86,7 @@ module Riml
             ]))
           ]))
         ]
+        reestablish_parents(node)
       end
     end
 
@@ -109,6 +116,7 @@ module Riml
         constructor.expressions.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
         )
+        reestablish_parents(constructor)
       end
 
       class MethodToNestedFunction < AST_Rewriter
@@ -127,7 +135,9 @@ module Riml
           node.parent_node = ast.expressions
           node.remove
           def_node.name.insert(0, "#{dict_name}.")
+          def_node.parent_node = constructor.expressions
           constructor.expressions << def_node
+          reestablish_parents(node)
         end
       end
 
@@ -164,6 +174,7 @@ module Riml
             )
           end
           class_node.expressions.unshift(def_node)
+          reestablish_parents(class_node)
         end
 
         def superclass_params
@@ -187,7 +198,6 @@ module Riml
         end
 
         def replace(constructor)
-          constructor.super_node.parent_node = constructor
           superclass = classes.superclass(class_node.name)
           super_constructor = superclass.constructor
 
@@ -200,7 +210,7 @@ module Riml
           )
 
           constructor.super_node.replace_with(set_var_node)
-          constructor.insert_after(set_var_node,
+          constructor.expressions.insert_after(set_var_node,
             ExplicitCallNode.new(
               nil,
               "extend",
@@ -210,6 +220,7 @@ module Riml
               ]
             )
           )
+          reestablish_parents(constructor)
         end
 
         def super_arguments(super_node)
@@ -235,8 +246,9 @@ module Riml
       def replace(node)
         constructor_name = node.call_node.name
         class_node = classes[constructor_name]
-        node.call_node.name = class_node.constructor_name
-        node.call_node.scope_modifier = class_node.constructor.scope_modifier
+        call_node = node.call_node
+        call_node.name = class_node.constructor_name
+        call_node.scope_modifier = class_node.constructor.scope_modifier
       end
     end
 

@@ -242,7 +242,6 @@ end
 class ExplicitCallNode < CallNode; end
 
 class OperatorNode < Struct.new(:operator, :operands)
-  include Riml::Constants
   include Visitable
   include Walkable
 
@@ -252,6 +251,7 @@ class OperatorNode < Struct.new(:operator, :operands)
 end
 
 class BinaryOperatorNode < OperatorNode
+  include Riml::Constants
 
   def operand1() operands[0] end
   def operand1=(val) operands[0] = val end
@@ -426,7 +426,7 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :expre
   end
 
   def children
-    expressions
+     [expressions]
   end
 
   def method_missing(method, *args, &blk)
@@ -480,7 +480,7 @@ class ElseNode < Struct.new(:expressions)
   end
 
   def children
-    expressions
+    [expressions]
   end
 end
 
@@ -531,6 +531,9 @@ end
 # dict['key1']['key2']
 class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
+  def children
+    [dict] + keys
+  end
 end
 
 class DictGetBracketNode < DictGetNode; end
@@ -540,6 +543,9 @@ class DictGetDotNode < DictGetNode; end
 # dict.key.key2 = 'val'
 class DictSetNode < Struct.new(:dict, :keys, :val)
   include Visitable
+  def children
+    [dict, val]
+  end
 end
 
 # list_or_dict[0]
@@ -548,6 +554,9 @@ class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   include Visitable
   alias list list_or_dict
   alias dict list_or_dict
+  def children
+    [list_or_dict]
+  end
 end
 
 class TryNode < Struct.new(:try_block, :catch_nodes, :ensure_block)
@@ -565,7 +574,7 @@ class CatchNode < Struct.new(:regexp, :expressions)
   include Walkable
 
   def children
-    expressions
+    [expressions]
   end
 end
 
@@ -602,7 +611,7 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
   end
 
   def children
-    expressions
+    [expressions]
   end
 end
 
