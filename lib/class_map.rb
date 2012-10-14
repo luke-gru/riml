@@ -8,7 +8,7 @@ module Riml
 
     def [](key)
       ensure_key_is_string!(key)
-      klass = @map[key]
+      @map[key]
     end
 
     def []=(key, val)

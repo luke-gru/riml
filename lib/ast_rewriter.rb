@@ -1,5 +1,5 @@
-require File.expand_path(__FILE__, "../constants")
-require File.expand_path(__FILE__, "../compiler")
+require File.expand_path("../constants", __FILE__)
+require File.expand_path("../class_map", __FILE__)
 
 module Riml
   class AST_Rewriter
@@ -8,6 +8,14 @@ module Riml
     attr_reader :ast
     def initialize(ast)
       @ast = ast
+    end
+
+    # Map of {"ClassName" => ClassDefinitionNode}
+    # Can also query object for superclass of a named class, etc...
+    #
+    # Ex : classes["SomeClass"].superclass_name => "SomeClassBase"
+    def classes
+      @@classes ||= ClassMap.new
     end
 
     def rewrite
@@ -32,6 +40,7 @@ module Riml
     def do_rewrite_on_match(node)
       replace node if match?(node)
     end
+
 
     def repeatable?
       true
@@ -80,7 +89,7 @@ module Riml
       end
 
       def replace(node)
-        Compiler.classes[node.name] = node
+        classes[node.name] = node
 
         name, expressions = node.name, node.expressions
         InsertInitializeMethod.new(node).rewrite_on_match
@@ -158,7 +167,7 @@ module Riml
         end
 
         def superclass_params
-          Compiler.classes.superclass(ast.name).constructor.parameters
+          classes.superclass(ast.name).constructor.parameters
         end
 
         def repeatable?
@@ -179,7 +188,7 @@ module Riml
 
         def replace(constructor)
           constructor.super_node.parent_node = constructor
-          superclass = Compiler.classes.superclass(class_node.name)
+          superclass = classes.superclass(class_node.name)
           super_constructor = superclass.constructor
 
           set_var_node = SetVariableNode.new(nil, superclass.constructor_obj_name,
@@ -225,7 +234,7 @@ module Riml
 
       def replace(node)
         constructor_name = node.call_node.name
-        class_node = Compiler.classes[constructor_name]
+        class_node = classes[constructor_name]
         node.call_node.name = class_node.constructor_name
         node.call_node.scope_modifier = class_node.constructor.scope_modifier
       end

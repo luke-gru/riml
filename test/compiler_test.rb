@@ -1,13 +1,6 @@
 require File.expand_path('../test_helper', __FILE__)
 
 class BasicCompilerTest < Riml::TestCase
-  Compiler = Riml::Compiler
-
-  def setup
-    Compiler.global_variables.clear
-    Compiler.special_variables.clear
-    Compiler.classes.clear
-  end
 
   test "basic function compiles" do
     riml = <<Riml
@@ -160,7 +153,6 @@ Viml
     expected = "unlet! b:a\n"
 
     assert_equal expected, compile(riml)
-    assert_equal 1, Compiler.global_variables.count
   end
 
   test "unless expression" do
@@ -177,7 +169,6 @@ endif
 Viml
 
     assert_equal expected, compile(riml)
-    assert_equal 0, Compiler.global_variables.count
   end
 
   test "variables work as expected in local and global scopes" do
@@ -198,7 +189,6 @@ endfunction
 Viml
 
     assert_equal expected, compile(riml)
-    assert_equal 2, Compiler.global_variables.count
   end
 
   test "interpolation in double-quoted strings" do
@@ -529,8 +519,6 @@ endif
 echo "hi"
 Viml
     assert_equal expected, compile(riml)
-    # the types are only known for 2 of them, not $VAR
-    assert_equal 2, Compiler.special_variables.values.size
   end
 
   test "compile line-continuations, but don't (yet) preserve spaces to keep compiled viml readable" do

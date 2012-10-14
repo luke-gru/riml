@@ -340,7 +340,6 @@ class GetVariableNode < Struct.new(:scope_modifier, :name)
   include Visitable
   include FullyNameable
   include QuestionVariableExistence
-  attr_accessor :node_type
 end
 
 # &autoindent
@@ -348,7 +347,6 @@ end
 class GetSpecialVariableNode < Struct.new(:prefix, :name)
   include Visitable
   include FullyNameable
-  attr_accessor :node_type
 end
 
 class CurlyBracePart < Struct.new(:value)
@@ -406,19 +404,9 @@ class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :expre
 
   SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}
 
-  def local_scope?
-    true
-  end
-
-  def scoped_variables
-    @scoped_variables ||= {}
-  end
-
-  # {"a:arg1" => :Argument0, "a:arg2" => :Argument1}
+  # ["arg1", "arg2"}
   def arg_variables
-    @arg_variables ||= Hash[parameters.delete_if(&SPLAT).map.with_index do |p,i|
-      ["a:#{p}", :"Argument#{i}"]
-    end]
+    @arg_variables ||= parameters.reject(&SPLAT)
   end
 
   # returns the splat argument or nil

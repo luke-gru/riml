@@ -1,32 +1,8 @@
 require File.expand_path('../nodes', __FILE__)
-require File.expand_path('../class_map', __FILE__)
 
 # visits AST nodes and translates them into VimL
 module Riml
   class Compiler
-
-    # Map of compiled global variable names to the type of node that they represent.
-    #
-    # Ex: {"s:string" => :StringNode}
-    def self.global_variables
-      @global_variables ||= {}
-    end
-
-    # Map of compiled 'special' variable names to the type of node that they
-    # represent
-    #
-    # Ex: {"$SOME_VAR" => :NumberNode, "&Another" => :StringNode}
-    def self.special_variables
-      @special_variables ||= {}
-    end
-
-    # Map of {"ClassName" => ClassDefinitionNode}
-    # Can also query object for superclass of a named class, etc...
-    #
-    # Ex : Compiler.classes["SomeClass"].superclass_name => "SomeClassBase"
-    def self.classes
-      @classes ||= ClassMap.new
-    end
 
     # Base abstract visitor
     class Visitor
@@ -212,7 +188,8 @@ module Riml
       end
     end
 
-    # common visiting methods for nodes that are scope modified with prefixes
+    # common visiting methods for nodes that are scope modified with variable
+    # name prefixes
     class ScopedVisitor < Visitor
       private
       def set_modifier(node)
@@ -220,56 +197,22 @@ module Riml
         #       myVariable = "override riml default scoping"
         node.scope_modifier = "" if node.scope_modifier == "n:"
         return node.scope_modifier if node.scope_modifier
-        node.scope_modifier = get_scope_modifier_for_variable_name(node)
+        node.scope_modifier = scope_modifier_for_variable_name(node)
       end
 
-      # `@variable_map` is a mapping of scope_modified local variable names
-      # to the type of the value that they represent
-      def get_scope_modifier_for_variable_name(node)
-        get_variable_map_for_node(node)
-        if @local_scope
-          default_modifier = ''
-        else
-          default_modifier = 's:'
+      private
+      def scope_modifier_for_variable_name(node)
+        if node.scope
+          return "a:" if node.scope.arg_variables.include?(node.name)
+          return ""
         end
-        @variable_map.keys.each do |name|
-          return name[0..1] if name[2..-1] == node.name
-        end
-        default_modifier
-      end
-
-      def get_variable_map_for_node(node)
-        @variable_map ||= begin
-          if node.scope and node.scope.local_scope?
-            @local_scope = true
-            node.scope.scoped_variables.merge!(node.scope.arg_variables)
-          elsif node.respond_to?(:prefix)
-            Compiler.special_variables
-          else
-            Compiler.global_variables
-          end
-        end
-      end
-
-      def associate_variable_name_with_type(node)
-        get_variable_map_for_node(node)
-        # ex: {"b:a" => :NilNode}
-        @variable_map[node.full_name] = node.value.class.name.to_sym
-      end
-
-      def get_type_for_node(node)
-        get_variable_map_for_node(node)
-        @variable_map.each do |name, type|
-          return type if node.full_name == name
-        end
-        nil
+        "s:"
       end
     end
 
     class SetVariableNodeVisitor < ScopedVisitor
       def compile(node)
         set_modifier(node)
-        associate_variable_name_with_type(node)
 
         value_visitor = visitor_for_node(node.value)
         node.compiled_output = "let #{node.full_name} = "
@@ -294,9 +237,8 @@ module Riml
       end
     end
 
-    class SetSpecialVariableNodeVisitor < ScopedVisitor
+    class SetSpecialVariableNodeVisitor < Visitor
       def compile(node)
-        associate_variable_name_with_type(node)
         node.compiled_output = "let #{node.full_name} = "
         value_visitor = visitor_for_node(node.value)
         node.value.parent_node = node
@@ -317,8 +259,6 @@ module Riml
         end
 
         set_modifier(node)
-        type = get_type_for_node(node)
-        node.node_type = type
         if node.scope && node.scope.respond_to?(:splat) && (splat = node.scope.splat)
           check_for_splat_match!(node, splat)
         end
@@ -332,23 +272,22 @@ module Riml
       private
       def check_for_splat_match!(node, splat)
         if node.name == splat[1..-1]
-          @modifier = nil
-          node.name = 'a:000'
+          node.scope_modifier = "a:"
+          node.name = '000'
         end
       end
     end
 
-    class GetSpecialVariableNodeVisitor < ScopedVisitor
+    class GetSpecialVariableNodeVisitor < Visitor
       def compile(node)
-        type = get_type_for_node(node)
-        node.node_type = type
         node.compiled_output = node.full_name
       end
     end
 
     class GetCurlyBraceNameNodeVisitor < ScopedVisitor
       def compile(node)
-        node.compiled_output = node.scope_modifier || 's:'
+        set_modifier(node)
+        node.compiled_output = node.scope_modifier
         node.variable.parts.each do |part|
           node.compiled_output <<
           if part.interpolated?
@@ -586,7 +525,7 @@ module Riml
       end
     end
 
-    class DictGetBracketNodeVisitor < ScopedVisitor
+    class DictGetBracketNodeVisitor < Visitor
       def compile(node)
         node.dict.parent_node = node
         node.keys.each {|k| k.parent_node = node}
@@ -600,7 +539,7 @@ module Riml
       end
     end
 
-    class DictGetDotNodeVisitor < ScopedVisitor
+    class DictGetDotNodeVisitor < Visitor
       def compile(node)
         node.dict.parent_node = node
         node.dict.accept(visitor_for_node(node.dict))
@@ -611,7 +550,7 @@ module Riml
       end
     end
 
-    class DictSetNodeVisitor < ScopedVisitor
+    class DictSetNodeVisitor < Visitor
       def compile(node)
         [node.dict, node.val].each {|n| n.parent_node = node}
         node.compiled_output = "let "

@@ -318,6 +318,7 @@ rule
   | DEFM { result = "DefMethodNode" }
 
   DefCallIdentifier:
+    # use '' for first argument instead of nil in order to avoid a double scope-modifier
     CurlyBraceName          { result = GetCurlyBraceNameNode.new('', val[0])}
   | IDENTIFIER              { result = val[0] }
   ;
