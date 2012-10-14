@@ -25,6 +25,7 @@ module Riml
       VarEqualsComparisonOperator.new(ast).rewrite_on_match
       ClassDefinitionToFunctions.new(ast).rewrite_on_match
       ObjectInstantiationToCall.new(ast).rewrite_on_match
+      CallToExplicitCall.new(ast).rewrite_on_match
       ast
     end
 
@@ -249,6 +250,17 @@ module Riml
         call_node = node.call_node
         call_node.name = class_node.constructor_name
         call_node.scope_modifier = class_node.constructor.scope_modifier
+      end
+    end
+
+    class CallToExplicitCall < AST_Rewriter
+      def match?(node)
+        node.instance_of?(CallNode) && node.must_be_explicit_call?
+      end
+
+      def replace(node)
+        node.replace_with(ExplicitCallNode.new(node[0], node[1], node[2]))
+        reestablish_parents(node)
       end
     end
 

@@ -230,6 +230,13 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   end
   alias no_parens_necessary? builtin_command?
 
+  def must_be_explicit_call?
+    return false if builtin_command?
+    return true if parent.nil?
+    return true if Nodes === parent
+    false
+  end
+
   def children
     arguments
   end

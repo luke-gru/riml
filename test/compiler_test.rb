@@ -1012,7 +1012,7 @@ function! g:FrenchToEnglishTranslationConstructor(input)
   return frenchToEnglishTranslationObj
 endfunction
 let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
-s:translation.translate()
+call s:translation.translate()
 Viml
 
     assert_equal expected, compile(riml)

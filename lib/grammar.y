@@ -1,6 +1,6 @@
 class Riml::Parser
 
-token IF ELSE ELSEIF THEN UNLESS END
+token IF ELSE THEN UNLESS END # TODO: add elseif
 token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH ENSURE
 token FOR IN
@@ -72,6 +72,7 @@ rule
   | Try                                   { result = val[0] }
   | ClassDefinition                       { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
+  | Super                                 { result = val[0] }
   | '(' Expression ')'                    { result = val[1] }
   | EndScript                             { result = val[0] }
   | LoopConstruct                         { result = val[0] }
@@ -178,13 +179,13 @@ rule
   DictGetWithDotLiteral:
     '.' IDENTIFIER                  { result = [val[1]] }
   | DictGetWithDotLiteral DICT_VAL  { result = val[0] << val[1] }
+  ;
 
   DictSet:
     VariableRetrieval DictGetWithDot '=' Expression     { result = DictSetNode.new(val[0], val[1], val[3]) }
   | LET VariableRetrieval DictGetWithDot '=' Expression { result = DictSetNode.new(val[1], val[2], val[4]) }
   ;
 
-  # can only tell if the identifier is a list or dict at compile time
   ListOrDictGet:
     VariableRetrieval ListOrDictGetWithKey    { result = ListOrDictGetNode.new(val[0], val[1]) }
   | DictGet ListOrDictGetWithKey              { result = ListOrDictGetNode.new(val[0], val[1]) }
