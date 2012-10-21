@@ -15,7 +15,7 @@ token REGEXP
 token TRUE FALSE NIL
 token LET UNLET IDENTIFIER
 token DICT_VAL # like dict.key, 'key' is a DICT_VAL
-token SCOPE_MODIFIER SPECIAL_VAR_PREFIX
+token SCOPE_MODIFIER SCOPE_MODIFIER_LITERAL SPECIAL_VAR_PREFIX
 token FINISH
 
 prechigh
@@ -91,6 +91,7 @@ rule
   | Regexp                                { result = val[0] }
   | List                                  { result = val[0] }
   | Dictionary                            { result = val[0] }
+  | ScopeModifierLiteral                  { result = val[0] }
   | TRUE                                  { result = TrueNode.new }
   | FALSE                                 { result = FalseNode.new }
   | NIL                                   { result = NilNode.new }
@@ -111,6 +112,10 @@ rule
 
   Regexp:
     REGEXP                                { result = RegexpNode.new(val[0]) }
+  ;
+
+  ScopeModifierLiteral:
+    SCOPE_MODIFIER_LITERAL                { result = ScopeModifierLiteralNode.new(val[0]) }
   ;
 
   List:

@@ -154,6 +154,7 @@ class ListNode < LiteralNode
   end
 end
 class DictionaryNode < LiteralNode; end
+class ScopeModifierLiteralNode < LiteralNode; end
 
 class TrueNode < LiteralNode
   def initialize() super(true) end

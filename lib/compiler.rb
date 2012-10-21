@@ -166,6 +166,7 @@ module Riml
     ListNodeVisitor = LiteralNodeVisitor
     DictionaryNodeVisitor = LiteralNodeVisitor
 
+    ScopeModifierLiteralNode = LiteralNodeVisitor
     FinishNodeVisitor = LiteralNodeVisitor
     ContinueNodeVisitor = LiteralNodeVisitor
     BreakNodeVisitor = LiteralNodeVisitor

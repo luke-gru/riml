@@ -4,7 +4,7 @@ class BasicLexerTest < Riml::TestCase
 
   test "if statement" do
     riml = <<-Riml
-    if 1 #### comment
+    if 1
       print '...'
       if false
         do_something
@@ -83,6 +83,46 @@ Riml
       [:DEF, "def"], [:IDENTIFIER, "myDict.echoMsg"], [:NEWLINE, "\n"],
         [:BUILTIN_COMMAND, "echo"],
           [:IDENTIFIER, "self"], [:DICT_VAL, "msg"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
+  end
+
+  test "ignore double-quote comments" do
+    riml = <<Riml
+" this is a comment
+" this is a comment with "a nested" double-quote
+if do_something()
+  do_something_1()
+else
+  do_something_2()
+end
+Riml
+
+    expected = [
+      [:IF, "if"], [:IDENTIFIER, "do_something"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
+        [:IDENTIFIER, "do_something_1"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
+      [:ELSE, "else"], [:NEWLINE, "\n"],
+        [:IDENTIFIER, "do_something_2"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
+  end
+
+  test "scope modifier literal" do
+    riml = <<Riml
+if s:var
+  return s:
+else
+  return g:
+end
+Riml
+
+    expected = [
+      [:IF, "if"], [:SCOPE_MODIFIER, "s:"], [:IDENTIFIER, "var"], [:NEWLINE, "\n"],
+        [:RETURN, "return"], [:SCOPE_MODIFIER_LITERAL, "s:"], [:NEWLINE, "\n"],
+      [:ELSE, "else"], [:NEWLINE, "\n"],
+        [:RETURN, "return"], [:SCOPE_MODIFIER_LITERAL, "g:"], [:NEWLINE, "\n"],
       [:END, "end"]
     ]
     assert_equal expected, lex(riml)

@@ -71,4 +71,27 @@ Riml
 
     assert_equal expected, parse(riml)
   end
+
+  test "scope modifier literal" do
+    riml = <<Riml
+if s:var
+  return s:
+else
+  return g:
+end
+Riml
+
+    expected =
+      Nodes.new([
+        IfNode.new(GetVariableNode.new("s:","var"),
+          Nodes.new([
+            ReturnNode.new(ScopeModifierLiteralNode.new("s:")),
+            ElseNode.new(Nodes.new([
+                           ReturnNode.new(ScopeModifierLiteralNode.new("g:"))
+                        ]))
+                    ])
+                  )
+                ])
+    assert_equal expected, parse(riml)
+  end
 end
