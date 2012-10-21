@@ -88,7 +88,7 @@ Riml
     assert_equal expected, lex(riml)
   end
 
-  test "ignore double-quote comments" do
+  test "ignore single_line comments" do
     riml = <<Riml
 " this is a comment
 " this is a comment with "a nested" double-quote
@@ -105,6 +105,30 @@ Riml
       [:ELSE, "else"], [:NEWLINE, "\n"],
         [:IDENTIFIER, "do_something_2"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
       [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
+  end
+
+  test "ignore inline comment after function name definition" do
+    riml = <<Riml
+function! smartinput#clear_rules()  "{{{2
+  let s:available_nrules = []
+endfunction
+Riml
+
+    expected = [
+      [:DEF, "def"], ["!", "!"], [:IDENTIFIER, "smartinput#clear_rules"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
+        [:LET, "let"], [:SCOPE_MODIFIER, "s:"], [:IDENTIFIER, "available_nrules"], ["=", "="], ["[", "["], ["]", "]"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
+  end
+
+  test "allow double single-quotes in single-quote in literal string" do
+    riml = %{echo ''''''}
+    expected = [
+      [:BUILTIN_COMMAND, "echo" ],
+      [:STRING_S, "''''"]
     ]
     assert_equal expected, lex(riml)
   end

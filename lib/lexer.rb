@@ -5,7 +5,7 @@ module Riml
     include Riml::Constants
     class MissingChunk < ArgumentError; end
 
-    COMMENT_REGEX = /\A\s*".*$/
+    SINGLE_LINE_COMMENT_REGEX = /\A\s*"(.*)$/
 
     def tokenize(code)
       @code = code
@@ -16,15 +16,14 @@ module Riml
       @indent_pending = false
       @dedent_pending = false
       @one_line_conditional_END_pending = false
-      @inline_comment_allowed = false
       @splat_allowed = false
       @line = 0
 
       while more_code_to_tokenize?
         begin
-          tokenize_chunk(get_new_chunk)
+          chunk = get_new_chunk
+          tokenize_chunk(chunk)
         rescue MissingChunk
-          break
         end
       end
       raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0
@@ -60,7 +59,6 @@ module Riml
           if identifier == 'function'
             identifier = 'def'
             @i += 5 # diff b/t the two string lengths
-            @inline_comment_allowed = true
           elsif identifier == 'finally'
             identifier = 'ensure'
             @i += 1 # diff b/t the two string lengths
@@ -133,16 +131,17 @@ module Riml
           @tokens << [ :STRING_D, " #{$4[1..-1]}" ]
         end
         @i += interpolation.size
-      elsif inline_comment = chunk[COMMENT_REGEX] && @inline_comment_allowed
-        comment = chunk[COMMENT_REGEX]
-        @i += comment.size # inline comment, don't consume newline character
-      elsif single_line_comment = chunk[COMMENT_REGEX] && (@tokens.last.nil? || @tokens.last[0] == :NEWLINE)
-        comment = chunk[COMMENT_REGEX]
+      elsif single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX] && (@tokens.last.nil? || @tokens.last[0] == :NEWLINE)
+        comment = chunk[SINGLE_LINE_COMMENT_REGEX]
         @i += comment.size + 1 # consume next newline character
-      elsif string = chunk[/\A("|')(.*?)(\1)/, 2]
-        type = ($1 == '"' ? :D : :S)
-        @tokens << [:"STRING_#{type}", string]
-        @i += string.size + 2
+      elsif inline_comment = chunk[/\A\s*"[^"]*?$/]
+        @i += inline_comment.size # inline comment, don't consume newline character
+      elsif string_double = chunk[/\A"(.*?)"/, 1]
+        @tokens << [:STRING_D, string_double]
+        @i += string_double.size + 2
+      elsif string_single = chunk[/\A'(([^']|'')*)'/, 1]
+        @tokens << [:STRING_S, string_single]
+        @i += string_single.size + 2
       elsif newlines = chunk[/\A(\n+)/, 1]
         # push only 1 newline
         @tokens << [:NEWLINE, "\n"]

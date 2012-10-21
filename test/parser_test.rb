@@ -94,4 +94,5 @@ Riml
                 ])
     assert_equal expected, parse(riml)
   end
+
 end
