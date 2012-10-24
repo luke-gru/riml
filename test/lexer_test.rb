@@ -151,4 +151,33 @@ Riml
     ]
     assert_equal expected, lex(riml)
   end
+
+  test "ex-literals (line starts with ':') pass right through" do
+    riml = <<Riml
+if s:var
+  :au something
+else
+  :au somethingElse
+end
+Riml
+    expected = [
+      [:IF, "if"], [:SCOPE_MODIFIER, "s:"], [:IDENTIFIER, "var"], [:NEWLINE, "\n"],
+        [:EX_LITERAL, "au something"], [:NEWLINE, "\n"],
+      [:ELSE, "else"], [:NEWLINE, "\n"],
+        [:EX_LITERAL, "au somethingElse"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
+  end
+
+  test "function variables don't get lexed as function keyword" do
+    riml = <<Riml
+let M = function('smartinput#map_to_trigger')
+Riml
+    expected = [
+      [:LET, "let"], [:IDENTIFIER, "M"], ["=", "="], [:IDENTIFIER, "function"], ["(", "("],
+      [:STRING_S, "smartinput#map_to_trigger"], [")", ")"]
+    ]
+    assert_equal expected, lex(riml)
+  end
 end

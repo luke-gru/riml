@@ -10,7 +10,7 @@ token RETURN
 token NEWLINE
 token NUMBER
 token STRING_D STRING_S # single- and double-quoted
-token HEREDOC
+token HEREDOC EX_LITERAL
 token REGEXP
 token TRUE FALSE NIL
 token LET UNLET IDENTIFIER
@@ -62,6 +62,7 @@ rule
   | VariableRetrieval                     { result = val[0] }
   | UnletVariable                         { result = val[0] }
   | Literal                               { result = val[0] }
+  | ExLiteral                             { result = val[0] }
   | Heredoc                               { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
@@ -423,6 +424,10 @@ rule
   Super:
     SUPER '(' ArgList ')'     { result = SuperNode.new(val[2], true) }
   | SUPER                     { result = SuperNode.new([], false) }
+  ;
+
+  ExLiteral:
+    EX_LITERAL                { result = ExLiteralNode.new(val[0])}
   ;
 end
 

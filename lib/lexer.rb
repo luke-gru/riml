@@ -17,14 +17,10 @@ module Riml
       @dedent_pending = false
       @one_line_conditional_END_pending = false
       @splat_allowed = false
-      @line = 0
 
       while more_code_to_tokenize?
-        begin
-          chunk = get_new_chunk
-          tokenize_chunk(chunk)
-        rescue MissingChunk
-        end
+        chunk = get_new_chunk
+        tokenize_chunk(chunk)
       end
       raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0
       raise SyntaxError, "#{(@current_indent / 2).abs} too many END identifiers" if @current_indent < 0
@@ -32,27 +28,35 @@ module Riml
     end
 
     def tokenize_chunk(chunk)
-      raise MissingChunk, "chunk is #{chunk.inspect}" unless chunk
 
       # deal with line continuations
-      if cont = chunk[/\A\\/]
+      if cont = chunk[/\A\\/] && @tokens.last[0] == :NEWLINE
         @i += 1
-        @tokens.pop until @tokens.last[0] != :NEWLINE
+        @tokens.pop while @tokens.last[0] == :NEWLINE
+        return
+      end
+
+      # all lines that start with ':' pass right through unmodified
+      if (@tokens.last.nil? || @tokens.last[0] == :NEWLINE) && (ex_literal = chunk[/\A\s*:(.*)?$/])
+        @i += ex_literal.size
+        @tokens << [:EX_LITERAL, $1]
         return
       end
 
       # the 'n' scope modifier is added by riml
-      if scope_modifier = chunk[/\A[bwtglsavn]:/]
+      if scope_modifier = chunk[/\A([bwtglsavn]:)[\w_]/]
         @i += 2
-        if lookahead_token[0] != :IDENTIFIER
-          @tokens << [:SCOPE_MODIFIER_LITERAL, scope_modifier]
-        else
-          @tokens << [:SCOPE_MODIFIER, scope_modifier]
-        end
+        @tokens << [:SCOPE_MODIFIER, $1]
+      elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
+        @i += 2
+        @tokens << [:SCOPE_MODIFIER_LITERAL, $1]
       elsif special_var_prefix = chunk[/\A[&$@]/]
         @tokens << [:SPECIAL_VAR_PREFIX, special_var_prefix]
         @expecting_identifier = true
         @i += 1
+      elsif function_reference = chunk[/\A(function)\(/]
+        @tokens << [:IDENTIFIER, $1]
+        @i += $1.size
       elsif identifier = chunk[/\A[a-zA-Z_][\w#]*\??/]
         # keyword identifiers
         if KEYWORDS.include?(identifier)
@@ -222,18 +226,6 @@ module Riml
       new_chunk[/^(.+?)(if|unless).+$/] && !$1.strip.empty?
     ensure
       @i = old_i
-    end
-
-    def lookahead_token
-      return [] unless more_code_to_tokenize?
-      old_i, old_tokens = @i, @tokens
-      @tokens = []
-      until @tokens.size == 1
-        tokenize_chunk(get_new_chunk)
-      end
-      @tokens.first
-    ensure
-      @i, @tokens = old_i, old_tokens
     end
 
     def get_new_chunk

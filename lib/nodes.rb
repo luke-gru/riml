@@ -172,6 +172,8 @@ class NewlineNode < LiteralNode
   def initialize() super("\n") end
 end
 
+class ExLiteralNode < LiteralNode; end
+
 class FinishNode < KeywordNode
   def initialize() super("finish\n") end
 end

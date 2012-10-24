@@ -162,6 +162,7 @@ module Riml
     NumberNodeVisitor = LiteralNodeVisitor
     StringNodeVisitor = LiteralNodeVisitor
     RegexpNodeVisitor = LiteralNodeVisitor
+    ExLiteralNodeVisitor = LiteralNodeVisitor
 
     ListNodeVisitor = LiteralNodeVisitor
     DictionaryNodeVisitor = LiteralNodeVisitor

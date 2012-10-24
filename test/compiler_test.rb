@@ -831,6 +831,13 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "ex-literals (lines starting with ':') don't get translated at all" do
+    riml     = ":autocmd BufEnter * quit!"
+    expected =  "autocmd BufEnter * quit!"
+
+    assert_equal expected, compile(riml)
+  end
+
   test "set variable to value of binary == expression" do
     riml = <<Riml
 a = "hi" == "hi"
