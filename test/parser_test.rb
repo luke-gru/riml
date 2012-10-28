@@ -9,7 +9,7 @@ class BasicParserTest < Riml::TestCase
     end
     Viml
     expected = Nodes.new([
-      DefNode.new(nil, "a_method", ['a', 'b'], nil,
+      DefNode.new('!', nil, "a_method", ['a', 'b'], nil,
         Nodes.new([TrueNode.new])
       )
     ])
@@ -27,7 +27,7 @@ def b:another_method(a, b)
 end
 Viml
     expected = Nodes.new([
-      DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new(
+      DefNode.new('!', 'b:', "another_method", ['a', 'b'], nil, Nodes.new(
         [IfNode.new(CallNode.new(nil, "hello", []),
                       Nodes.new([TrueNode.new,
                                  ElseNode.new(
@@ -83,15 +83,37 @@ Riml
 
     expected =
       Nodes.new([
-        IfNode.new(GetVariableNode.new("s:","var"),
-          Nodes.new([
-            ReturnNode.new(ScopeModifierLiteralNode.new("s:")),
-            ElseNode.new(Nodes.new([
-                           ReturnNode.new(ScopeModifierLiteralNode.new("g:"))
-                        ]))
-                    ])
-                  )
-                ])
+        IfNode.new(GetVariableNode.new("s:","var"), Nodes.new([
+          ReturnNode.new(ScopeModifierLiteralNode.new("s:")),
+        ElseNode.new(Nodes.new([
+          ReturnNode.new(ScopeModifierLiteralNode.new("g:"))
+        ]))
+        ])
+      )])
+    assert_equal expected, parse(riml)
+  end
+
+  test "dictionary key with bracket assign" do
+    riml = <<Riml
+  function! urules.add(name, urules)
+    call add(self.names, a:name)
+    let self.table[a:name] = a:urules
+  endfunction
+Riml
+
+    expected =
+      Nodes.new([
+        DefNode.new("!", nil, "urules.add", ["name", "urules"], nil, Nodes.new([
+          ExplicitCallNode.new(nil, "add", [DictGetDotNode.new(
+                                              GetVariableNode.new(nil, "self"), ["names"]),
+                                          GetVariableNode.new("a:", "name")]),
+        ListOrDictSetNode.new(
+          ListOrDictGetNode.new(
+            DictGetDotNode.new(GetVariableNode.new(nil, "self"), ["table"]),
+                              [GetVariableNode.new("a:", "name")]
+          ),
+          GetVariableNode.new("a:", "urules"))
+    ]))])
     assert_equal expected, parse(riml)
   end
 

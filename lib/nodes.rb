@@ -172,7 +172,12 @@ class NewlineNode < LiteralNode
   def initialize() super("\n") end
 end
 
-class ExLiteralNode < LiteralNode; end
+class ExLiteralNode < LiteralNode
+  def initialize(*)
+    super
+    self.force_newline = true
+  end
+end
 
 class FinishNode < KeywordNode
   def initialize() super("finish\n") end
@@ -383,7 +388,7 @@ class GetCurlyBraceNameNode < Struct.new(:scope_modifier, :variable)
   end
 end
 
-class UnletVariableNode < Struct.new(:variables)
+class UnletVariableNode < Struct.new(:bang, :variables)
   include Visitable
   include Walkable
 
@@ -398,7 +403,7 @@ class UnletVariableNode < Struct.new(:variables)
 end
 
 # Method definition.
-class DefNode < Struct.new(:scope_modifier, :name, :parameters, :keyword, :expressions)
+class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword, :expressions)
   include Visitable
   include Indentable
   include FullyNameable
@@ -450,7 +455,7 @@ end
 
 class DefMethodNode < DefNode
   def to_def_node
-    DefNode.new(scope_modifier, name, parameters, keyword, expressions)
+    DefNode.new(bang, scope_modifier, name, parameters, keyword, expressions)
   end
 end
 
@@ -536,9 +541,6 @@ class LineContinuation < Struct.new(:lines)
   end
 end
 
-# dict['key']
-# dict.key
-# dict['key1']['key2']
 class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
   def children
@@ -546,12 +548,17 @@ class DictGetNode < Struct.new(:dict, :keys)
   end
 end
 
+# dict['key']
+# dict['key1']['key2']
 class DictGetBracketNode < DictGetNode; end
+
+# dict.key
+# dict.key.key2
 class DictGetDotNode < DictGetNode; end
 
 # dict.key = 'val'
 # dict.key.key2 = 'val'
-class DictSetNode < Struct.new(:dict, :keys, :val)
+class DictSetDotNode < Struct.new(:dict, :keys, :val)
   include Visitable
   def children
     [dict, val]
@@ -565,7 +572,17 @@ class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   alias list list_or_dict
   alias dict list_or_dict
   def children
-    [list_or_dict]
+    [list_or_dict] + keys
+  end
+end
+
+# dict[key] = val
+# list[key] = val
+# list[key][key] = val
+class ListOrDictSetNode < Struct.new(:list_or_dict_get_node, :val)
+  include Visitable
+  def children
+    [list_or_dict_get_node, val]
   end
 end
 

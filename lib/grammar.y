@@ -56,6 +56,7 @@ rule
   | Assign                                { result = val[0] }
   | DictGet                               { result = val[0] }
   | ListOrDictGet                         { result = val[0] }
+  | ListOrDictSet                         { result = val[0] }
   | DictSet                               { result = val[0] }
   | Def                                   { result = val[0] }
   | Return                                { result = val[0] }
@@ -80,7 +81,7 @@ rule
   ;
 
   Terminator:
-    NEWLINE                               { result = NewlineNode.new }
+    NEWLINE                               { result = nil }
   | ';'                                   { result = nil }
   | '|'                                   { result = nil }
   ;
@@ -130,10 +131,8 @@ rule
 
   ListItems:
     /* nothing */                         { result = [] }
-  | Literal                               { result = val }
-  | VariableRetrieval                     { result = val }
-  | ListItems ',' Literal                 { result = val[0] << val[2] }
-  | ListItems ',' VariableRetrieval       { result = val[0] << val[2] }
+  | Expression                            { result = [val[0]] }
+  | ListItems ',' Expression              { result = val[0] << val[2] }
   ;
 
   Dictionary
@@ -188,8 +187,8 @@ rule
   ;
 
   DictSet:
-    VariableRetrieval DictGetWithDot '=' Expression     { result = DictSetNode.new(val[0], val[1], val[3]) }
-  | LET VariableRetrieval DictGetWithDot '=' Expression { result = DictSetNode.new(val[1], val[2], val[4]) }
+    VariableRetrieval DictGetWithDot '=' Expression     { result = DictSetDotNode.new(val[0], val[1], val[3]) }
+  | LET VariableRetrieval DictGetWithDot '=' Expression { result = DictSetDotNode.new(val[1], val[2], val[4]) }
   ;
 
   ListOrDictGet:
@@ -209,6 +208,11 @@ rule
   | DictGet           { result = val[0] }
   | Number            { result = val[0] }
   | Call              { result = val[0] }
+  ;
+
+  ListOrDictSet:
+    LET ListOrDictGet '=' Expression      { result = ListOrDictSetNode.new(val[1], val[3]) }
+  | ListOrDictGet '=' Expression          { result = ListOrDictSetNode.new(val[0], val[2]) }
   ;
 
   Call:
@@ -302,7 +306,7 @@ rule
   ;
 
   UnletVariable:
-    UNLET VariableRetrieval                               { result = UnletVariableNode.new([ val[1] ]) }
+    UNLET Bang VariableRetrieval                          { result = UnletVariableNode.new('!', [ val[2] ]) }
   | UnletVariable VariableRetrieval                       { result = val[0] << val[1] }
   ;
 
@@ -315,10 +319,14 @@ rule
   # Method definition
   # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new(val[1], val[2], [], val[3], val[4]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new(val[1], val[2], val[4], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new(val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType Bang Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new('!', val[2], val[3], [], val[4], val[5]) }
+  | FunctionType Bang Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5], val[7], val[8]) }
+  | FunctionType Bang Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5] << val[7], val[9], val[10]) }
   ;
+
+  Bang:
+    /* nothing */ { result = nil }
+  | '!'           { result = val[0] }
 
   FunctionType:
     DEF  { result = "DefNode" }
@@ -435,23 +443,34 @@ end
   require File.expand_path("../lexer", __FILE__)
   require File.expand_path("../nodes", __FILE__)
   require File.expand_path("../ast_rewriter", __FILE__)
+  require File.expand_path("../errors", __FILE__)
 ---- inner
   # This code will be put as-is in the parser class
 
   # parses tokens or code into output nodes
   def parse(object, rewrite_ast = true)
-    @tokens = if tokens?(object)
-      object
+    if tokens?(object)
+      @tokens = object
     elsif code?(object)
-      Riml::Lexer.new.tokenize(object)
+      @lexer = Riml::Lexer.new(object)
     end
     ast = do_parse
     return ast if rewrite_ast == false
     AST_Rewriter.new(ast).rewrite
   end
 
+  alias do_parse_without_error_handling do_parse
+  def do_parse_with_error_handling
+    do_parse_without_error_handling
+  rescue Racc::ParseError => e
+    raise unless @lexer
+    raise Riml::ParseError,  "line #{@lexer.lineno}: #{e.message}"
+  end
+  alias do_parse do_parse_with_error_handling
+
   def next_token
-    @tokens.shift
+    return @tokens.shift unless @lexer
+    @lexer.next_token
   end
 
   private

@@ -25,13 +25,13 @@ module Riml
       end
     end
 
-    def lexer; Lexer.new end
+    def lexer(code); Lexer.new(code) end
     def parser; Parser.new end
     def compiler; Compiler.new end
 
     # lex code into tokens
     def lex(code)
-      lexer.tokenize(code)
+      lexer(code).tokenize
     end
 
     # parse code (or tokens) into nodes

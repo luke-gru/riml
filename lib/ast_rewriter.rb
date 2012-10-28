@@ -149,7 +149,7 @@ module Riml
         end
 
         def match?(node)
-          DictSetNode === node && node.dict.name == "self"
+          DictSetDotNode === node && node.dict.name == "self"
         end
 
         def replace(node)
@@ -167,11 +167,11 @@ module Riml
         def replace(class_node)
           if class_node.superclass?
             def_node = DefNode.new(
-              nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
+              '!', nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
             )
           else
             def_node = DefNode.new(
-              nil, "initialize", [], nil, Nodes.new([])
+              '!', nil, "initialize", [], nil, Nodes.new([])
             )
           end
           class_node.expressions.unshift(def_node)

@@ -10,7 +10,7 @@ end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new(nil, "a_method", ['a', 'b'], nil,
+      DefNode.new('!', nil, "a_method", ['a', 'b'], nil,
         Nodes.new([ ReturnNode.new(TrueNode.new) ])
       )
     ])
@@ -38,7 +38,7 @@ end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new('b:', "another_method", ['a', 'b'], nil, Nodes.new([
+      DefNode.new('!', 'b:', "another_method", ['a', 'b'], nil, Nodes.new([
         IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([
           FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))])),
         ReturnNode.new(ExplicitCallNode.new(nil, "SomeFunction", []))
@@ -150,9 +150,9 @@ Viml
 
   test "setting variable to nil frees its memory" do
     riml = "b:a = nil"
-    expected = "unlet! b:a\n"
+    expected = "unlet! b:a"
 
-    assert_equal expected, compile(riml)
+    assert_equal expected, compile(riml).chomp
   end
 
   test "unless expression" do
@@ -209,16 +209,16 @@ Viml
 
   test "functions can take expressions" do
     riml = 'echo "found #{n} words"'
-    expected = 'echo "found " . s:n . " words"' << "\n"
+    expected = 'echo "found " . s:n . " words"'
 
-    assert_equal expected, compile(riml)
+    assert_equal expected, compile(riml).chomp
   end
 
   test "chaining method calls" do
     riml = 'n = n + len(split(getline(lnum)))'
-    expected = 'let s:n = s:n + len(split(getline(s:lnum)))' << "\n"
+    expected = 'let s:n = s:n + len(split(getline(s:lnum)))'
 
-    assert_equal expected, compile(riml)
+    assert_equal expected, compile(riml).chomp
   end
 
   test "function can take range when given parens" do
@@ -345,11 +345,11 @@ let s:alist = ["aap", "mies", "noot"]
 Viml
 
     riml2 = 'emptyList = []'
-    expected2 = 'let s:emptyList = []' << "\n"
+    expected2 = 'let s:emptyList = []'
 
 
   assert_equal expected, compile(riml)
-  assert_equal expected2, compile(riml2)
+  assert_equal expected2, compile(riml2).chomp
   end
 
   test "lists can take optional comma at end if not empty" do
@@ -376,8 +376,8 @@ Viml
 
   test "var + literal list concatenation" do
     riml = 'echo(alist + ["foo", "bar"])'
-    expected = 'echo s:alist + ["foo", "bar"]' << "\n"
-    assert_equal expected, compile(riml)
+    expected = 'echo s:alist + ["foo", "bar"]'
+    assert_equal expected, compile(riml).chomp
   end
 
   test "for var in list block" do
@@ -385,24 +385,25 @@ Viml
 for var in [1, 2, 3]
   echo var
 endfor
+echo "done"
 Riml
     expected = riml
-    assert_equal expected, compile(riml)
+    assert_equal expected, compile(riml).chomp
   end
 
   test "multi dimensional lists compile correctly" do
     riml = '_2d = ["one", ["two", "three"]]'
-    expected = 'let s:_2d = ["one", ["two", "three"]]' << "\n"
+    expected = 'let s:_2d = ["one", ["two", "three"]]'
 
     riml2 = 'mult_inner_lists = [["one"], "two", "three", ["four", "five"]]'
-    expected2 = 'let s:mult_inner_lists = [["one"], "two", "three", ["four", "five"]]' << "\n"
+    expected2 = 'let s:mult_inner_lists = [["one"], "two", "three", ["four", "five"]]'
 
     riml3 = 'three_d = [["one"], "two", "three", ["four", "five", ["six", "seven"]]]'
-    expected3 = 'let s:three_d = [["one"], "two", "three", ["four", "five", ["six", "seven"]]]' << "\n"
+    expected3 = 'let s:three_d = [["one"], "two", "three", ["four", "five", ["six", "seven"]]]'
 
-  assert_equal expected, compile(riml)
-  assert_equal expected2, compile(riml2)
-  assert_equal expected3, compile(riml3)
+  assert_equal expected, compile(riml).chomp
+  assert_equal expected2, compile(riml2).chomp
+  assert_equal expected3, compile(riml3).chomp
   end
 
 
@@ -437,25 +438,25 @@ Viml
 
   test "basic dictionaries compile correctly" do
     riml = 'dict = {"one": "een", "two": "twee"}'
-    expected = 'let s:dict = {"one": "een", "two": "twee"}' << "\n"
+    expected = 'let s:dict = {"one": "een", "two": "twee"}'
 
     riml2 = 'emptyDict = {}'
-    expected2 = 'let s:emptyDict = {}' << "\n"
+    expected2 = 'let s:emptyDict = {}'
 
     # dictionary with optional comma at the end
     riml3 = 'dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow",},}'
-    expected3 = 'let s:dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}' << "\n"
+    expected3 = 'let s:dictInDict = {"one": "een", ["two"]: "twee", "omg": {"who knows": "wow"}}'
 
-    assert_equal expected, compile(riml)
-    assert_equal expected2, compile(riml2)
-    assert_equal expected3, compile(riml3)
+    assert_equal expected, compile(riml).chomp
+    assert_equal expected2, compile(riml2).chomp
+    assert_equal expected3, compile(riml3).chomp
   end
 
   test "ternary operators compile correctly" do
     riml = 'a = b ? c : d'
-    expected = 'let s:a = s:b ? s:c : s:d' << "\n"
+    expected = 'let s:a = s:b ? s:c : s:d'
 
-    assert_equal expected, compile(riml)
+    assert_equal expected, compile(riml).chomp
   end
 
   test "for var in call() block end compiles correctly" do
@@ -465,7 +466,7 @@ for var in range(1,2,3)
 end
 Riml
 
-    expected = <<Viml.chomp
+    expected = <<Viml
 for var in range(1, 2, 3)
   echo var
 endfor
@@ -538,8 +539,8 @@ Viml
 
   test "octal, hex and floating point decimal numbers are preserved" do
     riml = "echo 0x7f + 036 + 0.1265"
-    expected = riml + "\n"
-    assert_equal expected, compile(riml)
+    expected = riml
+    assert_equal expected, compile(riml).chomp
   end
 
   test "dictionary get value for key using bracket syntax with variable" do
@@ -623,7 +624,7 @@ Viml
     assert_equal expected2, compile(riml2)
   end
 
-  test "dictionary set value for key with variable" do
+  test "dictionary set value for key with dot syntax" do
     riml = <<Riml
 dict = {'key': {'key2': 'value2'}}
 let dict.key = {'key3': 'value3'}
@@ -633,6 +634,19 @@ let s:dict = {'key': {'key2': 'value2'}}
 let s:dict.key = {'key3': 'value3'}
 Viml
     assert_equal expected, compile(riml)
+  end
+
+  test "set value for key using bracket syntax" do
+    riml = <<Riml
+dict = {'key': {'key2': 'value2'}}
+let myKey = 'key'
+let dict[myKey] = {'key3': 'value3'}
+Riml
+    expected = <<Viml
+let s:dict = {'key': {'key2': 'value2'}}
+let s:myKey = 'key'
+let s:dict[s:myKey] = {'key3': 'value3'}
+Viml
   end
 
   test "list or dict get with variable" do
@@ -759,7 +773,7 @@ Viml
   test "define dictionary method" do
     riml = <<Riml
 myDict = {'msg': 'hey'}
-def myDict.echoMsg()
+function! myDict.echoMsg()
   echo self.msg
 end
 Riml
@@ -831,9 +845,12 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "ex-literals (lines starting with ':') don't get translated at all" do
-    riml     = ":autocmd BufEnter * quit!"
-    expected =  "autocmd BufEnter * quit!"
+  test "ex-literals (lines starting with ':') don't get translated at all except for deleted ':' at beg. of line" do
+    riml     = <<Riml
+:autocmd BufEnter * quit!
+:autocmd BufEnter *.html split
+Riml
+    expected = riml.gsub(/^:/, '')
 
     assert_equal expected, compile(riml)
   end
@@ -873,8 +890,8 @@ Viml
            "omg this is a heredoc\t\n" +
            "EOS"
 
-    expected = "let s:heredoc = \"omg this is a heredoc\t\n\"" + "\n"
-    assert_equal expected, compile(riml)
+    expected = %{let s:heredoc = "omg this is a heredoc\t\n"}
+    assert_equal expected, compile(riml).chomp
   end
 
   test "autoloadable variables" do

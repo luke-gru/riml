@@ -124,28 +124,32 @@ module Riml
           0
         when NilClass
           'nil'
-        when String
-          StringNode === node ? escape(node) : node.value.dup
-        when Array
-          node.value.each {|n| n.parent_node = node}
-          '[' << node.value.map {|n| compile(n)}.join(', ') << ']'
-        when Hash
-          node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = [node, node]}
-          '{' << node.value.map {|k,v| compile(k) << ': ' << compile(v)}.join(', ') << '}'
         when Numeric
           node.value
+        when String
+          StringNode === node ? string_surround(node) : node.value.dup
+        when Array
+          node.value.each {|n| n.parent_node = node}
+          '[' <<
+          node.value.map do |n|
+            n.accept(visitor_for_node(n))
+            n.compiled_output
+          end.join(', ') << ']'
+        when Hash
+          node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = [node, node]}
+          '{' <<
+          node.value.map do |k,v|
+            k.accept(visitor_for_node(k))
+            v.accept(visitor_for_node(v))
+            k.compiled_output << ': ' << v.compiled_output
+          end.join(', ') << '}'
         end.to_s
 
         node.compiled_output = value
-      rescue NoMethodError
-        if GetVariableNode === node
-          node.accept(GetVariableNodeVisitor.new)
-          node.compiled_output
-        else raise end
       end
 
       private
-      def escape(string_node)
+      def string_surround(string_node)
         case string_node.type
         when :d
           '"' << string_node.value << '"'
@@ -306,7 +310,7 @@ module Riml
     class UnletVariableNodeVisitor < Visitor
       def compile(node)
         node.variables.each {|v| v.parent_node = node}
-        node.compiled_output = "unlet!"
+        node.compiled_output = "unlet#{node.bang}"
         node.variables.each do |var|
           node.compiled_output << " "
           var.accept(visitor_for_node(var))
@@ -344,8 +348,9 @@ module Riml
 
       def compile(node)
         modifier = node.scope ? nil : node.scope_modifier || 's:'
+        bang = node.bang
         params = process_parameters!(node)
-        declaration = "function! #{modifier}"
+        declaration = "function#{bang} #{modifier}"
         declaration <<
         if node.name.respond_to?(:variable)
           node.name.accept(visitor_for_node(node.name))
@@ -459,7 +464,7 @@ module Riml
         body.each_line do |line|
           node.compiled_output << node.indent + line
         end
-        node.compiled_output << "endfor"
+        node.compiled_output << "endfor\n"
       end
     end
 
@@ -550,7 +555,7 @@ module Riml
       end
     end
 
-    class DictSetNodeVisitor < Visitor
+    class DictSetDotNodeVisitor < Visitor
       def compile(node)
         [node.dict, node.val].each {|n| n.parent_node = node}
         node.compiled_output = "let "
@@ -560,6 +565,9 @@ module Riml
         node.val.accept(visitor_for_node(node.val))
         node.compiled_output << "\n"
       end
+    end
+
+    class ListOrDictSetBracketNode < Visitor
     end
 
     class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end

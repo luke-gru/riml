@@ -180,4 +180,23 @@ Riml
     ]
     assert_equal expected, lex(riml)
   end
+
+  test "line continuations" do
+
+    riml = <<Riml
+echo lnum == 1
+\\     ? "top"
+\\     : lnum == 1000
+\\             ? "last"
+\\             : lnum
+Riml
+    expected = [
+      [:BUILTIN_COMMAND, "echo"], [:IDENTIFIER, "lnum"], ["==", "=="], [:NUMBER, "1"],
+      ["?", "?"], [:STRING_D, "top"],
+      [":", ":"], [:IDENTIFIER, "lnum"], ["==", "=="], [:NUMBER, "1000"],
+      ["?", "?"], [:STRING_D, "last"],
+      [":", ":"], [:IDENTIFIER, "lnum"]
+    ]
+    assert_equal expected, lex(riml)
+  end
 end
