@@ -6,6 +6,6 @@ source :rubygems
 # $ racc -o parser.rb grammar.y
 gem 'racc'
 
-group :development do
-  gem 'ruby-debug19', :require => 'ruby-debug'
+group :test do
+  gem 'rake' # for travis-ci
 end
