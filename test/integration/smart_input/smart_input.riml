@@ -614,4 +614,4 @@ endif
 
 
 " __END__  "{{{1
-" vim: foldmethod=marker
+" vim: foldmethod=marker syntax=vim

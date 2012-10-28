@@ -42,8 +42,7 @@ module Riml
       if @token_buf.any?
         return @prev_token = @token_buf.shift
       end
-      raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0
-      raise SyntaxError, "#{(@current_indent / 2).abs} too many END identifiers" if @current_indent < 0
+      check_indentation
       nil
     end
 
@@ -235,6 +234,11 @@ module Riml
           @dedent_pending = true
         end
       end
+    end
+
+    def check_indentation
+      raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0
+      raise SyntaxError, "#{(@current_indent / 2).abs} too many END identifiers" if @current_indent < 0
     end
 
     def one_line_conditional?(chunk)
