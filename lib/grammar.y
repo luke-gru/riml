@@ -24,7 +24,7 @@ prechigh
   left '+' '+=' '-' '-=' '.'
   left '>' '>#' '>?' '<' '<#' '<?' '>=' '>=#' '>=?'  '<=' '<=#' '<=?'
   left '==' '==?' '==#' '=~' '=~?' '=~#' '!~' '!~?' '!~#' '!=' '!=?' '!=#'
-  left 'is' 'isnot'
+  left IS ISNOT
   left '&&'
   left '||'
   right '?'
@@ -158,22 +158,14 @@ rule
   ;
 
   DictGet:
-    Dictionary DictGetWithBrackets               { result = DictGetBracketNode.new(val[0], val[1]) }
+    Dictionary ListOrDictGetWithBrackets           { result = DictGetBracketNode.new(val[0], val[1]) }
   | Dictionary DictGetWithDotLiteral             { result = DictGetDotNode.new(val[0], val[1]) }
   | VariableRetrieval DictGetWithDot             { result = DictGetDotNode.new(val[0], val[1]) }
-  | VariableRetrieval DictGetWithBracketsString  { result = DictGetBracketNode.new(val[0], val[1]) }
-  | DictGet DictGetWithBracketsString            { result = DictGetBracketNode.new(val[0], val[1]) }
-  | Call DictGetWithBracketsString               { result = DictGetBracketNode.new(val[0], val[1]) }
   ;
 
-  DictGetWithBrackets:
-   '['  Literal ']'                              { result = [val[1]] }
-  | DictGetWithBrackets '[' Literal ']'          { result = val[0] << val[2] }
-  ;
-
-  DictGetWithBracketsString:
-   '[' String ']'                              { result = [val[1]] }
-  | DictGetWithBracketsString '[' String ']'   { result = val[0] << val[2] }
+  ListOrDictGetWithBrackets:
+   '['  Expression ']'                           { result = [val[1]] }
+  | ListOrDictGetWithBrackets '[' Expression ']' { result = val[0] << val[2] }
   ;
 
   DictGetWithDot:
@@ -192,22 +184,9 @@ rule
   ;
 
   ListOrDictGet:
-    VariableRetrieval ListOrDictGetWithKey    { result = ListOrDictGetNode.new(val[0], val[1]) }
-  | DictGet ListOrDictGetWithKey              { result = ListOrDictGetNode.new(val[0], val[1]) }
-  | Call ListOrDictGetWithKey                 { result = ListOrDictGetNode.new(val[0], val[1]) }
-  ;
-
-  ListOrDictGetWithKey:
-    '[' ListOrDictKey ']'                      { result = [val[1]] }
-  | ListOrDictGetWithKey '[' ListOrDictKey ']' { result = val[0] << val[2] }
-  | ListOrDictGetWithKey '[' String ']'        { result = val[0] << val[2] }
-  ;
-
-  ListOrDictKey:
-    VariableRetrieval { result = val[0] }
-  | DictGet           { result = val[0] }
-  | Number            { result = val[0] }
-  | Call              { result = val[0] }
+    VariableRetrieval ListOrDictGetWithBrackets    { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | DictGet ListOrDictGetWithBrackets              { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | Call ListOrDictGetWithBrackets                 { result = ListOrDictGetNode.new(val[0], val[1]) }
   ;
 
   ListOrDictSet:
@@ -284,8 +263,8 @@ rule
   | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   | Expression '.=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
 
-  | List 'is'    List                     { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | List 'isnot' List                     { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression IS    Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression ISNOT Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
   ;
 
   # Assignment to a variable
@@ -321,6 +300,7 @@ rule
   Def:
     FunctionType Bang Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new('!', val[2], val[3], [], val[4], val[5]) }
   | FunctionType Bang Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5], val[7], val[8]) }
+  | FunctionType Bang Scope DefCallIdentifier '(' SPLAT     ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5], val[7], val[8]) }
   | FunctionType Bang Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5] << val[7], val[9], val[10]) }
   ;
 
@@ -351,7 +331,8 @@ rule
   ;
 
   Return:
-    RETURN Expression       { result = ReturnNode.new(val[1]) }
+    RETURN Expression                     { result = ReturnNode.new(val[1]) }
+  | RETURN Terminator                     { result = ReturnNode.new(nil)    }
   ;
 
   EndScript:
@@ -389,8 +370,8 @@ rule
   ;
 
   For:
-    FOR IDENTIFIER IN Call Block END           { result = ForNodeCall.new(val[1], val[3], val[4]) }
-  | FOR IDENTIFIER IN List Block END           { result = ForNodeList.new(val[1], val[3], val[4]) }
+    FOR IDENTIFIER IN Expression Block END     { result = ForNode.new(val[1], val[3], val[4]) }
+  | FOR List IN Expression Block END           { result = ForNode.new(val[1], val[3], val[4]) }
   ;
 
   Try:

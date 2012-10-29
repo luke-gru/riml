@@ -6,8 +6,9 @@ module Riml
     include Riml::Constants
 
     SINGLE_LINE_COMMENT_REGEX = /\A\s*"(.*)$/
+    OPERATOR_REGEX = /\A#{Regexp.union(['||', '&&', '===', '+=', '-='] + COMPARISON_OPERATORS)}/
 
-    attr_reader :tokens, :prev_token, :lineno
+    attr_reader :tokens, :prev_token, :lineno, :chunk
 
     def initialize(code)
       @code = code
@@ -47,9 +48,11 @@ module Riml
     end
 
     def tokenize_chunk(chunk)
+      @chunk = chunk
       # deal with line continuations
-      if cont = chunk[/\A\n*\s*\\/]
+      if cont = chunk[/\A(\n*)\s*\\/]
         @i += cont.size
+        @lineno += $1.size
         return
       end
 
@@ -60,8 +63,11 @@ module Riml
         return
       end
 
+      if splatted_arg = chunk[/\Aa:\d+/]
+        @i += splatted_arg.size
+        @token_buf << [:SCOPE_MODIFIER, 'a:'] << [:IDENTIFIER, splatted_arg[2..-1]]
       # the 'n' scope modifier is added by riml
-      if scope_modifier = chunk[/\A([bwtglsavn]:)[\w_]/]
+      elsif scope_modifier = chunk[/\A([bwtglsavn]:)[\w_]/]
         @i += 2
         @token_buf << [:SCOPE_MODIFIER, $1]
       elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
@@ -182,16 +188,6 @@ module Riml
 
         @i += newlines.size
         @lineno += newlines.size
-      # operators of more than 1 char
-      elsif operator = chunk[%r{\A(\|\||&&|===|==|!=|<=|>=|\+=|-=|=~)}, 1]
-        @token_buf << [operator, operator]
-        @i += operator.size
-      # FIXME: this doesn't work well enough
-      elsif regexp = chunk[%r{\A/.*?[^\\]/}]
-        @token_buf << [:REGEXP, regexp]
-        @i += regexp.size
-      elsif whitespaces = chunk[/\A\s+/]
-        @i += whitespaces.size
       elsif heredoc_pattern = chunk[%r{\A<<(.+?)\r?\n}]
         pattern = $1
         @i += heredoc_pattern.size
@@ -201,6 +197,16 @@ module Riml
         @i += heredoc_string.size + $2.size
         @token_buf << [:STRING_D, $1]
         @lineno += (1 + heredoc_string.each_line.to_a.size)
+      # operators of more than 1 char
+      elsif operator = chunk[OPERATOR_REGEX]
+        @token_buf << [operator, operator]
+        @i += operator.size
+      # FIXME: this doesn't work well enough
+      elsif regexp = chunk[%r{\A/.*?[^\\]/}]
+        @token_buf << [:REGEXP, regexp]
+        @i += regexp.size
+      elsif whitespaces = chunk[/\A\s+/]
+        @i += whitespaces.size
       # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < > /
       else
         value = chunk[0, 1]

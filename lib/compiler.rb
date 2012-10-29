@@ -186,8 +186,10 @@ module Riml
 
     class ReturnNodeVisitor < Visitor
       def compile(node)
+        node.compiled_output = "return"
+        return (node.compiled_output << "\n") if node.expression.nil?
         node.expression.parent_node = node
-        node.compiled_output = "return "
+        node.compiled_output << " "
         node.expression.accept(visitor_for_node(node.expression))
         node.force_newline = true
         node.compiled_output
@@ -454,9 +456,21 @@ module Riml
 
     class ForNodeVisitor < Visitor
       def compile(node)
-        node.compiled_output = "for #{node.variable} in "
+        if node.variables
+          node.variables.parent_node = node
+          node.variables.accept(
+            visitor_for_node(
+              node.variables,
+              :propagate_up_tree => false
+            )
+          )
+          node.compiled_output = "for #{node.variables.compiled_output} in "
+        else
+          node.compiled_output = "for #{node.variable} in "
+        end
         node.list_expression.parent_node = node
-        yield
+        node.list_expression.force_newline = true
+        node.list_expression.accept(visitor_for_node(node.list_expression))
         node.expressions.parent_node = node
         node.expressions.accept(EstablishScopeVisitor.new(:scope => node))
         node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
@@ -465,23 +479,6 @@ module Riml
           node.compiled_output << node.indent + line
         end
         node.compiled_output << "endfor\n"
-      end
-    end
-
-    class ForNodeCallVisitor < ForNodeVisitor
-      def compile(node)
-        super do
-          node.list_expression.accept(CallNodeVisitor.new)
-        end
-      end
-    end
-
-    class ForNodeListVisitor < ForNodeVisitor
-      def compile(node)
-        super do
-          result = node.list_expression.accept(ListNodeVisitor.new)
-          result << "\n" unless result[-1] == "\n"
-        end
       end
     end
 

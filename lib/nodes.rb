@@ -517,13 +517,14 @@ class ForNode < Struct.new(:variable, :list_expression, :expressions)
 
   alias for_variable variable
 
+  def variables
+    variable if ListNode === variable
+  end
+
   def children
     [variable, list_expression, expressions]
   end
 end
-
-class ForNodeCall < ForNode; end
-class ForNodeList < ForNode; end
 
 # lines: [5, 6, 8, 9]
 # This means the continuation has 4 lines (line.size is 4) and each line

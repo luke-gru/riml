@@ -2,7 +2,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 
 class SmartInputParserTest < Riml::TestCase
   test "parses without error" do
-    skip "not working yet"
+    skip
     source = File.read File.expand_path("../smart_input.riml", __FILE__)
     assert parse(source)
   end
@@ -63,6 +63,55 @@ Riml
 
     assert parse(riml)
     assert compile(riml)
+  end
+
+  test "parse `is` expression" do
+    riml = <<Riml
+function! overlaied_urules.add(urule, ft)
+  for [urule, fts] in self.pairs
+    if urule is a:urule
+      call add(fts, a:ft)
+      return
+    endif
+  endfor
+  call add(self.pairs, [a:urule, [a:ft]])
+endfunction
+Riml
+
+    assert parse(riml)
+  end
+
+  test "complex variable assignment" do
+    riml = <<Riml
+function! s:_trigger_or_fallback(char, fallback)
+  let nrule =
+  \\ mode() =~# '\v^(i|R|Rv)$'
+  \\ ? s:find_the_most_proper_rule_in_insert_mode(
+  \\     s:available_nrules,
+  \\     a:char
+  \\   )
+  \\ : s:find_the_most_proper_rule_in_command_line_mode(
+  \\     s:available_nrules,
+  \\     a:char,
+  \\     getcmdline(),
+  \\     getcmdpos(),
+  \\     getcmdtype()
+  \\   )
+  if nrule is 0
+    return a:fallback
+  else
+    return nrule._input
+  endif
+endfunction
+Riml
+    assert parse(riml)
+  end
+
+  test "expression that found edge-case in parser" do
+    riml = <<Riml
+let d['i'][char] = char
+Riml
+    assert parse(riml)
   end
 
 end

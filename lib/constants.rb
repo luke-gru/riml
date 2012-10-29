@@ -2,11 +2,13 @@ module Riml
   module Constants
     VIML_KEYWORDS =
       %w(function if else elseif while for in command return
-         finish break continue call let unlet try catch finally)
+         is isnot finish break continue call let unlet try catch
+         finally)
     VIML_END_KEYWORDS =
       %w(endfunction endif endwhile endfor endtry)
     RIML_KEYWORDS =
-      %w(def defm super end then unless until true false nil ensure class new)
+      %w(def defm super end then unless until true false nil ensure
+         class new)
     DEFINE_KEYWORDS = %w(def defm function)
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
     SPECIAL_VARIABLE_PREFIXES =
@@ -14,8 +16,10 @@ module Riml
     BUILTIN_COMMANDS  =
       %w(echo echon echohl execute sleep)
     IGNORECASE_CAPABLE_OPERATORS =
-      %w(== != > >= < <= =~ !~)
-    COMPARISON_OPERATORS = IGNORECASE_CAPABLE_OPERATORS.map {|o| [o, o + '#']}.flatten
+      %w(== != >= > <= < =~ !~)
+    COMPARISON_OPERATORS = IGNORECASE_CAPABLE_OPERATORS.map do |o|
+      [o + '#', o + '?', o]
+    end.flatten
     # :h function-list
     BUILTIN_FUNCTIONS =
     %w(
