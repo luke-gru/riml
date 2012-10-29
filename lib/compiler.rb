@@ -564,9 +564,6 @@ module Riml
       end
     end
 
-    class ListOrDictSetBracketNode < Visitor
-    end
-
     class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end
 
     class ClassDefinitionNodeVisitor < Visitor

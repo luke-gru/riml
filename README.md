@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/luke-gru/riml.png)](https://travis-ci.org/luke-gru/riml)
+
 Riml, a relaxed version of Vimscript
 ====================================
 
