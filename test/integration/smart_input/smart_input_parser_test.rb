@@ -2,7 +2,6 @@ require File.expand_path('../../../test_helper', __FILE__)
 
 class SmartInputParserTest < Riml::TestCase
   test "parses without error" do
-    skip
     source = File.read File.expand_path("../smart_input.riml", __FILE__)
     assert parse(source)
   end
@@ -114,4 +113,19 @@ Riml
     assert parse(riml)
   end
 
+  test "tripped up the parser with extra newline" do
+    riml = <<Riml
+function! s:insert_or_replace_a_rule(sorted_nrules, nrule)  "{{{2
+  " a:sorted_nrules MUST be sorted by "hash" in descending order.
+  " So that binary search can be applied
+  "
+  " * To replace an existing rule which is equivalent to a:nrule, and
+  " * To insert a:nrule at the proper position to make the resulting
+  "   a:sorted_nrules sorted.
+
+  let i_min = 0
+endfunction
+Riml
+    assert parse(riml)
+  end
 end

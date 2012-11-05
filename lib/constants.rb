@@ -1,15 +1,15 @@
 module Riml
   module Constants
     VIML_KEYWORDS =
-      %w(function if else elseif while for in command return
-         is isnot finish break continue call let unlet try catch
-         finally)
+      %w(function function! if else elseif while for in command command!
+         return is isnot finish break continue call let unlet unlet! try
+         catch finally)
     VIML_END_KEYWORDS =
       %w(endfunction endif endwhile endfor endtry)
     RIML_KEYWORDS =
       %w(def defm super end then unless until true false nil ensure
          class new)
-    DEFINE_KEYWORDS = %w(def defm function)
+    DEFINE_KEYWORDS = %w(def def! defm defm! function function!)
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
     SPECIAL_VARIABLE_PREFIXES =
       %w(& @ $)

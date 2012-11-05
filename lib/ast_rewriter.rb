@@ -70,20 +70,20 @@ module Riml
 
       def match?(node)
         Nodes === node &&
-        SetVariableNode === node.nodes[0] &&
-        BinaryOperatorNode === (op = node.nodes[0].value) &&
+        AssignNode === node.nodes[0] &&
+        BinaryOperatorNode === (op = node.nodes[0].rhs) &&
         op.operator =~ COMPARISON_OPERATOR_MATCH
       end
 
       def replace(node)
-        binary_op = node.nodes[0].value
+        binary_op = node.nodes[0].rhs
         old_set_var = node.nodes[0]
-        set_var_true  = old_set_var.clone.tap {|sv_t| sv_t.value = TrueNode.new }
-        set_var_false = old_set_var.clone.tap {|sv_f| sv_f.value = FalseNode.new }
+        assign_true  = old_set_var.clone.tap {|assign_t| assign_t.rhs = TrueNode.new }
+        assign_false = old_set_var.clone.tap {|assign_f| assign_f.rhs = FalseNode.new }
         node.nodes = [
           IfNode.new(binary_op, Nodes.new([
-            set_var_true, ElseNode.new(Nodes.new([
-            set_var_false
+            assign_true, ElseNode.new(Nodes.new([
+            assign_false
             ]))
           ]))
         ]
@@ -107,7 +107,7 @@ module Riml
         # set up dictionary variable at top of function
         dict_name = node.constructor_obj_name
         constructor.expressions.unshift(
-          SetVariableNode.new(nil, dict_name, DictionaryNode.new({}))
+          AssignNode.new('=', GetVariableNode.new(nil, dict_name), DictionaryNode.new({}))
         )
 
         SuperToObjectExtension.new(constructor, node).rewrite_on_match
@@ -149,11 +149,11 @@ module Riml
         end
 
         def match?(node)
-          DictSetDotNode === node && node.dict.name == "self"
+          AssignNode === node && DictGetNode === node.lhs && node.lhs.dict.name == "self"
         end
 
         def replace(node)
-          node.dict.name = dict_name
+          node.lhs.dict.name = dict_name
         end
       end
 
@@ -202,7 +202,7 @@ module Riml
           superclass = classes.superclass(class_node.name)
           super_constructor = superclass.constructor
 
-          set_var_node = SetVariableNode.new(nil, superclass.constructor_obj_name,
+          set_var_node = AssignNode.new('=', GetVariableNode.new(nil, superclass.constructor_obj_name),
             CallNode.new(
               super_constructor.scope_modifier,
               super_constructor.name,

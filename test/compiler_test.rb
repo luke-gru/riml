@@ -103,7 +103,7 @@ Viml
       IfNode.new(
         CallNode.new(nil, 'b', []),
         Nodes.new(
-          [SetVariableNode.new(nil, 'a', NumberNode.new(2))]
+          [AssignNode.new("=", GetVariableNode.new(nil, "a"), NumberNode.new(2))]
         )
       )
     ])
@@ -308,7 +308,7 @@ while (s:i <# 5)
     break
   endif
   echo "hi"
-  s:i += 1
+  let s:i += 1
 endwhile
 Viml
 
@@ -328,7 +328,7 @@ Riml
 let s:i = 0
 while (!s:i ==# 5)
   echo "hi"
-  s:i += 1
+  let s:i += 1
 endwhile
 Viml
 
@@ -457,6 +457,21 @@ Viml
     expected = 'let s:a = s:b ? s:c : s:d'
 
     assert_equal expected, compile(riml).chomp
+  end
+
+  test "unary NOT operator compiles correctly" do
+    riml = <<Riml
+if (!has_key(nrule, 'mode'))
+  let nrule.mode = 'i'
+endif
+Riml
+
+    expected = <<Viml
+if (!has_key(s:nrule, 'mode'))
+  let s:nrule.mode = 'i'
+endif
+Viml
+    assert_equal expected, compile(riml)
   end
 
   test "for var in call() block end compiles correctly" do
@@ -917,6 +932,18 @@ if (["string"] ==# [0])
   echo "never get here"
 endif
 Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "list sublists" do
+    riml = <<Riml
+let myList = otherList[0:-1]
+Riml
+
+    expected = <<Viml
+let s:myList = s:otherList[0 : -1]
+Viml
+
     assert_equal expected, compile(riml)
   end
 

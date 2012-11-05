@@ -47,7 +47,7 @@ Viml
       IfNode.new(
         CallNode.new(nil, 'b', []),
         Nodes.new(
-          [SetVariableNode.new(nil, 'a', NumberNode.new("2"))]
+          [AssignNode.new("=", GetVariableNode.new(nil, "a"), NumberNode.new("2"))]
         )
       )
     ])
@@ -101,19 +101,12 @@ Riml
   endfunction
 Riml
 
-    expected =
-      Nodes.new([
+    expected = Nodes.new([
         DefNode.new("!", nil, "urules.add", ["name", "urules"], nil, Nodes.new([
           ExplicitCallNode.new(nil, "add", [DictGetDotNode.new(
-                                              GetVariableNode.new(nil, "self"), ["names"]),
-                                          GetVariableNode.new("a:", "name")]),
-        ListOrDictSetNode.new(
-          ListOrDictGetNode.new(
-            DictGetDotNode.new(GetVariableNode.new(nil, "self"), ["table"]),
-                              [GetVariableNode.new("a:", "name")]
-          ),
-          GetVariableNode.new("a:", "urules"))
-    ]))])
+            GetVariableNode.new(nil, "self"), ["names"]), GetVariableNode.new("a:", "name")]),
+          AssignNode.new("=", ListOrDictGetNode.new(
+            DictGetDotNode.new(GetVariableNode.new(nil, "self"), ["table"]), [GetVariableNode.new("a:", "name")]), GetVariableNode.new("a:", "urules"))]))])
     assert_equal expected, parse(riml)
   end
 

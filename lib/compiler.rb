@@ -14,6 +14,7 @@ module Riml
       end
 
       def visit(node)
+        node.compiled_output.clear
         @value = compile(node)
         @value << "\n" if node.force_newline and @value[-1] != "\n"
         propagate_up_tree(node, @value)
@@ -41,10 +42,11 @@ module Riml
         node.body.accept(NodesVisitor.new(:propagate_up_tree => false))
 
         node.body.compiled_output.each_line do |line|
-          node.compiled_output << (line =~ /else\n\Z/ ? line : node.indent + line)
+          node.compiled_output << (line =~ /else|elseif\n\Z/ ? line : node.indent + line)
         end
         node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
-        node.compiled_output << "endif\n"
+        node.force_newline = true
+        node.compiled_output << "endif"
       end
     end
 
@@ -67,24 +69,21 @@ module Riml
 
     class WhileNodeVisitor < Visitor
       def compile(node)
-        cond_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
-        node.body.parent_node = node
         node.compiled_output = "while ("
         node.compiled_output << "!" if UntilNode === node
 
-        node.condition.accept(cond_visitor)
+        node.condition.accept visitor_for_node(node.condition)
         node.compiled_output << ")\n"
 
-        output = node.compiled_output.dup
-        node.compiled_output.clear
+        node.body.accept NodesVisitor.new(:propagate_up_tree => false)
 
-        node.body.accept(NodesVisitor.new)
-        node.compiled_output.each_line do |line|
-          output << node.indent + line
+        node.body.compiled_output.each_line do |line|
+          node.compiled_output << node.indent + line
         end
-        node.compiled_output = output << "\n"
-        node.compiled_output << "endwhile\n"
+        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
+        node.force_newline = true
+        node.compiled_output << "endwhile"
       end
     end
 
@@ -96,6 +95,19 @@ module Riml
         expressions_visitor = NodesVisitor.new
         node.expressions.parent_node = node
         node.expressions.accept(expressions_visitor)
+        node.compiled_output
+      end
+    end
+
+    class ElseifNodeVisitor < Visitor
+      def compile(node)
+        node.compiled_output = "elseif ("
+        node.condition.parent_node = node
+        node.condition.accept(visitor_for_node(node.condition))
+        node.compiled_output << ")\n"
+        node.expressions.parent_node = node
+        node.expressions.accept(visitor_for_node(node.expressions))
+        node.force_newline = true
         node.compiled_output
       end
     end
@@ -171,7 +183,7 @@ module Riml
     ListNodeVisitor = LiteralNodeVisitor
     DictionaryNodeVisitor = LiteralNodeVisitor
 
-    ScopeModifierLiteralNode = LiteralNodeVisitor
+    ScopeModifierLiteralNodeVisitor = LiteralNodeVisitor
     FinishNodeVisitor = LiteralNodeVisitor
     ContinueNodeVisitor = LiteralNodeVisitor
     BreakNodeVisitor = LiteralNodeVisitor
@@ -218,39 +230,13 @@ module Riml
       end
     end
 
-    class SetVariableNodeVisitor < ScopedVisitor
+    class AssignNodeVisitor < ScopedVisitor
       def compile(node)
-        set_modifier(node)
-
-        value_visitor = visitor_for_node(node.value)
-        node.compiled_output = "let #{node.full_name} = "
-        node.value.parent_node = node
-        node.value.accept(value_visitor)
-        node.compiled_output = "unlet! #{node.full_name}" if node.value.compiled_output == 'nil'
-        node.force_newline = true
-        node.compiled_output
-      end
-    end
-
-    # list, expression
-    class SetVariableNodeListVisitor < Visitor
-      def compile(node)
-        node.compiled_output = "let "
-        node.list.parent_node = node
-        node.list.accept(ListNodeVisitor.new)
-        node.compiled_output << " = "
-        node.expression.parent_node = node
-        node.expression.accept(visitor_for_node(node.expression))
-        node.compiled_output
-      end
-    end
-
-    class SetSpecialVariableNodeVisitor < Visitor
-      def compile(node)
-        node.compiled_output = "let #{node.full_name} = "
-        value_visitor = visitor_for_node(node.value)
-        node.value.parent_node = node
-        node.value.accept(value_visitor)
+        node.lhs.accept(visitor_for_node(node.lhs, :propagate_up_tree => false))
+        node.compiled_output = "let #{node.lhs.compiled_output} #{node.operator} "
+        node.rhs.parent_node = node
+        node.rhs.accept(visitor_for_node(node.rhs))
+        node.compiled_output = "unlet! #{node.lhs.compiled_output}" if node.rhs.compiled_output == 'nil'
         node.force_newline = true
         node.compiled_output
       end
@@ -338,6 +324,15 @@ module Riml
         node.compiled_output << " #{node.operator}#{operator_suffix}"
         op2_visitor.propagate_up_tree = true
         op2.accept(op2_visitor)
+        node.compiled_output
+      end
+    end
+
+    class UnaryOperatorNodeVisitor < Visitor
+      def compile(node)
+        node.compiled_output << node.operator
+        node.operand.parent_node = node
+        node.operand.accept(visitor_for_node(node.operand))
         node.compiled_output
       end
     end
@@ -434,8 +429,10 @@ module Riml
 
         unless node.descendant_of_control_structure? ||
                node.descendant_of_call_node? ||
-               node.descendant_of_list_or_dict_get_node?
-          node.compiled_output << "\n"
+               node.descendant_of_list_node? ||
+               node.descendant_of_list_or_dict_get_node? ||
+               node.descendant_of_operator_node?
+          node.force_newline = true
         end
         node.compiled_output
       end
@@ -530,7 +527,9 @@ module Riml
     class DictGetBracketNodeVisitor < Visitor
       def compile(node)
         node.dict.parent_node = node
-        node.keys.each {|k| k.parent_node = node}
+        node.keys.each do |k|
+          k.parent_node = node
+        end
         node.dict.accept(visitor_for_node(node.dict))
         node.keys.each do |key|
           node.compiled_output << '['
@@ -540,6 +539,8 @@ module Riml
         node.compiled_output
       end
     end
+
+    class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end
 
     class DictGetDotNodeVisitor < Visitor
       def compile(node)
@@ -551,20 +552,6 @@ module Riml
         node.compiled_output
       end
     end
-
-    class DictSetDotNodeVisitor < Visitor
-      def compile(node)
-        [node.dict, node.val].each {|n| n.parent_node = node}
-        node.compiled_output = "let "
-        node.dict.accept(visitor_for_node(node.dict))
-        node.keys.each {|k| node.compiled_output << ".#{k}"}
-        node.compiled_output << " = "
-        node.val.accept(visitor_for_node(node.val))
-        node.compiled_output << "\n"
-      end
-    end
-
-    class ListOrDictGetNodeVisitor < DictGetBracketNodeVisitor; end
 
     class ClassDefinitionNodeVisitor < Visitor
       def compile(node)

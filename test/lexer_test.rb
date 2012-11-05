@@ -117,7 +117,7 @@ endfunction
 Riml
 
     expected = [
-      [:DEF, "def"], ["!", "!"], [:IDENTIFIER, "smartinput#clear_rules"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
+      [:DEF_BANG, "def!"], [:IDENTIFIER, "smartinput#clear_rules"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
         [:LET, "let"], [:SCOPE_MODIFIER, "s:"], [:IDENTIFIER, "available_nrules"], ["=", "="], ["[", "["], ["]", "]"], [:NEWLINE, "\n"],
       [:END, "end"]
     ]

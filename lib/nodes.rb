@@ -111,6 +111,11 @@ class Nodes < Struct.new(:nodes)
     self
   end
 
+  def concat(list_of_nodes)
+    nodes.concat(list_of_nodes)
+    self
+  end
+
   # forward missing methods to `nodes` array
   def method_missing(method, *args, &block)
     if nodes.respond_to?(method)
@@ -279,6 +284,10 @@ class BinaryOperatorNode < OperatorNode
   end
 end
 
+class UnaryOperatorNode < OperatorNode
+  alias operand operands
+end
+
 # operator = :ternary
 # operands = [condition, if_expr, else_expr]
 class TernaryOperatorNode < OperatorNode
@@ -295,36 +304,12 @@ end
 
 # let var = 2
 # let s:var = 4
-class SetVariableNode < Struct.new(:scope_modifier, :name, :value)
-  include Visitable
-  include FullyNameable
-  include Walkable
-
-  def children
-    [value]
-  end
-end
-
-# let &compatible = 1
-# let @r = ''
-# let $HOME = '/home/luke'
-class SetSpecialVariableNode < Struct.new(:prefix, :name, :value)
-  include Visitable
-  include FullyNameable
-  include Walkable
-
-  def children
-    [value]
-  end
-end
-
-# let [var1, var2] = expression()
-class SetVariableNodeList < Struct.new(:list, :expression)
+class AssignNode < Struct.new(:operator, :lhs, :rhs)
   include Visitable
   include Walkable
 
   def children
-    [list, expression]
+    [lhs, rhs]
   end
 end
 
@@ -499,7 +484,28 @@ class ElseNode < Struct.new(:expressions)
   end
 end
 
-class ElsifNode < ElseNode; end
+class ElseifNode < ControlStructure
+  include Visitable
+  include Walkable
+  alias expressions body
+
+  def <<(expr)
+    expressions << expr
+    self
+  end
+
+  def pop
+    expressions.pop
+  end
+
+  def last
+    expressions.last
+  end
+
+  def children
+    [expressions]
+  end
+end
 
 # for variable in someFunction(1,2,3)
 #   echo variable
@@ -519,6 +525,14 @@ class ForNode < Struct.new(:variable, :list_expression, :expressions)
 
   def variables
     variable if ListNode === variable
+  end
+
+  def arg_variables
+    if ListNode === variable
+      variable.value.map(&:name)
+    else
+      [variable]
+    end
   end
 
   def children
@@ -557,14 +571,6 @@ class DictGetBracketNode < DictGetNode; end
 # dict.key.key2
 class DictGetDotNode < DictGetNode; end
 
-# dict.key = 'val'
-# dict.key.key2 = 'val'
-class DictSetDotNode < Struct.new(:dict, :keys, :val)
-  include Visitable
-  def children
-    [dict, val]
-  end
-end
 
 # list_or_dict[0]
 # function()[identifier]
@@ -574,16 +580,6 @@ class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   alias dict list_or_dict
   def children
     [list_or_dict] + keys
-  end
-end
-
-# dict[key] = val
-# list[key] = val
-# list[key][key] = val
-class ListOrDictSetNode < Struct.new(:list_or_dict_get_node, :val)
-  include Visitable
-  def children
-    [list_or_dict_get_node, val]
   end
 end
 

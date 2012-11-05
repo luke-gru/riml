@@ -1,11 +1,11 @@
 class Riml::Parser
 
-token IF ELSE THEN UNLESS END # TODO: add elseif
+token IF ELSE ELSEIF THEN UNLESS END
 token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH ENSURE
 token FOR IN
-token DEF SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
-token CLASS NEW DEFM SUPER
+token DEF DEF_BANG SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
+token CLASS NEW DEFM DEFM_BANG SUPER
 token RETURN
 token NEWLINE
 token NUMBER
@@ -13,7 +13,7 @@ token STRING_D STRING_S # single- and double-quoted
 token HEREDOC EX_LITERAL
 token REGEXP
 token TRUE FALSE NIL
-token LET UNLET IDENTIFIER
+token LET UNLET UNLET_BANG IDENTIFIER
 token DICT_VAL # like dict.key, 'key' is a DICT_VAL
 token SCOPE_MODIFIER SCOPE_MODIFIER_LITERAL SPECIAL_VAR_PREFIX
 token FINISH
@@ -51,13 +51,12 @@ rule
 
   # All types of expressions in Riml
   Expression:
-    Operator                              { result = val[0] }
+    BinaryOperator                        { result = val[0] }
+  | UnaryOperator                         { result = val[0] }
   | Call                                  { result = val[0] }
   | Assign                                { result = val[0] }
   | DictGet                               { result = val[0] }
   | ListOrDictGet                         { result = val[0] }
-  | ListOrDictSet                         { result = val[0] }
-  | DictSet                               { result = val[0] }
   | Def                                   { result = val[0] }
   | Return                                { result = val[0] }
   | VariableRetrieval                     { result = val[0] }
@@ -75,9 +74,9 @@ rule
   | ClassDefinition                       { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
   | Super                                 { result = val[0] }
-  | '(' Expression ')'                    { result = val[1] }
+  | LoopKeyword                           { result = val[0] }
   | EndScript                             { result = val[0] }
-  | LoopConstruct                         { result = val[0] }
+  | '(' Expression ')'                    { result = val[1] }
   ;
 
   Terminator:
@@ -101,6 +100,8 @@ rule
 
   Number:
     NUMBER                                { result = NumberNode.new(val[0]) }
+  | '-' NUMBER                            { result = NumberNode.new(val[1].insert(0, val[0])) }
+  | '+' NUMBER                            { result = NumberNode.new(val[1].insert(0, val[0])) }
   ;
 
   String:
@@ -135,7 +136,7 @@ rule
   | ListItems ',' Expression              { result = val[0] << val[2] }
   ;
 
-  Dictionary
+  Dictionary:
     DictionaryLiteral                     { result = DictionaryNode.new(val[0]) }
   ;
 
@@ -158,14 +159,30 @@ rule
   ;
 
   DictGet:
-    Dictionary ListOrDictGetWithBrackets           { result = DictGetBracketNode.new(val[0], val[1]) }
+    Dictionary ListOrDictGetWithBrackets         { result = DictGetBracketNode.new(val[0], val[1]) }
   | Dictionary DictGetWithDotLiteral             { result = DictGetDotNode.new(val[0], val[1]) }
   | VariableRetrieval DictGetWithDot             { result = DictGetDotNode.new(val[0], val[1]) }
+  | ListOrDictGet DictGetWithDot                 { result = DictGetDotNode.new(val[0], val[1]) }
+  ;
+
+  ListOrDictGet:
+    VariableRetrieval ListOrDictGetWithBrackets    { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | DictGet ListOrDictGetWithBrackets              { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | Call ListOrDictGetWithBrackets                 { result = ListOrDictGetNode.new(val[0], val[1]) }
   ;
 
   ListOrDictGetWithBrackets:
-   '['  Expression ']'                           { result = [val[1]] }
+    '['  Expression ']'                          { result = [val[1]] }
+  | '['  SubList    ']'                          { result = [val[1]] }
   | ListOrDictGetWithBrackets '[' Expression ']' { result = val[0] << val[2] }
+  | ListOrDictGetWithBrackets '[' SubList    ']' { result = val[0] << val[2] }
+  ;
+
+  SubList:
+    Expression ':' Expression                    { result = Nodes.new([val[0], LiteralNode.new(' : '), val[2]]) }
+  | Expression ':'                               { result = Nodes.new([val[0], LiteralNode.new(' :')]) }
+  | ':' Expression                               { result = Nodes.new([LiteralNode.new(': '), val[1]]) }
+  | ':'                                          { result = Nodes.new([LiteralNode.new(':')]) }
   ;
 
   DictGetWithDot:
@@ -176,22 +193,6 @@ rule
   DictGetWithDotLiteral:
     '.' IDENTIFIER                  { result = [val[1]] }
   | DictGetWithDotLiteral DICT_VAL  { result = val[0] << val[1] }
-  ;
-
-  DictSet:
-    VariableRetrieval DictGetWithDot '=' Expression     { result = DictSetDotNode.new(val[0], val[1], val[3]) }
-  | LET VariableRetrieval DictGetWithDot '=' Expression { result = DictSetDotNode.new(val[1], val[2], val[4]) }
-  ;
-
-  ListOrDictGet:
-    VariableRetrieval ListOrDictGetWithBrackets    { result = ListOrDictGetNode.new(val[0], val[1]) }
-  | DictGet ListOrDictGetWithBrackets              { result = ListOrDictGetNode.new(val[0], val[1]) }
-  | Call ListOrDictGetWithBrackets                 { result = ListOrDictGetNode.new(val[0], val[1]) }
-  ;
-
-  ListOrDictSet:
-    LET ListOrDictGet '=' Expression      { result = ListOrDictSetNode.new(val[1], val[3]) }
-  | ListOrDictGet '=' Expression          { result = ListOrDictSetNode.new(val[0], val[2]) }
   ;
 
   Call:
@@ -214,67 +215,78 @@ rule
   | ArgList "," Expression                { result = val[0] << val[2] }
   ;
 
-  # Binary operators
-  Operator:
-    Expression '||' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '&&' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  BinaryOperator:
+    Expression '||' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '&&' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '==' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '==#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '==?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '==' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '==#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '==?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
   # added by riml
-  | Expression '===' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '===' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '!=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '!=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '!=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '!=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '=~' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '=~#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '=~?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '=~' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '=~#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '=~?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '!~' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '!~#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '!~?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '!~' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!~#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!~?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '>' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '>#' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '>?' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>#' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>?' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '>=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '>=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '>=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '>=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '<' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '<#' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '<?' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<#' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<?' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '<=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '<=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '<=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '<=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<=#' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<=?' Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression '+' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '+=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '-' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '-=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '*' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression '.=' Expression            { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression '+' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '-' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '*' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '/' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '.' Expression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | Expression IS    Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
-  | Expression ISNOT Expression           { result = BinaryOperatorNode.new(val[1], [val[0]] << val[2]) }
+  | Expression IS    Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression ISNOT Expression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
   ;
 
-  # Assignment to a variable
+  UnaryOperator:
+    '!' Expression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
+  ;
+
+  # ['=', LHS, RHS]
   Assign:
-    LET Scope IDENTIFIER '=' Expression                   { result = SetVariableNode.new(val[1], val[2], val[4]) }
-  | Scope IDENTIFIER '=' Expression                       { result = SetVariableNode.new(val[0], val[1], val[3]) }
-  | LET ListLiteral '=' Expression                        { result = SetVariableNodeList.new(ListNode.new(val[1]), val[3]) }
-  | ListLiteral '=' Expression                            { result = SetVariableNodeList.new(ListNode.new(val[0]), val[2]) }
-  | LET SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression      { result = SetSpecialVariableNode.new(val[1], val[2], val[4]) }
-  | SPECIAL_VAR_PREFIX IDENTIFIER '=' Expression          { result = SetSpecialVariableNode.new(val[0], val[1], val[3]) }
+    LET AssignExpression                  { result = AssignNode.new(val[1][0], val[1][1], val[1][2]) }
+  | AssignExpression                      { result = AssignNode.new(val[0][0], val[0][1], val[0][2]) }
+  ;
+
+  # ['=', AssignLHS, Expression]
+  AssignExpression:
+    AssignLHS '='  Expression             { result = [val[1], val[0], val[2]] }
+  | AssignLHS '+=' Expression             { result = [val[1], val[0], val[2]] }
+  | AssignLHS '-=' Expression             { result = [val[1], val[0], val[2]] }
+  | AssignLHS '.=' Expression             { result = [val[1], val[0], val[2]] }
+  ;
+
+  AssignLHS:
+    VariableRetrieval                     { result = val[0] }
+  | DictGet                               { result = val[0] }
+  | List                                  { result = val[0] }
+  | ListOrDictGet                         { result = val[0] }
   ;
 
   # retrieving the value of a variable
@@ -285,7 +297,8 @@ rule
   ;
 
   UnletVariable:
-    UNLET Bang VariableRetrieval                          { result = UnletVariableNode.new('!', [ val[2] ]) }
+    UNLET VariableRetrieval                               { result = UnletVariableNode.new('!', [ val[1] ]) }
+  | UNLET_BANG VariableRetrieval                          { result = UnletVariableNode.new('!', [ val[1] ]) }
   | UnletVariable VariableRetrieval                       { result = val[0] << val[1] }
   ;
 
@@ -298,19 +311,17 @@ rule
   # Method definition
   # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType Bang Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new('!', val[2], val[3], [], val[4], val[5]) }
-  | FunctionType Bang Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5], val[7], val[8]) }
-  | FunctionType Bang Scope DefCallIdentifier '(' SPLAT     ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5], val[7], val[8]) }
-  | FunctionType Bang Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new('!', val[2], val[3], val[5] << val[7], val[9], val[10]) }
+    FunctionType Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
-  Bang:
-    /* nothing */ { result = nil }
-  | '!'           { result = val[0] }
-
   FunctionType:
-    DEF  { result = "DefNode" }
-  | DEFM { result = "DefMethodNode" }
+    DEF           { result = "DefNode" }
+  | DEF_BANG      { result = "DefNode" }
+  | DEFM          { result = "DefMethodNode" }
+  ;
 
   DefCallIdentifier:
     # use '' for first argument instead of nil in order to avoid a double scope-modifier
@@ -360,7 +371,7 @@ rule
     WHILE Expression Block END                 { result = WhileNode.new(val[1], val[2]) }
   ;
 
-  LoopConstruct:
+  LoopKeyword:
     BREAK                                      { result = BreakNode.new }
   | CONTINUE                                   { result = ContinueNode.new }
   ;
@@ -392,13 +403,23 @@ rule
   # expressions list could contain an ElseNode, which contains expressions
   # itself
   Block:
-    NEWLINE Expressions                          { result = val[1] }
-  | NEWLINE                                      { result = Nodes.new([]) }
+    NEWLINE Expressions                        { result = val[1] }
+  | NEWLINE                                    { result = Nodes.new([]) }
   ;
 
   IfBlock:
-    Block                                        { result = val[0] }
-  | NEWLINE Expressions ELSE NEWLINE Expressions { result = val[1] << ElseNode.new(val[4]) }
+    Block                                      { result = val[0] }
+  | NEWLINE Expressions ElseBlock              { result = val[1].concat(val[2]) }
+  ;
+
+  ElseBlock:
+    ElseifBlock ELSE NEWLINE Expressions       { result = [val[0], ElseNode.new(val[3])].compact }
+  ;
+
+  ElseifBlock:
+    ELSEIF Expression NEWLINE Expressions                   { result = Nodes.new([ElseifNode.new(val[1], val[3])]) }
+  | ElseifBlock ELSEIF Expression NEWLINE Expressions       { result = val[0] << ElseifNode.new(val[2], val[4]) }
+  | /* nothing */                                           { result = nil }
   ;
 
   ClassDefinition:
