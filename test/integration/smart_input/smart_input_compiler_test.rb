@@ -61,4 +61,57 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "for variable name collides with argument variable name" do
+    riml = <<Riml
+function! overlayed_urules.add(urule, ft) dict
+  for [urule, fts] in self.pairs
+    if (urule is a:urule)
+      call add(fts, ft)
+      return
+    endif
+  endfor
+  call add(self.pairs, [urule, [a:ft]])
+endfunction
+Riml
+    expected = <<Viml
+function! s:overlayed_urules.add(urule, ft) dict
+  for [urule, fts] in self.pairs
+    if (urule is a:urule)
+      call add(fts, a:ft)
+      return
+    endif
+  endfor
+  call add(self.pairs, [a:urule, [a:ft]])
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "found bug in compiler related to scope" do
+    riml = <<Riml
+function doSomething()
+  for ft in filter(keys(ft_urule_sets_table), 'v:val != "*"')
+    for urule_set in ft_urule_sets_table[ft]
+      for urule in urule_set
+        call overlaied_urules.add(urule, ft)
+      endfor
+    endfor
+  endfor
+endfunction
+Riml
+
+    expected = <<Viml
+function! s:doSomething()
+  for ft in filter(keys(ft_urule_sets_table), 'v:val != "*"')
+    for urule_set in ft_urule_sets_table[ft]
+      for urule in urule_set
+        call overlaied_urules.add(urule, ft)
+      endfor
+    endfor
+  endfor
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
 end

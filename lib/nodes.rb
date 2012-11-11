@@ -1,4 +1,5 @@
 require File.expand_path('../constants', __FILE__)
+require 'set'
 
 module Visitable
   def accept(visitor)
@@ -153,9 +154,14 @@ end
 
 class RegexpNode < LiteralNode; end
 class ListNode < LiteralNode
+  include Walkable
   def self.wrap(value)
     val = Array === value ? value : [value]
     new(val)
+  end
+
+  def children
+    value
   end
 end
 class DictionaryNode < LiteralNode; end
@@ -251,7 +257,11 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   end
 
   def children
-    arguments
+    if name.is_a?(String)
+      arguments
+    else
+      [name] + arguments
+    end
   end
 end
 
@@ -405,8 +415,8 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
   SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}
 
   # ["arg1", "arg2"}
-  def arg_variables
-    @arg_variables ||= parameters.reject(&SPLAT)
+  def argument_variable_names
+    @argument_variable_names ||= parameters.reject(&SPLAT)
   end
 
   # returns the splat argument or nil
@@ -425,6 +435,13 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     expressions.detect {|n| SuperNode === n}
   end
 
+  def to_scope
+    ScopeNode.new.tap do |scope|
+      scope.argument_variable_names += argument_variable_names
+      scope.function = self
+    end
+  end
+
   def children
      [expressions]
   end
@@ -435,6 +452,42 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     else
       super
     end
+  end
+end
+
+class ScopeNode
+  attr_writer :for_node_variable_names, :argument_variable_names
+  attr_accessor :function
+
+  def for_node_variable_names
+    @for_node_variable_names ||= Set.new
+  end
+
+  def argument_variable_names
+    @argument_variable_names ||= Set.new
+  end
+
+  alias function? function
+
+  def initialize_copy(source)
+    super
+    self.for_node_variable_names = for_node_variable_names.dup
+    self.argument_variable_names = argument_variable_names.dup
+    self.function = source.function
+  end
+
+  def merge(other)
+    dup.merge! other
+  end
+
+  def merge!(other)
+    unless other.is_a?(ScopeNode)
+      raise ArgumentError, "other must be ScopeNode, is #{other.class}"
+    end
+    self.for_node_variable_names += other.for_node_variable_names
+    self.argument_variable_names -= for_node_variable_names
+    self.function = other.function if function.nil? && other.function
+    self
   end
 end
 
@@ -516,7 +569,7 @@ end
 # for variable in [1,2,3]
 #   echo variable
 # end
-class ForNode < Struct.new(:variable, :list_expression, :expressions)
+class ForNode < Struct.new(:variable, :in_expression, :expressions)
   include Visitable
   include Indentable
   include Walkable
@@ -527,7 +580,7 @@ class ForNode < Struct.new(:variable, :list_expression, :expressions)
     variable if ListNode === variable
   end
 
-  def arg_variables
+  def for_node_variable_names
     if ListNode === variable
       variable.value.map(&:name)
     else
@@ -535,8 +588,12 @@ class ForNode < Struct.new(:variable, :list_expression, :expressions)
     end
   end
 
+  def to_scope
+    ScopeNode.new.tap {|s| s.for_node_variable_names += for_node_variable_names}
+  end
+
   def children
-    [variable, list_expression, expressions]
+    [variable, in_expression, expressions]
   end
 end
 
@@ -558,6 +615,8 @@ end
 
 class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
+  include Walkable
+
   def children
     [dict] + keys
   end
@@ -576,6 +635,8 @@ class DictGetDotNode < DictGetNode; end
 # function()[identifier]
 class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   include Visitable
+  include Walkable
+
   alias list list_or_dict
   alias dict list_or_dict
   def children

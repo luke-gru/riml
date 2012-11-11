@@ -223,7 +223,7 @@ module Riml
       private
       def scope_modifier_for_variable_name(node)
         if node.scope
-          return "a:" if node.scope.arg_variables.include?(node.name)
+          return "a:" if node.scope.argument_variable_names.include?(node.name)
           return ""
         end
         "s:"
@@ -245,15 +245,9 @@ module Riml
     # scope_modifier, name
     class GetVariableNodeVisitor < ScopedVisitor
       def compile(node)
-        # the variable is a ForNode variable
-        scope = node.parent_node && node.parent_node.scope
-        if scope && scope.respond_to?(:for_variable) &&
-           scope.for_variable == node.name && node.scope_modifier.nil?
-          return node.name
-        end
-
         set_modifier(node)
-        if node.scope && node.scope.respond_to?(:splat) && (splat = node.scope.splat)
+
+        if node.scope && node.scope.function? && (splat = node.scope.function.splat)
           check_for_splat_match!(node, splat)
         end
         if node.question_existence?
@@ -370,7 +364,7 @@ module Riml
 
       private
       def setup_local_scope_for_descendants(node)
-        node.expressions.accept(EstablishScopeVisitor.new(:scope => node))
+        node.expressions.accept(EstablishScopeVisitor.new(:scope => node.to_scope))
       end
 
       def process_parameters!(node)
@@ -400,7 +394,11 @@ module Riml
       end
 
       def establish_scope(node)
-        node.scope = @scope
+        if node.scope
+          node.scope = node.scope.merge @scope
+        else
+          node.scope = @scope
+        end
         walk_node!(node) if node.respond_to?(:each)
       end
     end
@@ -455,6 +453,7 @@ module Riml
       def compile(node)
         if node.variables
           node.variables.parent_node = node
+          node.variables.each {|v| v.scope_modifier = ""}
           node.variables.accept(
             visitor_for_node(
               node.variables,
@@ -465,11 +464,11 @@ module Riml
         else
           node.compiled_output = "for #{node.variable} in "
         end
-        node.list_expression.parent_node = node
-        node.list_expression.force_newline = true
-        node.list_expression.accept(visitor_for_node(node.list_expression))
+        node.in_expression.parent_node = node
+        node.in_expression.force_newline = true
+        node.in_expression.accept(visitor_for_node(node.in_expression))
         node.expressions.parent_node = node
-        node.expressions.accept(EstablishScopeVisitor.new(:scope => node))
+        node.expressions.accept(EstablishScopeVisitor.new(:scope => node.to_scope))
         node.expressions.accept(NodesVisitor.new :propagate_up_tree => false)
         body = node.expressions.compiled_output
         body.each_line do |line|
