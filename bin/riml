@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# vim: syntax=ruby
+
+require File.expand_path("../../config/environment", __FILE__)
+
+module Riml
+  include Environment
+  require File.join(ROOTDIR, 'version')
+  require File.join(LIBDIR, "helper")
+
+  require 'optparse'
+  require 'ostruct'
+
+  class Options
+    def self.parse(argv)
+
+      # defaults
+      options = OpenStruct.new
+      options.compile = []
+      options.riml_source_path = Dir.getwd
+
+      OptionParser.new do |opts|
+        opts.banner = "Usage: riml [options]"
+        opts.separator ""
+        opts.separator "Specific options:"
+
+        opts.on("-c", "--compile FILE", "Compile riml file to VimL") do |file|
+          if File.exists?(file)
+            options.compile << file
+          else
+            warn "Couldn't find file #{file.inspect}"
+          end
+        end
+
+        opts.on("-s", "--stdio", "pipe in riml to STDIN and get back VimL on STDOUT") do
+          options.stdio = true
+        end
+
+        opts.on_tail("-v", "--version", "Show riml version") do
+          puts VERSION.join('.')
+          exit
+        end
+
+        opts.on_tail("-h", "--help", "Show this message") do
+          puts opts
+          exit
+        end
+      end.parse!(argv)
+
+      options
+    end
+  end
+
+  class Runner
+    class << self
+      def start
+        options = Options.parse(ARGV)
+        if options.stdio
+          puts Riml.compile($stdin.gets)
+        elsif options.compile.any?
+          options.compile.each do |file|
+            Riml.compile_file(file)
+          end
+        end
+      end
+    end
+  end
+  Runner.start
+end

@@ -1,11 +1,6 @@
 #!/usr/bin/env ruby
 
-require File.expand_path('../../config/environment', __FILE__)
-require 'nodes'
-require 'lexer'
-require 'parser'
-require 'compiler'
-
+require File.expand_path('../../lib/helper', __FILE__)
 require 'minitest/autorun'
 
 module Riml
@@ -25,47 +20,16 @@ module Riml
       end
     end
 
-    def lexer(code) Lexer.new(code) end
-    def parser()    Parser.new      end
-    def compiler()  Compiler.new    end
-
-    # lex code into tokens
     def lex(code)
-      lexer(code).tokenize
+      Riml.lex(code)
     end
 
-    # parse code (or tokens) into nodes
-    def parse(object, rewrite_ast = true)
-      unless tokens?(object) || code?(object)
-        raise ArgumentError, "object must be tokens or code, is #{object}"
-      end
-      parser.parse(object, rewrite_ast)
+    def parse(input, rewrite_ast = true)
+      Riml.parse(input, rewrite_ast)
     end
 
-    # compile nodes (or tokens or code) into output code
-    def compile(object)
-      if nodes?(object)
-        nodes = object
-      elsif tokens?(object) || code?(object)
-        nodes = parser.parse(object)
-      else
-        raise ArgumentError, "object must be nodes, tokens or code, is #{object}"
-      end
-      compiler.compile(nodes)
+    def compile(input)
+      Riml.compile(input)
     end
-
-    private
-    def tokens?(object)
-      Array === object
-    end
-
-    def code?(object)
-      String === object
-    end
-
-    def nodes?(object)
-      Nodes === object
-    end
-
   end
 end
