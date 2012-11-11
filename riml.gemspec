@@ -16,6 +16,7 @@ Gem::Specification.new do |s|
 
   s.author = 'Luke Gruber'
   s.email = 'luke.gru@gmail.com'
+  s.homepage = 'https://github.com/luke-gru/riml'
   s.bindir = 'bin'
   s.require_path = 'lib'
   s.executables = ['riml']
