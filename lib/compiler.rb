@@ -405,17 +405,22 @@ module Riml
 
     class CallNodeVisitor < ScopedVisitor
       def compile(node)
-        set_modifier(node) unless node.builtin_function?
+        set_modifier(node) if node.name && !node.builtin_function?
         node.compiled_output =
-        if node.name.respond_to?(:variable)
-          node.name.accept(visitor_for_node(node.name))
-          node.scope_modifier + node.name.compiled_output
-        elsif DictGetDotNode === node.name
-          node.name.accept(visitor_for_node(node.name))
-          node.name.compiled_output
-        else
-          "#{node.full_name}"
-        end
+          if node.name.respond_to?(:variable)
+            node.name.accept(visitor_for_node(node.name))
+            node.scope_modifier + node.name.compiled_output
+          elsif DictGetDotNode === node.name
+            node.name.accept(visitor_for_node(node.name))
+            node.name.compiled_output
+          else
+            "#{node.full_name}"
+          end
+        compile_arguments(node)
+        node.compiled_output
+      end
+
+      def compile_arguments(node)
         node.compiled_output << (node.builtin_command? ? " " : "(")
         node.arguments.each_with_index do |arg, i|
           arg.parent_node = node
@@ -433,7 +438,6 @@ module Riml
                node.descendant_of_wrap_in_parens_node?
           node.force_newline = true
         end
-        node.compiled_output
       end
 
       private
@@ -444,9 +448,13 @@ module Riml
 
     class ExplicitCallNodeVisitor < CallNodeVisitor
       def compile(node)
-        pre = "call "
-        post = super
-        node.compiled_output = pre << post
+        if node.scope_modifier || node.name
+          node.compiled_output = "call " << super
+        else
+          node.compiled_output = "call"
+          compile_arguments(node)
+        end
+        node.compiled_output
       end
     end
 

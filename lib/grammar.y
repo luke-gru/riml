@@ -100,8 +100,6 @@ rule
 
   Number:
     NUMBER                                { result = NumberNode.new(val[0]) }
-  | '-' NUMBER                            { result = NumberNode.new(val[1].insert(0, val[0])) }
-  | '+' NUMBER                            { result = NumberNode.new(val[1].insert(0, val[0])) }
   ;
 
   String:
@@ -199,6 +197,7 @@ rule
     Scope DefCallIdentifier '(' ArgList ')'       { result = CallNode.new(val[0], val[1], val[3]) }
   | DictGet '(' ArgList ')'                       { result = CallNode.new(nil, val[0], val[2]) }
   | CALL Scope DefCallIdentifier '(' ArgList ')'  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | CALL '(' ArgList ')'                          { result = ExplicitCallNode.new(nil, nil, val[2]) }
   | CALL DictGet '(' ArgList ')'                  { result = ExplicitCallNode.new(nil, val[1], val[3]) }
   | BUILTIN_COMMAND '(' ArgList ')'               { result = CallNode.new(nil, val[0], val[2]) }
   | BUILTIN_COMMAND ArgList                       { result = CallNode.new(nil, val[0], val[1]) }
@@ -266,6 +265,8 @@ rule
 
   UnaryOperator:
     '!' Expression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
+  | '+' Expression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
+  | '-' Expression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
   ;
 
   # ['=', LHS, RHS]
@@ -409,17 +410,18 @@ rule
 
   IfBlock:
     Block                                      { result = val[0] }
-  | NEWLINE Expressions ElseBlock              { result = val[1].concat(val[2]) }
+  | NEWLINE Expressions ElseBlock              { result = val[1] << val[2] }
+  | NEWLINE Expressions ElseifBlock            { result = val[1] << val[2] }
+  | NEWLINE Expressions ElseifBlock ElseBlock  { result = val[1] << val[2] << val[3] }
   ;
 
   ElseBlock:
-    ElseifBlock ELSE NEWLINE Expressions       { result = [val[0], ElseNode.new(val[3])].compact }
+    ELSE NEWLINE Expressions                   { result = ElseNode.new(val[2]) }
   ;
 
   ElseifBlock:
     ELSEIF Expression NEWLINE Expressions                   { result = Nodes.new([ElseifNode.new(val[1], val[3])]) }
   | ElseifBlock ELSEIF Expression NEWLINE Expressions       { result = val[0] << ElseifNode.new(val[2], val[4]) }
-  | /* nothing */                                           { result = nil }
   ;
 
   ClassDefinition:
@@ -456,19 +458,17 @@ end
     elsif code?(object)
       @lexer = Riml::Lexer.new(object)
     end
-    ast = do_parse
+
+    begin
+      ast = do_parse
+    rescue Racc::ParseError => e
+      raise unless @lexer
+      raise Riml::ParseError,  "line #{@lexer.lineno}: #{e.message}"
+    end
+
     return ast if rewrite_ast == false
     AST_Rewriter.new(ast).rewrite
   end
-
-  alias do_parse_without_error_handling do_parse
-  def do_parse_with_error_handling
-    do_parse_without_error_handling
-  rescue Racc::ParseError => e
-    raise unless @lexer
-    raise Riml::ParseError,  "line #{@lexer.lineno}: #{e.message}"
-  end
-  alias do_parse do_parse_with_error_handling
 
   def next_token
     return @tokens.shift unless @lexer

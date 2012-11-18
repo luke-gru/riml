@@ -26,6 +26,7 @@ module Riml
     end
 
     def tokenize
+      @i, @current_indent = 0, 0
       while more_code_to_tokenize?
         new_token = next_token
         @tokens << new_token unless new_token.nil?
@@ -152,7 +153,7 @@ module Riml
         @lineno += 1
       elsif inline_comment = chunk[/\A\s*"[^"]*?$/]
         @i += inline_comment.size # inline comment, don't consume newline character
-      elsif string_double = chunk[/\A"(.*?)"/, 1]
+      elsif string_double = chunk[/\A"(.*?)(?<!\\)"/, 1]
         @token_buf << [:STRING_D, string_double]
         @i += string_double.size + 2
       elsif string_single = chunk[/\A'(([^']|'')*)'/, 1]
