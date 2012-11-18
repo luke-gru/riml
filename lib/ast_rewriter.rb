@@ -134,11 +134,12 @@ module Riml
         def replace(node)
           def_node = node.to_def_node
           node.parent_node = ast.expressions
+          def_node.parent_node = ast.expressions
           node.remove
           def_node.name.insert(0, "#{dict_name}.")
           def_node.parent_node = constructor.expressions
           constructor.expressions << def_node
-          reestablish_parents(node)
+          reestablish_parents(def_node)
         end
       end
 
@@ -259,8 +260,8 @@ module Riml
       end
 
       def replace(node)
-        node.replace_with(ExplicitCallNode.new(node[0], node[1], node[2]))
-        reestablish_parents(node)
+        explicit = node.replace_with(ExplicitCallNode.new(node[0], node[1], node[2]))
+        reestablish_parents(explicit)
       end
     end
 

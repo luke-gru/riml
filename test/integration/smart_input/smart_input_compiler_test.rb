@@ -1,7 +1,7 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class SmartInputCompilerTest < Riml::TestCase
-  test "parses without error" do
+  test "compiles without error" do
     source = File.read File.expand_path("../smart_input.riml", __FILE__)
     assert compile(source)
     #puts("\n")
@@ -40,7 +40,7 @@ Viml
 
   test "problem with dictionaries" do
     riml = <<Riml
-if a:nrule.hash ==# a:sorted_nrules[i_med].hash
+if (a:nrule.hash ==# a:sorted_nrules[i_med].hash)
   break
 elseif !(a:nrule.hash <# a:sorted_nrules[i_med].hash)
   let i_max = i_med - 1
@@ -52,7 +52,7 @@ Riml
     expected = <<Viml
 if (a:nrule.hash ==# a:sorted_nrules[s:i_med].hash)
   break
-elseif (!a:nrule.hash <# a:sorted_nrules[s:i_med].hash)
+elseif !(a:nrule.hash <# a:sorted_nrules[s:i_med].hash)
   let s:i_max = s:i_med - 1
 else
   let s:i_min = s:i_med + 1

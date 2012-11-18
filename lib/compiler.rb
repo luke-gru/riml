@@ -14,7 +14,6 @@ module Riml
       end
 
       def visit(node)
-        node.compiled_output.clear
         @value = compile(node)
         @value << "\n" if node.force_newline and @value[-1] != "\n"
         propagate_up_tree(node, @value)
@@ -33,12 +32,11 @@ module Riml
       def compile(node)
         condition_visitor = visitor_for_node(node.condition)
         node.condition.parent_node = node
-        node.body.parent_node = node
-        node.compiled_output = "if ("
+        node.condition.force_newline = true
+        node.compiled_output = "if "
         node.compiled_output << "!" if UnlessNode === node
 
         node.condition.accept(condition_visitor)
-        node.compiled_output << ")\n"
         node.body.accept(NodesVisitor.new(:propagate_up_tree => false))
 
         node.body.compiled_output.each_line do |line|
@@ -69,12 +67,10 @@ module Riml
 
     class WhileNodeVisitor < Visitor
       def compile(node)
-        node.condition.parent_node = node
-        node.compiled_output = "while ("
+        node.condition.force_newline = true
+        node.compiled_output = "while "
         node.compiled_output << "!" if UntilNode === node
-
         node.condition.accept visitor_for_node(node.condition)
-        node.compiled_output << ")\n"
 
         node.body.accept NodesVisitor.new(:propagate_up_tree => false)
 
@@ -92,19 +88,18 @@ module Riml
     class ElseNodeVisitor < Visitor
       def compile(node)
         node.compiled_output = "else\n"
-        expressions_visitor = NodesVisitor.new
-        node.expressions.parent_node = node
-        node.expressions.accept(expressions_visitor)
+        node.expressions.parent = node
+        node.expressions.accept(visitor_for_node(node.expressions))
         node.compiled_output
       end
     end
 
     class ElseifNodeVisitor < Visitor
       def compile(node)
-        node.compiled_output = "elseif ("
+        node.compiled_output = "elseif "
         node.condition.parent_node = node
+        node.condition.force_newline = true
         node.condition.accept(visitor_for_node(node.condition))
-        node.compiled_output << ")\n"
         node.expressions.parent_node = node
         node.expressions.accept(visitor_for_node(node.expressions))
         node.force_newline = true
@@ -208,6 +203,15 @@ module Riml
       end
     end
 
+    class WrapInParensNodeVisitor < Visitor
+      def compile(node)
+        node.compiled_output << "("
+        node.expression.parent_node = node
+        node.expression.accept(visitor_for_node(node.expression))
+        node.compiled_output << ")"
+      end
+    end
+
     # common visiting methods for nodes that are scope modified with variable
     # name prefixes
     class ScopedVisitor < Visitor
@@ -305,19 +309,15 @@ module Riml
     class BinaryOperatorNodeVisitor < Visitor
       def compile(node)
         op1, op2 = node.operand1, node.operand2
-        op1_visitor, op2_visitor = visitor_for_node(op1), visitor_for_node(op2)
-        node.operands.each {|n| n.parent_node = node}
-        op1.accept(op1_visitor)
-        op2_visitor.propagate_up_tree = false
-        op2.accept(op2_visitor)
+        [op1, op2].each {|n| n.parent = node}
+        op1.accept(visitor_for_node(op1))
         if node.ignorecase_capable_operator?(node.operator)
           operator_suffix = "# "
         else
           operator_suffix = " "
         end
         node.compiled_output << " #{node.operator}#{operator_suffix}"
-        op2_visitor.propagate_up_tree = true
-        op2.accept(op2_visitor)
+        op2.accept(visitor_for_node(op2))
         node.compiled_output
       end
     end
@@ -416,20 +416,21 @@ module Riml
         else
           "#{node.full_name}"
         end
-        node.compiled_output << (node.no_parens_necessary? ? " " : "(")
+        node.compiled_output << (node.builtin_command? ? " " : "(")
         node.arguments.each_with_index do |arg, i|
           arg.parent_node = node
           arg_visitor = visitor_for_node(arg)
           arg.accept(arg_visitor)
           node.compiled_output << ", " unless last_arg?(node.arguments, i)
         end
-        node.compiled_output << ")" unless node.no_parens_necessary?
+        node.compiled_output << ")" unless node.builtin_command?
 
         unless node.descendant_of_control_structure? ||
                node.descendant_of_call_node? ||
                node.descendant_of_list_node? ||
                node.descendant_of_list_or_dict_get_node? ||
-               node.descendant_of_operator_node?
+               node.descendant_of_operator_node? ||
+               node.descendant_of_wrap_in_parens_node?
           node.force_newline = true
         end
         node.compiled_output

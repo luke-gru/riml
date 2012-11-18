@@ -21,14 +21,14 @@ token FINISH
 prechigh
   right '!'
   left '*' '/' '%'
-  left '+' '+=' '-' '-=' '.'
+  left '+' '-' '.'
   left '>' '>#' '>?' '<' '<#' '<?' '>=' '>=#' '>=?'  '<=' '<=#' '<=?'
   left '==' '==?' '==#' '=~' '=~?' '=~#' '!~' '!~?' '!~#' '!=' '!=?' '!=#'
   left IS ISNOT
   left '&&'
   left '||'
   right '?'
-  right '='
+  right '=' '+=' '-=' '.='
   left ','
   left IF UNLESS
 preclow
@@ -76,7 +76,7 @@ rule
   | Super                                 { result = val[0] }
   | LoopKeyword                           { result = val[0] }
   | EndScript                             { result = val[0] }
-  | '(' Expression ')'                    { result = val[1] }
+  | '(' Expression ')'                    { result = WrapInParensNode.new(val[1]) }
   ;
 
   Terminator:
@@ -329,7 +329,7 @@ rule
   | IDENTIFIER              { result = val[0] }
   ;
 
-  # Example: 'range' or 'dict' after function definition
+  # Example: 'range', 'dict' or 'abort' after function definition
   Keyword:
     IDENTIFIER            { result = val[0] }
   | /* nothing */         { result = nil }

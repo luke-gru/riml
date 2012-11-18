@@ -48,7 +48,7 @@ Riml
 
     expected = <<Viml
 function! b:another_method(a, b)
-  if (hello())
+  if hello()
     0
   else
     1
@@ -58,6 +58,21 @@ endfunction
 Viml
 
     assert_equal expected, compile(nodes)
+    assert_equal expected, compile(riml)
+  end
+
+  test "if function with more complicated conditional" do
+    riml = <<Riml
+if exists("g:loaded_pathogen") || &cp
+  finish
+endif
+Riml
+
+    expected = <<Viml
+if exists("g:loaded_pathogen") || &cp
+  finish
+endif
+Viml
     assert_equal expected, compile(riml)
   end
 
@@ -72,7 +87,7 @@ Riml
 
   expected = <<Viml
 function! s:A_method(a, b)
-  if (a:a)
+  if a:a
     echo a:a
   endif
 endfunction
@@ -109,7 +124,7 @@ Viml
     ])
 
   expected = <<Viml
-if (s:b())
+if s:b()
   let s:a = 2
 endif
 Viml
@@ -124,7 +139,7 @@ a = 3 if a == 0
 Riml
 
     expected = <<Viml
-if (s:a ==# 0)
+if s:a ==# 0
   let s:a = 3
 endif
 Viml
@@ -155,7 +170,7 @@ Viml
     assert_equal expected, compile(riml).chomp
   end
 
-  test "unless expression" do
+  test "unless expression always wraps the condition in parens to avoid ! operator ambiguity" do
     riml = <<Riml
 unless shy()
   echo 'hi';
@@ -163,9 +178,57 @@ end
 Riml
 
     expected = <<Viml
-if (!s:shy())
+if !(s:shy())
   echo 'hi'
 endif
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "unless expression doesn't wrap in parens again if already wrapped" do
+    riml = <<Riml
+unless (shy())
+  echo 'hi';
+end
+Riml
+
+    expected = <<Viml
+if !(s:shy())
+  echo 'hi'
+endif
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "until expression always wraps the condition in parens to avoid ! operator ambiguity" do
+    riml = <<Riml
+until sober() || asleep()
+  echo 'Party Hard!'
+end
+Riml
+
+    expected = <<Viml
+while !(s:sober() || s:asleep())
+  echo 'Party Hard!'
+endwhile
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "until expression doesn't wrap in parens again if already wrapped" do
+    riml = <<Riml
+until (sober() || asleep())
+  echo 'Party Hard!'
+end
+Riml
+
+    expected = <<Viml
+while !(s:sober() || s:asleep())
+  echo 'Party Hard!'
+endwhile
 Viml
 
     assert_equal expected, compile(riml)
@@ -275,7 +338,7 @@ end
 Riml
 
     expected = <<Viml
-if (exists("g:myplugin"))
+if exists("g:myplugin")
   finish
 endif
 Viml
@@ -300,11 +363,11 @@ Riml
 
     expected = <<Viml
 let s:i = 0
-while (s:i <# 5)
-  if (s:skip_flag)
+while s:i <# 5
+  if s:skip_flag
     continue
   endif
-  if (s:finished_flag)
+  if s:finished_flag
     break
   endif
   echo "hi"
@@ -326,8 +389,28 @@ Riml
 
     expected = <<Viml
 let s:i = 0
-while (!s:i ==# 5)
+while !(s:i ==# 5)
   echo "hi"
+  let s:i += 1
+endwhile
+Viml
+
+  assert_equal expected, compile(riml)
+  end
+
+  test "until with two expressions in conditional takes into account paren grouping" do
+    riml = <<Riml
+i = 0
+until i == 5 || i == 3
+  echo s:i
+  i += 1
+end
+Riml
+
+    expected = <<Viml
+let s:i = 0
+while !(s:i ==# 5 || s:i ==# 3)
+  echo s:i
   let s:i += 1
 endwhile
 Viml
@@ -474,6 +557,23 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "unary NOT takes into account parens" do
+    riml = <<Riml
+if !(has_key(nrule, 'mode') || has_key(nrule, 'other'))
+  let nrule.mode  = 'i'
+  let nrule.other = 'j'
+endif
+Riml
+
+    expected = <<Viml
+if !(has_key(s:nrule, 'mode') || has_key(s:nrule, 'other'))
+  let s:nrule.mode = 'i'
+  let s:nrule.other = 'j'
+endif
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "for var in call() block end compiles correctly" do
     riml = <<Riml
 for var in range(1,2,3)
@@ -529,7 +629,7 @@ Riml
 echo $VAR
 let @a = "register a"
 let &hello = "omg"
-if (&hello ==# "omg")
+if &hello ==# "omg"
   echo &hello
 endif
 echo "hi"
@@ -876,7 +976,7 @@ a = "hi" == "hi"
 Riml
 
     expected = <<Viml
-if ("hi" ==# "hi")
+if "hi" ==# "hi"
   let s:a = 1
 else
   let s:a = 0
@@ -891,7 +991,7 @@ b = "hi" =~ /hi/
 Riml
 
     expected = <<Viml
-if ("hi" =~# /hi/)
+if "hi" =~# /hi/
   let s:b = 1
 else
   let s:b = 0
@@ -980,7 +1080,7 @@ function! g:MyClassConstructor(arg1, arg2, ...)
   let myClassObj = {}
   let myClassObj.name = a:arg1
   let myClassObj.country = a:arg2
-  if (a:000[0])
+  if a:000[0]
     let myClassObj.lastArg = a:000[0]
   endif
   return myClassObj
@@ -1031,7 +1131,7 @@ end
 
 class FrenchToEnglishTranslation < Translation
   defm translate
-    if (self.input == "Bonjour!")
+    if self.input == "Bonjour!"
       echo "Hello!"
     else
       echo "Sorry, I don't know that word."
@@ -1054,7 +1154,7 @@ function! g:FrenchToEnglishTranslationConstructor(input)
   let translationObj = g:TranslationConstructor(a:input)
   call extend(frenchToEnglishTranslationObj, translationObj)
   function! frenchToEnglishTranslationObj.translate() dict
-    if (self.input ==# "Bonjour!")
+    if self.input ==# "Bonjour!"
       echo "Hello!"
     else
       echo "Sorry, I don't know that word."
@@ -1112,7 +1212,7 @@ function! g:HotRodConstructor(make, model, color, topSpeed)
   let carObj = g:CarConstructor(a:make, a:model, a:color)
   call extend(hotRodObj, carObj)
   function! hotRodObj.drive() dict
-    if (self.topSpeed ># 140)
+    if self.topSpeed ># 140
       echo "Ahhhhhhh!"
     else
       echo "Nice"

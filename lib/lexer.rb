@@ -6,7 +6,7 @@ module Riml
     include Riml::Constants
 
     SINGLE_LINE_COMMENT_REGEX = /\A\s*"(.*)$/
-    OPERATOR_REGEX = /\A#{Regexp.union(['||', '&&', '===', '+=', '-='] + COMPARISON_OPERATORS)}/
+    OPERATOR_REGEX = /\A#{Regexp.union(['||', '&&', '===', '+=', '-=', '.='] + COMPARISON_OPERATORS)}/
 
     attr_reader :tokens, :prev_token, :lineno, :chunk
 
@@ -70,7 +70,7 @@ module Riml
       elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
         @i += 2
         @token_buf << [:SCOPE_MODIFIER_LITERAL, $1]
-      elsif special_var_prefix = chunk[/\A(&(\w:)?|\$|@)/]
+      elsif special_var_prefix = chunk[/\A(&(\w:)?(?!&)|\$|@)/]
         @token_buf << [:SPECIAL_VAR_PREFIX, special_var_prefix.strip]
         @expecting_identifier = true
         @i += special_var_prefix.size

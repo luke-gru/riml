@@ -93,6 +93,7 @@ module Walkable
     return unless idx
     parent.children.insert(idx, new_node)
     parent.children.slice!(idx+1)
+    new_node
   end
 end
 
@@ -202,8 +203,16 @@ class ContinueNode < KeywordNode
   def initialize() super("continue\n") end
 end
 
-
 class ReturnNode < Struct.new(:expression)
+  include Visitable
+  include Walkable
+
+  def children
+    [expression]
+  end
+end
+
+class WrapInParensNode < Struct.new(:expression)
   include Visitable
   include Walkable
 
@@ -238,6 +247,17 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include FullyNameable
   include Walkable
 
+  def initialize(scope_modifier, name, arguments)
+    super
+    remove_parens_wrapper if builtin_command?
+  end
+
+  # TODO: find way to remove this hack
+  def remove_parens_wrapper
+    return unless WrapInParensNode === arguments.first
+    arguments[0] = arguments[0].expression
+  end
+
   def builtin_function?
     return false unless name.is_a?(String)
     scope_modifier.nil? and (BUILTIN_FUNCTIONS + BUILTIN_COMMANDS).include?(name)
@@ -247,7 +267,6 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
     return false unless name.is_a?(String)
     scope_modifier.nil? and BUILTIN_COMMANDS.include?(name)
   end
-  alias no_parens_necessary? builtin_command?
 
   def must_be_explicit_call?
     return false if builtin_command?
@@ -493,7 +512,9 @@ end
 
 class DefMethodNode < DefNode
   def to_def_node
-    DefNode.new(bang, scope_modifier, name, parameters, keyword, expressions)
+    def_node = DefNode.new(bang, scope_modifier, name, parameters, keyword, expressions)
+    def_node.parent = parent
+    def_node
   end
 end
 
@@ -506,13 +527,30 @@ class ControlStructure < Struct.new(:condition, :body)
   def children
     [condition, body]
   end
+
+  def wrap_condition_in_parens!
+    return if WrapInParensNode === condition
+    _parent = condition.parent
+    self.condition = WrapInParensNode.new(condition)
+    self.condition.parent = _parent
+  end
 end
 
 class IfNode < ControlStructure; end
-class UnlessNode < ControlStructure; end
-
 class WhileNode < ControlStructure; end
-class UntilNode < ControlStructure; end
+
+class UnlessNode < ControlStructure
+  def initialize(*)
+    super
+    wrap_condition_in_parens!
+  end
+end
+class UntilNode < ControlStructure
+  def initialize(*)
+    super
+    wrap_condition_in_parens!
+  end
+end
 
 class ElseNode < Struct.new(:expressions)
   include Visitable
