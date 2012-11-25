@@ -23,7 +23,7 @@ Viml
         assert_equal expected, compile(riml)
         file1_vim = File.join(Riml.source_path, "file1.vim")
         assert File.exists?(file1_vim)
-        assert_equal File.read("./file1_expected.vim"), File.read(file1_vim)
+        assert_equal Riml::FILE_HEADER + File.read("./file1_expected.vim"), File.read(file1_vim)
       end
     end
   end
@@ -55,7 +55,7 @@ Viml
         assert_equal expected, compile(riml)
         faster_car_vim = File.join(Riml.source_path, "faster_car.vim")
         assert File.exists?(faster_car_vim)
-        assert_equal File.read("./faster_car_expected.vim"), File.read(faster_car_vim)
+        assert_equal Riml::FILE_HEADER + File.read("./faster_car_expected.vim"), File.read(faster_car_vim)
       end
     end
 

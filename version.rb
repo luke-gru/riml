@@ -1,4 +1,4 @@
 module Riml
-  # last changed: Nov. 18, 2012
-  VERSION = [0,1,4]
+  # last changed: Nov. 25, 2012
+  VERSION = [0,1,5]
 end
