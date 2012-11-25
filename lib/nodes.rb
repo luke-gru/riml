@@ -137,6 +137,8 @@ class Nodes < Struct.new(:nodes)
   end
 end
 
+class SublistNode < Nodes; end
+
 # Literals are static values that have a Ruby representation, eg.: a string, number, list,
 # true, false, nil, etc.
 class LiteralNode < Struct.new(:value)
@@ -265,13 +267,12 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
 
   def builtin_command?
     return false unless name.is_a?(String)
-    scope_modifier.nil? and BUILTIN_COMMANDS.include?(name)
+    scope_modifier.nil? and (BUILTIN_COMMANDS + RIML_COMMANDS).include?(name)
   end
 
   def must_be_explicit_call?
     return false if builtin_command?
-    return true if parent.nil?
-    return true if Nodes === parent
+    return true  if parent.instance_of?(Nodes)
     false
   end
 
@@ -289,6 +290,7 @@ end
 #   call Method()
 #   call s:Method(argument1, argument2)
 class ExplicitCallNode < CallNode; end
+class RimlCommandNode < CallNode; end
 
 class OperatorNode < Struct.new(:operator, :operands)
   include Visitable

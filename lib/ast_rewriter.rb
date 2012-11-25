@@ -6,8 +6,8 @@ module Riml
   class AST_Rewriter
     include Riml::Constants
 
-    attr_reader :ast
-    def initialize(ast)
+    attr_accessor :ast
+    def initialize(ast = nil)
       @ast = ast
     end
 

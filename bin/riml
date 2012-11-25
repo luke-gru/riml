@@ -1,12 +1,11 @@
 #!/usr/bin/env ruby
 # vim: syntax=ruby
 
-require File.expand_path("../../config/environment", __FILE__)
+require File.expand_path("../../lib/environment", __FILE__)
 
 module Riml
   include Environment
-  require File.join(ROOTDIR, 'version')
-  require File.join(LIBDIR, "helper")
+  require 'riml'
 
   require 'optparse'
   require 'ostruct'
@@ -16,32 +15,41 @@ module Riml
 
       # defaults
       options = OpenStruct.new
-      options.compile = []
-      options.riml_source_path = Dir.getwd
+      options.compile_files = []
 
       OptionParser.new do |opts|
         opts.banner = "Usage: riml [options]"
         opts.separator ""
         opts.separator "Specific options:"
 
-        opts.on("-c", "--compile FILE", "Compile riml file to VimL") do |file|
+        opts.on("-c", "--compile FILE", "Compile riml file to VimL.") do |file|
           if File.exists?(file)
-            options.compile << file
+            options.compile_files << file
           else
-            warn "Couldn't find file #{file.inspect}"
+            warn "Couldn't find file #{file.inspect}."
+            exit 1
           end
         end
 
-        opts.on("-s", "--stdio", "pipe in riml to STDIN and get back VimL on STDOUT") do
+        opts.on("-t", "--source-path PATH", "Path riml uses for `riml_source` to find files. Defaults to pwd.") do |path|
+          if Dir.exists?(path)
+            Riml.source_path = path
+          else
+            warn "Couldn't find directory #{path.inspect}."
+            exit 1
+          end
+        end
+
+        opts.on("-s", "--stdio", "Pipe in riml to STDIN and get back VimL on STDOUT.") do
           options.stdio = true
         end
 
-        opts.on_tail("-v", "--version", "Show riml version") do
+        opts.on_tail("-v", "--version", "Show riml version.") do
           puts VERSION.join('.')
           exit
         end
 
-        opts.on_tail("-h", "--help", "Show this message") do
+        opts.on_tail("-h", "--help", "Show this message.") do
           puts opts
           exit
         end
@@ -55,12 +63,11 @@ module Riml
     class << self
       def start
         options = Options.parse(ARGV)
+
         if options.stdio
           puts Riml.compile($stdin.gets)
-        elsif options.compile.any?
-          options.compile.each do |file|
-            Riml.compile_file(file)
-          end
+        elsif options.compile_files.any?
+          Riml.compile_files(*options.compile_files)
         end
       end
     end

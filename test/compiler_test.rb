@@ -33,7 +33,7 @@ def b:another_method(a, b)
   else
     true
   end
-  return call SomeFunction()
+  call SomeFunction()
 end
 Riml
 
@@ -41,7 +41,7 @@ Riml
       DefNode.new('!', 'b:', "another_method", ['a', 'b'], nil, Nodes.new([
         IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([
           FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))])),
-        ReturnNode.new(ExplicitCallNode.new(nil, "SomeFunction", []))
+        ExplicitCallNode.new(nil, "SomeFunction", [])
         ])
       )
     ])
@@ -53,7 +53,7 @@ function! b:another_method(a, b)
   else
     1
   endif
-  return call SomeFunction()
+  call SomeFunction()
 endfunction
 Viml
 

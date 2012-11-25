@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require File.expand_path('../../lib/helper', __FILE__)
+require File.expand_path('../../lib/riml', __FILE__)
 require 'minitest/autorun'
 
 module Riml
@@ -24,12 +24,27 @@ module Riml
       Riml.lex(code)
     end
 
-    def parse(input, rewrite_ast = true)
-      Riml.parse(input, rewrite_ast)
+    def parse(input, ast_rewriter = AST_Rewriter.new)
+      Riml.parse(input, ast_rewriter)
     end
 
     def compile(input)
       Riml.compile(input)
+    end
+
+    def with_riml_source_path(path)
+      old = Riml.source_path
+      Riml.source_path = path
+      Dir.chdir(path) { yield }
+    ensure
+      Riml.source_path = old
+    end
+
+    def with_file_cleanup(file_name)
+      yield
+    ensure
+      full_path = File.join(Riml.source_path, file_name)
+      File.delete(full_path) if File.exists?(full_path)
     end
   end
 end

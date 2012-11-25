@@ -106,6 +106,8 @@ module Riml
 
         elsif BUILTIN_COMMANDS.include? identifier
           @token_buf << [:BUILTIN_COMMAND, identifier]
+        elsif RIML_COMMANDS.include? identifier
+          @token_buf << [:RIML_COMMAND, identifier]
         # method names and variable names
         else
           @token_buf << [:IDENTIFIER, identifier]

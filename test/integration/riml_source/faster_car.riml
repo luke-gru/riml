@@ -1,0 +1,6 @@
+class FasterCar < Car
+  def initialize(*args)
+    super
+    self.maxSpeed = 200
+  end
+end

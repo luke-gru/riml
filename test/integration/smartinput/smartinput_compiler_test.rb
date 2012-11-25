@@ -1,11 +1,10 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class SmartInputCompilerTest < Riml::TestCase
-  test "compiles without error" do
-    source = File.read File.expand_path("../smart_input.riml", __FILE__)
-    assert compile(source)
-    #puts("\n")
-    #compile(source).each_line do |line| puts line end
+  test "compiles to target" do
+    source   = File.read File.expand_path("../smartinput.riml", __FILE__)
+    compiled = File.read File.expand_path("../smartinput.vim",  __FILE__)
+    assert_equal compiled, compile(source)
   end
 
   test "wrong newline insertion" do

@@ -122,6 +122,8 @@ module Riml
       end
     end
 
+    SublistNodeVisitor = NodesVisitor
+
     class LiteralNodeVisitor < Visitor
       def compile(node)
         value = case node.value
@@ -435,7 +437,8 @@ module Riml
                node.descendant_of_list_node? ||
                node.descendant_of_list_or_dict_get_node? ||
                node.descendant_of_operator_node? ||
-               node.descendant_of_wrap_in_parens_node?
+               node.descendant_of_wrap_in_parens_node? ||
+               node.descendant_of_sublist_node?
           node.force_newline = true
         end
       end
@@ -455,6 +458,29 @@ module Riml
           compile_arguments(node)
         end
         node.compiled_output
+      end
+    end
+
+    class RimlCommandNodeVisitor < CallNodeVisitor
+      def compile(node)
+        if node.name == 'riml_source'
+          node.arguments.map(&:value).each do |file|
+            unless File.exists?(File.join(Riml.source_path, file))
+              raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
+                "source path (#{Riml.source_path.inspect})"
+            end
+
+            root_node(node).current_compiler.compile_queue << file
+          end
+          node.compiled_output << 'source'
+          compile_arguments(node)
+          node.compiled_output.gsub(/['"]/, '').gsub('.riml', '.vim')
+        end
+      end
+
+      def root_node(node)
+        node = node.parent until node.parent.nil?
+        node
       end
     end
 
@@ -577,10 +603,21 @@ module Riml
       end
     end
 
+    module CompilerAccessible
+      attr_accessor :current_compiler
+    end
+
+    def compile_queue
+      @compile_queue ||= []
+    end
+
     # compiles nodes into output code
     def compile(root_node)
-      root_visitor = NodesVisitor.new
-      root_node.accept(root_visitor)
+      # so we can compile concurrently, as some nodes have access to the
+      # compiler instance itself
+      root_node.extend CompilerAccessible
+      root_node.current_compiler = self
+      root_node.accept(NodesVisitor.new)
       root_node.compiled_output
     end
 

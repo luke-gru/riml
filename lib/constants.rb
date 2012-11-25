@@ -11,10 +11,14 @@ module Riml
          class new)
     DEFINE_KEYWORDS = %w(def def! defm defm! function function!)
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
+
     SPECIAL_VARIABLE_PREFIXES =
       %w(& @ $)
     BUILTIN_COMMANDS  =
       %w(echo echon echohl execute sleep)
+    RIML_COMMANDS =
+      %w(riml_source)
+
     IGNORECASE_CAPABLE_OPERATORS =
       %w(== != >= > <= < =~ !~)
     COMPARISON_OPERATORS = IGNORECASE_CAPABLE_OPERATORS.map do |o|
