@@ -60,4 +60,21 @@ Viml
     end
 
   end
+
+  test "ClassNotFound is thrown if the sourced file references undeclared class" do
+    riml = <<Riml
+riml_source 'faster_car.riml'
+Riml
+
+    ret = nil
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      with_file_cleanup("faster_car.vim") do
+        assert_raises Riml::ClassNotFound do
+          ret = compile(riml)
+        end
+      end
+    end
+    assert_nil ret
+
+  end
 end

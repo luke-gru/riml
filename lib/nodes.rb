@@ -167,6 +167,13 @@ class ListNode < LiteralNode
     value
   end
 end
+
+class ListUnpackNode < ListNode
+  def rest
+    value.last
+  end
+end
+
 class DictionaryNode < LiteralNode; end
 class ScopeModifierLiteralNode < LiteralNode; end
 
@@ -700,15 +707,6 @@ class CatchNode < Struct.new(:regexp, :expressions)
 
   def children
     [expressions]
-  end
-end
-
-class HeredocNode < Struct.new(:pattern, :string_node)
-  include Visitable
-  include Walkable
-
-  def children
-    [string_node]
   end
 end
 

@@ -10,7 +10,7 @@ token RETURN
 token NEWLINE
 token NUMBER
 token STRING_D STRING_S # single- and double-quoted
-token HEREDOC EX_LITERAL
+token EX_LITERAL
 token REGEXP
 token TRUE FALSE NIL
 token LET UNLET UNLET_BANG IDENTIFIER
@@ -79,7 +79,6 @@ rule
   | VariableRetrieval                     { result = val[0] }
   | Literal                               { result = val[0] }
   | Call                                  { result = val[0] }
-  | Heredoc                               { result = val[0] }
   | Ternary                               { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
   | BinaryOperator                        { result = val[0] }
@@ -114,10 +113,6 @@ rule
   | STRING_D                              { result = StringNode.new(val[0], :d) }
   ;
 
-  Heredoc:
-    HEREDOC String                        { result = HeredocNode.new(val[0], val[1]) }
-  ;
-
   Regexp:
     REGEXP                                { result = RegexpNode.new(val[0]) }
   ;
@@ -128,6 +123,10 @@ rule
 
   List:
     ListLiteral                           { result = ListNode.new(val[0]) }
+  ;
+
+  ListUnpack:
+    '[' ListItems ';' ValueExpression ']' { result = ListUnpackNode.new(val[1] << val[3]) }
   ;
 
   ListLiteral:
@@ -299,6 +298,7 @@ rule
     VariableRetrieval                          { result = val[0] }
   | DictGet                                    { result = val[0] }
   | List                                       { result = val[0] }
+  | ListUnpack                                 { result = val[0] }
   | ListOrDictGet                              { result = val[0] }
   ;
 
@@ -480,7 +480,7 @@ end
       raise Riml::ParseError,  "line #{@lexer.lineno}: #{e.message}"
     end
 
-    @ast_rewriter = ast_rewriter
+    @ast_rewriter ||= ast_rewriter
     return ast unless @ast_rewriter
     @ast_rewriter.ast = ast
     @ast_rewriter.rewrite

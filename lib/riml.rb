@@ -40,11 +40,15 @@ module Riml
 
   # expects `file_names` to be readable files
   def self.compile_files(*file_names)
+    threads = []
     file_names.each do |file_name|
-      f = File.open(file_name)
-      # `compile` will close file handle
-      compile(f)
+      threads << Thread.new do
+        f = File.open(file_name)
+        # `compile` will close file handle
+        compile(f)
+      end
     end
+    threads.each {|t| t.join}
   end
 
   def self.source_path
@@ -65,7 +69,7 @@ module Riml
     return true if compiler.compile_queue.empty?
 
     file_name = compiler.compile_queue.shift
-    compile(File.open(File.join(Riml.source_path, file_name)), parser, Compiler.new)
+    compile(File.open(File.join(Riml.source_path, file_name)), parser)
     process_compile_queue!(parser, compiler)
   end
 

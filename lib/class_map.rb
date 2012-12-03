@@ -1,6 +1,10 @@
 module Riml
   class ClassNotFound < NameError; end
 
+  # Map of {"ClassName" => ClassDefinitionNode}
+  # Can also query object for superclass of a named class, etc...
+  #
+  # Ex : classes["SomeClass"].superclass_name => "SomeClassBase"
   class ClassMap
     def initialize
       @map = {}

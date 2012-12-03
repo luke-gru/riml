@@ -7,25 +7,26 @@ module Riml
     include Riml::Constants
 
     attr_accessor :ast
-    def initialize(ast = nil)
+    attr_reader   :classes
+
+    def initialize(ast = nil, classes = nil)
       @ast = ast
+      @classes = classes || ClassMap.new
     end
 
-    # Map of {"ClassName" => ClassDefinitionNode}
-    # Can also query object for superclass of a named class, etc...
-    #
-    # Ex : classes["SomeClass"].superclass_name => "SomeClassBase"
-    def classes
-      @@classes ||= ClassMap.new
-    end
 
     def rewrite
       establish_parents(ast)
-      StrictEqualsComparisonOperator.new(ast).rewrite_on_match
-      VarEqualsComparisonOperator.new(ast).rewrite_on_match
-      ClassDefinitionToFunctions.new(ast).rewrite_on_match
-      ObjectInstantiationToCall.new(ast).rewrite_on_match
-      CallToExplicitCall.new(ast).rewrite_on_match
+      rewriters = [
+        StrictEqualsComparisonOperator.new(ast, classes),
+        VarEqualsComparisonOperator.new(ast, classes),
+        ClassDefinitionToFunctions.new(ast, classes),
+        ObjectInstantiationToCall.new(ast, classes),
+        CallToExplicitCall.new(ast, classes)
+      ]
+      rewriters.each do |rewriter|
+        rewriter.rewrite_on_match
+      end
       ast
     end
 
@@ -100,7 +101,7 @@ module Riml
         classes[node.name] = node
 
         name, expressions = node.name, node.expressions
-        InsertInitializeMethod.new(node).rewrite_on_match
+        InsertInitializeMethod.new(node, classes).rewrite_on_match
         constructor = node.constructor
         constructor.scope_modifier = 'g:' unless constructor.scope_modifier
         constructor.name = node.constructor_name
@@ -110,8 +111,8 @@ module Riml
           AssignNode.new('=', GetVariableNode.new(nil, dict_name), DictionaryNode.new({}))
         )
 
-        SuperToObjectExtension.new(constructor, node).rewrite_on_match
-        MethodToNestedFunction.new(node, constructor, dict_name).rewrite_on_match
+        SuperToObjectExtension.new(constructor, classes, node).rewrite_on_match
+        MethodToNestedFunction.new(node, classes, constructor, dict_name).rewrite_on_match
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
 
         constructor.expressions.push(
@@ -122,8 +123,8 @@ module Riml
 
       class MethodToNestedFunction < AST_Rewriter
         attr_reader :constructor, :dict_name
-        def initialize(class_node, constructor, dict_name)
-          super(class_node)
+        def initialize(class_node, classes, constructor, dict_name)
+          super(class_node, classes)
           @dict_name, @constructor = dict_name, constructor
         end
 
@@ -190,8 +191,8 @@ module Riml
 
       class SuperToObjectExtension < AST_Rewriter
         attr_reader :class_node
-        def initialize(constructor, class_node)
-          super(constructor)
+        def initialize(constructor, classes, class_node)
+          super(constructor, classes)
           @class_node = class_node
         end
 

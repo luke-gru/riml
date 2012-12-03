@@ -7,6 +7,9 @@ module Riml
 
     SINGLE_LINE_COMMENT_REGEX = /\A\s*"(.*)$/
     OPERATOR_REGEX = /\A#{Regexp.union(['||', '&&', '===', '+=', '-=', '.='] + COMPARISON_OPERATORS)}/
+    INTERPOLATION_REGEX = /\A"(.*?)(\#\{(.*?)\})(.*?)"/m
+    INTERPOLATION_SPLIT_REGEX = /(\#{.*?})/m
+
 
     attr_reader :tokens, :prev_token, :lineno, :chunk
 
@@ -21,15 +24,14 @@ module Riml
       @current_indent = 0
       @indent_pending = false
       @dedent_pending = false
-      @one_line_conditional_END_pending = false
+      @one_line_conditional_end_pending = false
       @splat_allowed = false
     end
 
     def tokenize
       @i, @current_indent = 0, 0
-      while more_code_to_tokenize?
-        new_token = next_token
-        @tokens << new_token unless new_token.nil?
+      while (token = next_token) != nil
+        @tokens << token
       end
       @tokens
     end
@@ -38,7 +40,7 @@ module Riml
       while @token_buf.empty? && more_code_to_tokenize?
         tokenize_chunk(get_new_chunk)
       end
-      if @token_buf.any?
+      if !@token_buf.empty?
         return @prev_token = @token_buf.shift
       end
       check_indentation
@@ -137,17 +139,10 @@ module Riml
       elsif decimal = chunk[/\A[0-9]+(\.[0-9]+)?/]
         @token_buf << [:NUMBER, decimal.to_s]
         @i += decimal.size
-      elsif interpolation = chunk[/\A"(.*?)(\#\{(.*?)\})(.*?)"/]
-        # "#{hey} guys" = "hey" . " guys"
-        unless $1.empty?
-          @token_buf << [:STRING_D, $1]
-          @token_buf << ['.', '.']
-        end
-        @token_buf << [:IDENTIFIER, $3]
-        unless $4.empty?
-          @token_buf << ['.', '.']
-          @token_buf << [ :STRING_D, " #{$4[1..-1]}" ]
-        end
+      elsif interpolation = chunk[INTERPOLATION_REGEX]
+        # "hey there, #{name}" = "hey there, " . name
+        parts = interpolation[1...-1].split(INTERPOLATION_SPLIT_REGEX)
+        handle_interpolation(*parts)
         @i += interpolation.size
       elsif single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX] && (prev_token.nil? || prev_token[0] == :NEWLINE)
         comment = chunk[SINGLE_LINE_COMMENT_REGEX]
@@ -166,8 +161,8 @@ module Riml
         @token_buf << [:NEWLINE, "\n"] unless prev_token && prev_token[0] == :NEWLINE
 
         # pending indents/dedents
-        if @one_line_conditional_END_pending
-          @one_line_conditional_END_pending = false
+        if @one_line_conditional_end_pending
+          @one_line_conditional_end_pending = false
         elsif @indent_pending
           @indent_pending = false
         elsif @dedent_pending
@@ -179,11 +174,15 @@ module Riml
       elsif heredoc_pattern = chunk[%r{\A<<(.+?)\r?\n}]
         pattern = $1
         @i += heredoc_pattern.size
-        @token_buf << [:HEREDOC, pattern]
         new_chunk = get_new_chunk
-        heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|]
-        @i += heredoc_string.size + $2.size
-        @token_buf << [:STRING_D, $1]
+        heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|, 1]
+        @i += heredoc_string.size + pattern.size
+        if ('"' + heredoc_string + '"') =~ INTERPOLATION_REGEX
+          parts = heredoc_string.split(INTERPOLATION_SPLIT_REGEX)
+          handle_interpolation(*parts)
+        else
+          @token_buf << [:STRING_D, heredoc_string]
+        end
         @lineno += (1 + heredoc_string.each_line.to_a.size)
       # operators of more than 1 char
       elsif operator = chunk[OPERATOR_REGEX]
@@ -220,13 +219,13 @@ module Riml
         @indent_pending = true
       when :if, :unless
         if one_line_conditional?(chunk)
-          @one_line_conditional_END_pending = true
+          @one_line_conditional_end_pending = true
         elsif !statement_modifier?(chunk)
           @current_indent += 2
           @indent_pending = true
         end
       when :end
-        unless @one_line_conditional_END_pending
+        unless @one_line_conditional_end_pending
           @current_indent -= 2
           @dedent_pending = true
         end
@@ -256,6 +255,18 @@ module Riml
 
     def one_line_conditional?(chunk)
       chunk[/^(if|unless).+?(else)?.+?end$/]
+    end
+
+    def handle_interpolation(*parts)
+      parts.delete_if {|p| p.empty?}.each_with_index do |part, i|
+        if part[0..1] == '#{' && part[-1] == '}'
+          @token_buf << [:IDENTIFIER, part[2...-1]]
+        else
+          @token_buf << [:STRING_D, part]
+        end
+        # concatenate the parts unless this is the last part
+        @token_buf << ['.', '.'] unless parts[i + 1].nil?
+      end
     end
 
     def statement_modifier?(chunk)

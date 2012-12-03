@@ -446,6 +446,18 @@ Viml
   assert_equal expected, compile(riml)
   end
 
+  test "list unpack in let" do
+    riml = <<Riml
+let [var1, var2; rest] = mylist
+Riml
+
+    expected = <<Viml
+let [s:var1, s:var2; s:rest] = s:mylist
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
   test "list-literal concatenation" do
     riml = <<Riml
 alist = ["aap", "mies"] + ["noot"]
@@ -1001,11 +1013,38 @@ Viml
   end
 
   test "heredoc string" do
-    riml = "heredoc = <<EOS\n" +
-           "omg this is a heredoc\t\n" +
-           "EOS"
+    riml = '
+heredoc = <<EOS
+omg this is a heredoc
+EOS
+'.strip
 
-    expected = %{let s:heredoc = "omg this is a heredoc\t\n"}
+    expected = %{let s:heredoc = "omg this is a heredoc\n"}
+
+    assert_equal expected, compile(riml).chomp
+  end
+
+  test "heredoc string with interpolation" do
+    riml = '
+heredoc = <<EOS
+Hello there, #{name}, how are you?
+EOS
+'.strip
+
+    expected = %{let s:heredoc = "Hello there, " . s:name . ", how are you?\n"}
+
+    assert_equal expected, compile(riml).chomp
+  end
+
+  test "heredoc string with more than one interpolated variable" do
+    riml = '
+lineFromMovie = <<EOS
+Holy #{expletive} it\'s freaking #{superhero}!
+EOS
+'.strip
+
+    expected = %{let s:lineFromMovie = "Holy " . s:expletive . " it's freaking " . s:superhero . "!\n"}
+
     assert_equal expected, compile(riml).chomp
   end
 

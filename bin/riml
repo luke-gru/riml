@@ -22,12 +22,14 @@ module Riml
         opts.separator ""
         opts.separator "Specific options:"
 
-        opts.on("-c", "--compile FILE", "Compile riml file to VimL.") do |file|
-          if File.exists?(file)
-            options.compile_files << file
-          else
-            warn "Couldn't find file #{file.inspect}."
-            exit 1
+        opts.on("-c", "--compile FILES", Array, "Compile riml file(s) to VimL.") do |files|
+          files.each do |f|
+            if File.exists?(f)
+              options.compile_files << f
+            else
+              warn "Couldn't find file #{f.inspect}."
+              exit 1
+            end
           end
         end
 

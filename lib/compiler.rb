@@ -136,7 +136,7 @@ module Riml
         when Numeric
           node.value
         when String
-          StringNode === node ? string_surround(node) : node.value.dup
+          StringNode === node ? string_surround(node) : node.value
         when Array
           node.value.each {|n| n.parent_node = node}
           '[' <<
@@ -145,7 +145,7 @@ module Riml
             n.compiled_output
           end.join(', ') << ']'
         when Hash
-          node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = [node, node]}
+          node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = node, node}
           '{' <<
           node.value.map do |k,v|
             k.accept(visitor_for_node(k))
@@ -185,11 +185,9 @@ module Riml
     ContinueNodeVisitor = LiteralNodeVisitor
     BreakNodeVisitor = LiteralNodeVisitor
 
-    class HeredocNodeVisitor < Visitor
+    class ListUnpackNodeVisitor < ListNodeVisitor
       def compile(node)
-        node.string_node.parent_node = node
-        node.string_node.accept(StringNodeVisitor.new)
-        node.compiled_output
+        node.compiled_output = super.reverse.sub(',', ';').reverse
       end
     end
 
@@ -603,6 +601,9 @@ module Riml
       end
     end
 
+    # root node has access to compiler instance in order to append to
+    # the compiler's `compile_queue`. This happens when another file is
+    # sourced using `riml_source`.
     module CompilerAccessible
       attr_accessor :current_compiler
     end
@@ -613,8 +614,6 @@ module Riml
 
     # compiles nodes into output code
     def compile(root_node)
-      # so we can compile concurrently, as some nodes have access to the
-      # compiler instance itself
       root_node.extend CompilerAccessible
       root_node.current_compiler = self
       root_node.accept(NodesVisitor.new)
