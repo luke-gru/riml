@@ -979,6 +979,29 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "try block with multiple catches" do
+    riml = <<Riml
+try
+  a = 2
+catch /E484:/
+  echo "error 484"
+catch /E485:/
+  echo "Oh. My. Gawd! Not error 485!!!"
+end
+Riml
+
+    expected = <<Viml
+try
+  let s:a = 2
+catch /E484:/
+  echo "error 484"
+catch /E485:/
+  echo "Oh. My. Gawd! Not error 485!!!"
+endtry
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "ex-literals (lines starting with ':') don't get translated at all except for deleted ':' at beg. of line" do
     riml     = <<Riml
 :autocmd BufEnter * quit!
@@ -1308,7 +1331,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "implicit super works when inside function given splat arguments" do
+  test "implicit super works when inside function that's given a splat parameter" do
     riml = <<Riml
 class A
   def initialize(foo, *options)
