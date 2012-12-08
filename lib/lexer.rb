@@ -90,9 +90,6 @@ module Riml
             old_identifier = identifier.dup
             identifier.sub!(/function/, "def")
             @i += (old_identifier.size - identifier.size)
-          elsif identifier == 'finally'
-            identifier = 'ensure'
-            @i += 1 # diff b/t the two string lengths
           elsif VIML_END_KEYWORDS.include? identifier
             old_identifier = identifier.dup
             identifier = 'end'

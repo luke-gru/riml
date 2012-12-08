@@ -2,7 +2,7 @@ class Riml::Parser
 
 token IF ELSE ELSEIF THEN UNLESS END
 token WHILE UNTIL BREAK CONTINUE
-token TRY CATCH ENSURE
+token TRY CATCH FINALLY
 token FOR IN
 token DEF DEF_BANG SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
 token CLASS NEW DEFM DEFM_BANG SUPER RIML_COMMAND
@@ -401,7 +401,7 @@ rule
   Try:
     TRY Block END                              { result = TryNode.new(val[1], nil, nil) }
   | TRY Block Catch END                        { result = TryNode.new(val[1], val[2], nil) }
-  | TRY Block Catch ENSURE Block END           { result = TryNode.new(val[1], val[2], val[4]) }
+  | TRY Block Catch FINALLY Block END          { result = TryNode.new(val[1], val[2], val[4]) }
   ;
 
   Catch:

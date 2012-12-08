@@ -691,13 +691,13 @@ class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   end
 end
 
-class TryNode < Struct.new(:try_block, :catch_nodes, :ensure_block)
+class TryNode < Struct.new(:try_block, :catch_nodes, :finally_block)
   include Visitable
   include Indentable
   include Walkable
 
   def children
-    [try_block, catch_nodes, ensure_block]
+    [try_block, catch_nodes, finally_block]
   end
 end
 

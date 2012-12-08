@@ -474,7 +474,9 @@ module Riml
           end
           node.compiled_output << 'source'
           compile_arguments(node)
-          node.compiled_output.gsub(/['"]/, '').gsub('.riml', '.vim')
+          node.compiled_output.gsub!(/['"]/, '')
+          node.compiled_output.sub!('.riml', '.vim')
+          node.compiled_output
         end
       end
 
@@ -514,9 +516,9 @@ module Riml
     end
 
     class TryNodeVisitor < Visitor
-      # try_block, catch_nodes, ensure_block
+      # try_block, catch_nodes, finally_block
       def compile(node)
-        try, catches, _ensure = node.try_block, node.catch_nodes, node.ensure_block
+        try, catches, finally = node.try_block, node.catch_nodes, node.finally_block
         node.compiled_output = "try\n"
         try.accept(visitor_for_node(try, :propagate_up_tree => false))
         try.compiled_output.each_line do |line|
@@ -530,10 +532,10 @@ module Riml
           end
         end if catches
 
-        if _ensure
+        if finally
           node.compiled_output << "finally\n"
-          _ensure.accept(visitor_for_node(_ensure, :propagate_up_tree => false))
-          _ensure.compiled_output.each_line do |line|
+          finally.accept(visitor_for_node(finally, :propagate_up_tree => false))
+          finally.compiled_output.each_line do |line|
             node.compiled_output << node.indent + line
           end
         end
