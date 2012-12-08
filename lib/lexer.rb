@@ -10,12 +10,15 @@ module Riml
     INTERPOLATION_REGEX = /\A"(.*?)(\#\{(.*?)\})(.*?)"/m
     INTERPOLATION_SPLIT_REGEX = /(\#{.*?})/m
 
-
     attr_reader :tokens, :prev_token, :lineno, :chunk
 
     def initialize(code)
       @code = code
       @code.chomp!
+      set_start_state!
+    end
+
+    def set_start_state!
       @i = 0 # number of characters consumed
       @token_buf = []
       @tokens = []
@@ -29,7 +32,7 @@ module Riml
     end
 
     def tokenize
-      @i, @current_indent = 0, 0
+      set_start_state!
       while (token = next_token) != nil
         @tokens << token
       end
@@ -260,13 +263,17 @@ module Riml
     def handle_interpolation(*parts)
       parts.delete_if {|p| p.empty?}.each_with_index do |part, i|
         if part[0..1] == '#{' && part[-1] == '}'
-          @token_buf << [:IDENTIFIER, part[2...-1]]
+          @token_buf.concat tokenize_without_moving_pos(part[2...-1])
         else
           @token_buf << [:STRING_D, part]
         end
-        # concatenate the parts unless this is the last part
+        # string-concatenate all the parts unless this is the last part
         @token_buf << ['.', '.'] unless parts[i + 1].nil?
       end
+    end
+
+    def tokenize_without_moving_pos(code)
+      Lexer.new(code).tokenize
     end
 
     def statement_modifier?(chunk)

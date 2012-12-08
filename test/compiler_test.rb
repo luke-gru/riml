@@ -255,19 +255,26 @@ Viml
   end
 
   test "interpolation in double-quoted strings" do
-  riml1 = '"found #{n} words"'
-  expected1 = '"found " . s:n . " words"'
+    riml1 = '"found #{n} words"'
+    expected1 = '"found " . s:n . " words"'
 
-  riml2 = '"#{n} words were found"'
-  expected2 = 's:n . " words were found"'
+    riml2 = '"#{n} words were found"'
+    expected2 = 's:n . " words were found"'
 
-  # single-quoted
-  riml3 = '\'#{n} words were found\''
-  expected3 = '\'#{n} words were found\''
+    # single-quoted
+    riml3 = '\'#{n} words were found\''
+    expected3 = '\'#{n} words were found\''
 
-  assert_equal expected1, compile(riml1)
-  assert_equal expected2, compile(riml2)
-  assert_equal expected3, compile(riml3)
+    assert_equal expected1, compile(riml1)
+    assert_equal expected2, compile(riml2)
+    assert_equal expected3, compile(riml3)
+  end
+
+  test "interpolation with any expressions, not just variables" do
+    riml = '"I think his name was... #{guess()}"'
+    expected = '"I think his name was... " . s:guess()'
+
+    assert_equal expected, compile(riml)
   end
 
   test "functions can take expressions" do
