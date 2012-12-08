@@ -29,6 +29,7 @@ module Riml
       @dedent_pending = false
       @one_line_conditional_end_pending = false
       @splat_allowed = false
+      @in_function_declaration = false
     end
 
     def tokenize
@@ -70,7 +71,7 @@ module Riml
         @i += splat_var.size
         @token_buf << [:SCOPE_MODIFIER, 'a:'] << [:IDENTIFIER, splat_var[2..-1]]
       # the 'n' scope modifier is added by riml
-      elsif scope_modifier = chunk[/\A([bwtglsavn]:)[\w_]/]
+      elsif scope_modifier = chunk[/\A([bwtglsavn]:)[\w]/]
         @i += 2
         @token_buf << [:SCOPE_MODIFIER, $1]
       elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]

@@ -6,7 +6,7 @@ module Riml
 
     # Base abstract visitor
     class Visitor
-      attr_accessor :propagate_up_tree
+      attr_writer :propagate_up_tree
       attr_reader :value
 
       def initialize(options={})

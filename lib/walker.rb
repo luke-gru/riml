@@ -1,6 +1,6 @@
 module Riml
   class Walker
-    def self.walk_node(node, method, walk_children = lambda {|node| true })
+    def self.walk_node(node, method, walk_children = lambda {|n| true })
       # breadth-first walk
       to_visit = [node]
       while to_visit.length > 0

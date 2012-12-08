@@ -67,7 +67,7 @@ module Riml
         options = Options.parse(ARGV)
 
         if options.stdio
-          puts Riml.compile($stdin.gets)
+          puts Riml.compile($stdin.read)
         elsif options.compile_files.any?
           Riml.compile_files(*options.compile_files)
         end

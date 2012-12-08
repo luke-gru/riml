@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+$VERBOSE = 1
+
 require File.expand_path('../../lib/riml', __FILE__)
 require 'minitest/autorun'
 
@@ -19,6 +21,33 @@ module Riml
         end
       end
     end
+
+    # `capture_subprocess_io` is available in new versions of MiniTest
+    MiniTest::Assertions.class_eval do
+      def capture_subprocess_io
+        require 'tempfile'
+
+        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
+
+        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
+        $stdout.reopen captured_stdout
+        $stderr.reopen captured_stderr
+
+        begin
+          yield
+
+          $stdout.rewind
+          $stderr.rewind
+
+          [captured_stdout.read, captured_stderr.read]
+        ensure
+          captured_stdout.unlink
+          captured_stderr.unlink
+          $stdout.reopen orig_stdout
+          $stderr.reopen orig_stderr
+        end
+      end
+    end unless MiniTest::Assertions.instance_methods.include?(:capture_subprocess_io)
 
     def lex(code)
       Riml.lex(code)
@@ -40,11 +69,13 @@ module Riml
       Riml.source_path = old
     end
 
-    def with_file_cleanup(file_name)
+    def with_file_cleanup(*file_names)
       yield
     ensure
-      full_path = File.join(Riml.source_path, file_name)
-      File.delete(full_path) if File.exists?(full_path)
+      file_names.each do |name|
+        full_path = File.join(Riml.source_path, name)
+        File.delete(full_path) if File.exists?(full_path)
+      end
     end
   end
 end

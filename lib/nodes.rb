@@ -38,8 +38,8 @@ end
 module Walkable
   include Enumerable
 
-  def each &block
-    children.each &block
+  def each(&block)
+    children.each(&block)
   end
   alias walk each
 
@@ -476,7 +476,7 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
 
   def method_missing(method, *args, &blk)
     if children.respond_to?(method)
-      children.send(method, *args &blk)
+      children.send(method, *args, &blk)
     else
       super
     end
