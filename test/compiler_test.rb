@@ -1043,14 +1043,14 @@ EOS
     assert_equal expected, compile(riml).chomp
   end
 
-  test "heredoc string with more than one interpolated variable" do
+  test "heredoc string with more than one interpolated expression" do
     riml = '
 lineFromMovie = <<EOS
-Holy #{expletive} it\'s freaking #{superhero}!
+Holy #{loudExpletive()} it\'s freaking #{superhero}!
 EOS
 '.strip
 
-    expected = %{let s:lineFromMovie = "Holy " . s:expletive . " it's freaking " . s:superhero . "!\n"}
+    expected = %{let s:lineFromMovie = "Holy " . s:loudExpletive() . " it's freaking " . s:superhero . "!\n"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1301,6 +1301,42 @@ function! g:BConstructor(foo, bar)
   let aObj = g:AConstructor(a:foo, a:bar)
   call extend(bObj, aObj)
   let bObj.other = other
+  return bObj
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "implicit super works when inside function given splat arguments" do
+    riml = <<Riml
+class A
+  def initialize(foo, *options)
+    self.foo = foo
+    self.options = options
+  end
+end
+
+class B < A
+  def initialize(foo, *options)
+    self.other = calculateOther()
+    super
+  end
+end
+Riml
+
+    expected = <<Viml
+function! g:AConstructor(foo, ...)
+  let aObj = {}
+  let aObj.foo = a:foo
+  let aObj.options = a:000
+  return aObj
+endfunction
+function! g:BConstructor(foo, ...)
+  let bObj = {}
+  let bObj.other = calculateOther()
+  let aObj = g:AConstructor(a:foo, a:000)
+  call extend(bObj, aObj)
   return bObj
 endfunction
 Viml

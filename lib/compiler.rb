@@ -263,7 +263,9 @@ module Riml
 
       private
       def check_for_splat_match!(node, splat)
-        if node.name == splat[1..-1]
+        # if `function doIt(*options)`, then:
+        # *options OR options in function body becomes `a:000`
+        if [ splat, splat[1..-1] ].include?(node.name)
           node.scope_modifier = "a:"
           node.name = '000'
         end

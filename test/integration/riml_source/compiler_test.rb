@@ -66,15 +66,12 @@ Viml
 riml_source 'faster_car.riml'
 Riml
 
-    ret = nil
     with_riml_source_path(File.expand_path("../", __FILE__)) do
       with_file_cleanup("faster_car.vim") do
         assert_raises Riml::ClassNotFound do
-          ret = compile(riml)
+          compile(riml)
         end
       end
     end
-    assert_nil ret
-
   end
 end
