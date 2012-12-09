@@ -1,8 +1,8 @@
 let s:available_nrules = []
-function! s:smartinput#clear_rules()
+function! smartinput#clear_rules()
   let s:available_nrules = []
 endfunction
-function! s:smartinput#define_default_rules()
+function! smartinput#define_default_rules()
   let urules = {}
   let urules.names = []
   let urules.table = {}
@@ -64,15 +64,15 @@ function! s:_operator_pattern_from(operator_name)
   let k = a:operator_name
   return k
 endfunction
-function! s:smartinput#_leave_block(end_char)
+function! smartinput#_leave_block(end_char)
   call search(a:end_char, 'cW')
   return ''
 endfunction
-function! s:smartinput#define_rule(urule)
+function! smartinput#define_rule(urule)
   let nrule = s:normalize_rule(a:urule)
   call s:insert_or_replace_a_rule(s:available_nrules, nrule)
 endfunction
-function! s:smartinput#map_to_trigger(mode, lhs, rhs_char, rhs_fallback)
+function! smartinput#map_to_trigger(mode, lhs, rhs_char, rhs_fallback)
   let char_expr = s:_encode_for_map_char_expr(a:rhs_char)
   let fallback_expr = s:_encode_for_map_char_expr(a:rhs_fallback)
   execute printf('%snoremap %s %s  <SID>_trigger_or_fallback(%s, %s)', a:mode, '<script> <expr>', a:lhs, char_expr, fallback_expr)
@@ -92,7 +92,7 @@ function! s:_trigger_or_fallback(char, fallback)
     return nrule._input
   endif
 endfunction
-function! s:smartinput#map_trigger_keys(...)
+function! smartinput#map_trigger_keys(...)
   let overridep = 1 <=# a:0 ? a:1 : 0
   let d = {'i': {}, 'c': {}}
   for nrule in s:available_nrules
@@ -121,12 +121,12 @@ function! s:smartinput#map_trigger_keys(...)
     silent! call M(mode, map_modifier.' '.'<NL>', '<Enter>', '<NL>')
   endfor
 endfunction
-function! s:smartinput#invoke_the_initial_setup_if_necessary()
+function! smartinput#invoke_the_initial_setup_if_necessary()
 endfunction
-function! s:smartinput#scope()
+function! smartinput#scope()
   return s:
 endfunction
-function! s:smartinput#sid()
+function! smartinput#sid()
   return maparg('<SID>', 'n')
 endfunction
 nnoremap <SID>  <SID>

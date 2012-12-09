@@ -283,6 +283,10 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
     false
   end
 
+  def autoload?
+    name.include?('#')
+  end
+
   def children
     if name.is_a?(String)
       arguments
@@ -457,6 +461,10 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
   def keyword
     return super unless name.include?(".")
     "dict"
+  end
+
+  def autoload?
+    name.include?('#')
   end
 
   def super_node

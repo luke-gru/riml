@@ -2,7 +2,7 @@ if exists("g:loaded_pathogen") || &cp
   finish
 endif
 let g:loaded_pathogen = 1
-function! s:pathogen#infect(...) abort
+function! pathogen#infect(...) abort
   let source_path = a:0 ? a:1 : 'bundle'
   if source_path =~# '[\\/]'
     call pathogen#runtime_prepend_subdirectories(source_path)
@@ -11,14 +11,14 @@ function! s:pathogen#infect(...) abort
   endif
   call pathogen#cycle_filetype()
 endfunction
-function! s:pathogen#split(path) abort
+function! pathogen#split(path) abort
   if type(a:path) ==# type([])
     return a:path
   endif
   let split = split(a:path, '\\\@<!\%(\\\\\)*\zs,')
   return map(split, 'substitute(v:val,''\\\([\\,]\)'',''\1'',"g")')
 endfunction
-function! s:pathogen#join(...) abort
+function! pathogen#join(...) abort
   if type(a:1) ==# type(1) && a:1
     let i = 1
     let space = ' '
@@ -43,10 +43,10 @@ function! s:pathogen#join(...) abort
   endwhile
   return substitute(path, '^,', '', '')
 endfunction
-function! s:pathogen#legacyjoin(...) abort
+function! pathogen#legacyjoin(...) abort
   return call('pathogen#join', [1] + a:000)
 endfunction
-function! s:pathogen#uniq(list) abort
+function! pathogen#uniq(list) abort
   let i = 0
   let seen = {}
   while i <# len(a:list)
@@ -62,23 +62,23 @@ function! s:pathogen#uniq(list) abort
   endwhile
   return a:list
 endfunction
-function! s:pathogen#separator() abort
+function! pathogen#separator() abort
   return !exists("+shellslash") || &shellslash ? '/' : '\'
 endfunction
-function! s:pathogen#glob(pattern) abort
+function! pathogen#glob(pattern) abort
   let files = split(glob(a:pattern), "\n")
   return map(files, 'substitute(v:val,"[".pathogen#separator()."/]$","","")')
 endfunction
-function! s:pathogen#glob_directories(pattern) abort
+function! pathogen#glob_directories(pattern) abort
   return filter(pathogen#glob(a:pattern), 'isdirectory(v:val)')
 endfunction
-function! s:pathogen#cycle_filetype()
+function! pathogen#cycle_filetype()
   if exists('g:did_load_filetypes')
     filetype off
     filetype on
   endif
 endfunction
-function! s:pathogen#is_disabled(path)
+function! pathogen#is_disabled(path)
   if a:path =~# '\~$'
     return 1
   elseif !exists("g:pathogen_disabled")
@@ -87,7 +87,7 @@ function! s:pathogen#is_disabled(path)
   let sep = pathogen#separator()
   return index(g:pathogen_disabled, strpart(a:path, strridx(a:path, sep) + 1)) !=# -1
 endfunction
-function! s:pathogen#runtime_prepend_subdirectories(path)
+function! pathogen#runtime_prepend_subdirectories(path)
   let sep = pathogen#separator()
   let before = filter(pathogen#glob_directories(a:path . sep . "*"), '!pathogen#is_disabled(v:val)')
   let after = filter(pathogen#glob_directories(a:path . sep . "*" . sep . "after"), '!pathogen#is_disabled(v:val[0:-7])')
@@ -97,7 +97,7 @@ function! s:pathogen#runtime_prepend_subdirectories(path)
   let &rtp = pathogen#join(pathogen#uniq(before + rtp + after))
   return &rtp
 endfunction
-function! s:pathogen#runtime_append_all_bundles(...)
+function! pathogen#runtime_append_all_bundles(...)
   let sep = pathogen#separator()
   let name = a:0 ? a:1 : 'bundle'
   if "\n" . s:done_bundles =~# "\\M\n" . name . "\n"
@@ -116,7 +116,7 @@ function! s:pathogen#runtime_append_all_bundles(...)
   return 1
 endfunction
 let s:done_bundles = ''
-function! s:pathogen#helptags()
+function! pathogen#helptags()
   let sep = pathogen#separator()
   for dir in pathogen#split(&rtp)
     if (dir . sep)[0 : strlen($VIMRUNTIME)] !=# $VIMRUNTIME.sep && filewritable(dir . sep . 'doc') ==# 2 && !empty(filter(split(glob(dir . sep . 'doc' . sep . '*'), "\n>"), '!isdirectory(v:val)')) && (!filereadable(dir . sep . 'doc' . sep . 'tags') || filewritable(dir . sep . 'doc' . sep . 'tags'))
@@ -125,7 +125,7 @@ function! s:pathogen#helptags()
   endfor
 endfunction
 command! -bar Helptags :call pathogen#helptags()
-function! s:pathogen#runtime_findfile(file, count)
+function! pathogen#runtime_findfile(file, count)
   let rtp = pathogen#join(1, pathogen#split(&rtp))
   let a:file = findfile(a:file, rtp, a:count)
   if a:file ==# ''
@@ -134,7 +134,7 @@ function! s:pathogen#runtime_findfile(file, count)
     return fnamemodify(a:file, ':p')
   endif
 endfunction
-function! s:pathogen#fnameescape(string)
+function! pathogen#fnameescape(string)
   if exists('*fnameescape')
     return fnameescape(a:string)
   elseif a:string ==# '-'

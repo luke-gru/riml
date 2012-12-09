@@ -24,7 +24,7 @@ class BinRimlTest < Riml::TestCase
     Dir.chdir(File.expand_path('../', __FILE__)) do
       with_file_cleanup('./pathogen.vim', 'smartinput.vim') do
         `#{EXEC} -c #{pathogen_riml_path},#{smartinput_riml_path}`
-        assert_equal 0, $?.to_i
+        assert_equal 0, $?.exitstatus
         assert File.exists?('./pathogen.vim')
         assert File.exists?('./smartinput.vim')
       end

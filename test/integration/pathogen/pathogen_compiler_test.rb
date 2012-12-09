@@ -38,7 +38,7 @@ endfunction " }}}1
 Riml
 
     expected = <<Viml
-function! s:pathogen#join(...) abort
+function! pathogen#join(...) abort
   if type(a:1) ==# type(1) && a:1
     let i = 1
     let space = ' '
@@ -76,7 +76,7 @@ endfunction " }}}1
 Riml
 
     expected = <<Viml
-function! s:pathogen#legacyjoin(...) abort
+function! pathogen#legacyjoin(...) abort
   return call('pathogen#join', [1] + a:000)
 endfunction
 Viml
@@ -99,7 +99,7 @@ endfunction
 Riml
 
     expected = <<Viml
-function! s:pathogen#is_disabled(path)
+function! pathogen#is_disabled(path)
   if a:path =~# '\~$'
     return 1
   elseif !exists("g:pathogen_disabled")
@@ -129,7 +129,7 @@ endfunction " }}}1
 Riml
 
     expected = <<Viml
-function! s:pathogen#runtime_prepend_subdirectories(path)
+function! pathogen#runtime_prepend_subdirectories(path)
   let sep = pathogen#separator()
   let before = filter(pathogen#glob_directories(a:path . sep . "*"), '!pathogen#is_disabled(v:val)')
   let after = filter(pathogen#glob_directories(a:path . sep . "*" . sep . "after"), '!pathogen#is_disabled(v:val[0:-7])')

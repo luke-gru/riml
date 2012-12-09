@@ -48,12 +48,12 @@ Riml
 
     expected = <<Viml
 function! b:another_method(a, b)
-  if hello()
+  if s:hello()
     0
   else
     1
   endif
-  call SomeFunction()
+  call s:SomeFunction()
 endfunction
 Viml
 
@@ -1357,7 +1357,7 @@ function! g:AConstructor(foo, ...)
 endfunction
 function! g:BConstructor(foo, ...)
   let bObj = {}
-  let bObj.other = calculateOther()
+  let bObj.other = s:calculateOther()
   let aObj = g:AConstructor(a:foo, a:000)
   call extend(bObj, aObj)
   return bObj

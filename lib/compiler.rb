@@ -221,15 +221,16 @@ module Riml
         #       myVariable = "override riml default scoping"
         node.scope_modifier = "" if node.scope_modifier == "n:"
         return node.scope_modifier if node.scope_modifier
-        node.scope_modifier = scope_modifier_for_variable_name(node)
+        node.scope_modifier = scope_modifier_for_node(node)
       end
 
       private
-      def scope_modifier_for_variable_name(node)
+      def scope_modifier_for_node(node)
         if node.scope
           return "a:" if node.scope.argument_variable_names.include?(node.name)
-          return ""
+          return "" unless node.is_a?(CallNode)
         end
+        return "" if (node.is_a?(CallNode) || node.is_a?(DefNode)) && node.autoload?
         "s:"
       end
     end
@@ -333,17 +334,17 @@ module Riml
       end
     end
 
-    class DefNodeVisitor < Visitor
+    class DefNodeVisitor < ScopedVisitor
       def visit(node)
         setup_local_scope_for_descendants(node)
         super
       end
 
       def compile(node)
-        modifier = node.scope ? nil : node.scope_modifier || 's:'
+        set_modifier(node)
         bang = node.bang
         params = process_parameters!(node)
-        declaration = "function#{bang} #{modifier}"
+        declaration = "function#{bang} #{node.scope_modifier}"
         declaration <<
         if node.name.respond_to?(:variable)
           node.name.accept(visitor_for_node(node.name))
