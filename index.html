@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Riml by luke-gru</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Riml</h1>
+        <p>Relaxed Vimscript</p>
+
+        <p class="view"><a href="https://github.com/luke-gru/riml">View the Project on GitHub <small>luke-gru/riml</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/luke-gru/riml/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/luke-gru/riml/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/luke-gru/riml">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p><a href="https://travis-ci.org/luke-gru/riml"><img src="https://travis-ci.org/luke-gru/riml.png" alt="Build Status"></a></p>
+
+<h1>Riml, a relaxed version of Vimscript</h1>
+
+<p>Riml aims to be a superset of VimL that includes some nice features that I
+enjoy in other scripting languages, including classes, string interpolation,
+heredocs, default case-sensitive string comparison and other things most
+programmers take for granted. Also, Riml takes some liberties and provides
+some syntactic sugar for lots of VimL constructs. To see how Riml constructs
+are compiled into VimL, just take a look in this README. The left side is Riml,
+and the right side is the equivalent VimL after compilation.</p>
+
+<h2>Variables</h2>
+
+<pre><code>count = 1                     let s:count = 1
+while count &lt; 5               while s:count &lt; 5
+  source other.vim              source other.vim
+  count += 1                    let s:count += 1
+end                           endwhile
+</code></pre>
+
+<p>If you don't specify a scope modifier, it's script local by default in the
+global namespace. Within a function, variables without scope modifiers are plain
+old local variables.</p>
+
+<h3>globally</h3>
+
+<pre><code>a = 3                         let s:a = 3
+</code></pre>
+
+<h3>locally</h3>
+
+<pre><code>a = 3                         let a = 3
+</code></pre>
+
+<h3>Freeing memory</h3>
+
+<pre><code>a = nil                       unlet! a
+</code></pre>
+
+<h3>Checking for existence</h3>
+
+<pre><code>unless s:callcount?                    if !exists("s:callcount")
+  callcount = 0                         let s:callcount = 0
+end                                    endif
+callcount += 1                         let s:callcount += 1
+puts "called #{callcount} times"       echo "called " . s:callcount . " times"
+</code></pre>
+
+<h2>Comparisons</h2>
+
+<pre><code>a = "hi" == "hi"                      if ("hi" ==# "hi")
+                                        let s:a = 1
+                                      else
+                                        let s:a = 0
+                                      endif
+</code></pre>
+
+<h2>Heredocs</h2>
+
+<pre><code>msg = &lt;&lt;EOS                           let s:msg = "a vim heredoc!\n"
+a vim heredoc!
+EOS
+</code></pre>
+
+<h2>Classes</h2>
+
+<h3>Riml example 1</h3>
+
+<pre><code>class MyClass
+  def initialize(arg1, arg2, *args)
+  end
+
+  defm getData
+    return self.data
+  end
+
+  defm getOtherData
+    return self.otherData
+  end
+end
+</code></pre>
+
+<h3>Viml example 1</h3>
+
+<pre><code>function! g:MyClassConstructor(arg1, arg2, ...)
+  let myClassObj = {}
+  function! myClassObj.getData() dict
+    return self.data
+  endfunction
+  function! myClassObj.getOtherData() dict
+    return self.otherData
+  endfunction
+  return myClassObj
+endfunction
+</code></pre>
+
+<h3>Riml example 2</h3>
+
+<pre><code>class Translation
+  def initialize(input)
+    self.input = input
+  end
+end
+
+class FrenchToEnglishTranslation &lt; Translation
+  defm translate
+    if (self.input == "Bonjour!")
+      echo "Hello!"
+    else
+      echo "Sorry, I don't know that word."
+    end
+  end
+end
+
+translation = new FrenchToEnglishTranslation("Bonjour!")
+translation.translate()
+</code></pre>
+
+<h3>VimL example 2</h3>
+
+<pre><code>function! g:TranslationConstructor(input)
+  let translationObj = {}
+  let translationObj.input = a:input
+  return translationObj
+endfunction
+
+function! g:FrenchToEnglishTranslationConstructor(input)
+  let frenchToEnglishTranslationObj = {}
+  let translationObj = g:TranslationConstructor(a:input)
+  call extend(frenchToEnglishTranslationObj, translationObj)
+  function! frenchToEnglishTranslationObj.translate() dict
+    if (self.input ==# "Bonjour!")
+      echo "Hello!"
+    else
+      echo "Sorry, I don't know that word."
+    endif
+  endfunction
+  return frenchToEnglishTranslationObj
+endfunction
+
+let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
+call s:translation.translate()
+</code></pre>
+
+<h2>Hacking</h2>
+
+<p>Make sure to generate the parser before running tests or developing on Riml.
+Also, make sure to regenerate the parser after modifiying the grammar file.</p>
+
+<ol>
+<li><code>bundle install</code></li>
+<li>Go to the lib directory and enter <code>racc -o parser.rb grammar.y</code>
+</li>
+</ol>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/luke-gru">luke-gru</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
