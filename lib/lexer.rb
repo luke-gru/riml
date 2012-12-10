@@ -71,19 +71,19 @@ module Riml
         @i += splat_var.size
         @token_buf << [:SCOPE_MODIFIER, 'a:'] << [:IDENTIFIER, splat_var[2..-1]]
       # the 'n' scope modifier is added by riml
-      elsif scope_modifier = chunk[/\A([bwtglsavn]:)[\w]/]
+      elsif scope_modifier = chunk[/\A([bwtglsavn]:)\w/, 1]
         @i += 2
-        @token_buf << [:SCOPE_MODIFIER, $1]
+        @token_buf << [:SCOPE_MODIFIER, scope_modifier]
       elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
-        @i += 2
-        @token_buf << [:SCOPE_MODIFIER_LITERAL, $1]
+        @i += scope_modifier_literal.size
+        @token_buf << [:SCOPE_MODIFIER_LITERAL, scope_modifier_literal]
       elsif special_var_prefix = chunk[/\A(&(\w:)?(?!&)|\$|@)/]
         @token_buf << [:SPECIAL_VAR_PREFIX, special_var_prefix.strip]
         @expecting_identifier = true
         @i += special_var_prefix.size
-      elsif function_method = chunk[/\A(function)\(/]
-        @token_buf << [:IDENTIFIER, $1]
-        @i += $1.size
+      elsif function_method = chunk[/\A(function)\(/, 1]
+        @token_buf << [:IDENTIFIER, function_method]
+        @i += function_method.size
       elsif identifier = chunk[/\A[a-zA-Z_][\w#]*(\?|!)?/]
         # keyword identifiers
         if KEYWORDS.include?(identifier)
@@ -130,15 +130,15 @@ module Riml
         @i += splat.size
       # integer (octal)
       elsif octal = chunk[/\A0[0-7]+/]
-        @token_buf << [:NUMBER, octal.to_s]
+        @token_buf << [:NUMBER, octal]
         @i += octal.size
       # integer (hex)
       elsif hex = chunk[/\A0[xX]\h+/]
-        @token_buf << [:NUMBER, hex.to_s]
+        @token_buf << [:NUMBER, hex]
         @i += hex.size
       # integer or float (decimal)
       elsif decimal = chunk[/\A[0-9]+(\.[0-9]+)?/]
-        @token_buf << [:NUMBER, decimal.to_s]
+        @token_buf << [:NUMBER, decimal]
         @i += decimal.size
       elsif interpolation = chunk[INTERPOLATION_REGEX]
         # "hey there, #{name}" = "hey there, " . name

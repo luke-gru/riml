@@ -652,22 +652,6 @@ class ForNode < Struct.new(:variable, :in_expression, :expressions)
   end
 end
 
-# lines: [5, 6, 8, 9]
-# This means the continuation has 4 lines (line.size is 4) and each line
-# preserves the amt of whitespace specified as the value in the array.
-# Ex: 1st line preserves 5 spaces, 2nd line preserves 6 spaces, etc...
-class LineContinuation < Struct.new(:lines)
-  include Visitable
-
-  def size
-    lines.size
-  end
-
-  def [](idx)
-    lines[idx]
-  end
-end
-
 class DictGetNode < Struct.new(:dict, :keys)
   include Visitable
   include Walkable
