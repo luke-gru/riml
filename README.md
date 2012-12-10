@@ -10,7 +10,6 @@ programmers take for granted. Also, Riml takes some liberties and provides
 some syntactic sugar for lots of VimL constructs. To see how Riml constructs
 are compiled into VimL, just take a look in this README. The left side is Riml,
 and the right side is the equivalent VimL after compilation.
-
 Variables
 ---------
 
@@ -38,11 +37,11 @@ old local variables.
 
 ###Checking for existence
 
-    unless s:callcount?                    if !exists("s:callcount")
-      callcount = 0                         let s:callcount = 0
-    end                                    endif
-    callcount += 1                         let s:callcount += 1
-    puts "called #{callcount} times"       echo "called " . s:callcount . " times"
+    unless s:callcount?                   if !exists("s:callcount")
+      callcount = 0                        let s:callcount = 0
+    end                                   endif
+    callcount += 1                        let s:callcount += 1
+    echo "called #{callcount} times"      echo "called " . s:callcount . " times"
 
 Comparisons
 -----------
@@ -56,93 +55,54 @@ Comparisons
 Heredocs
 --------
 
-    msg = <<EOS                           let s:msg = "a vim heredoc!\n"
-    a vim heredoc!
+    msg = <<EOS                           let s:msg = "a vim heredoc! " . s:cryForJoy() . "!\n"
+    A vim heredoc! #{cryForJoy()}!
     EOS
 
 Classes
 -------
 
-###Riml example 1
+###Basic Class
 
-    class MyClass
-      def initialize(arg1, arg2, *args)
-      end
-
-      defm getData
-        return self.data
-      end
-
-      defm getOtherData
-        return self.otherData
-      end
-    end
-
-###Viml example 1
-
-
-    function! g:MyClassConstructor(arg1, arg2, ...)
-      let myClassObj = {}
-      function! myClassObj.getData() dict
-        return self.data
-      endfunction
-      function! myClassObj.getOtherData() dict
-        return self.otherData
-      endfunction
-      return myClassObj
-    endfunction
-
-###Riml example 2
-
-    class Translation
-      def initialize(input)
-        self.input = input
+    class MyClass                                      function! g:MyClassConstructor(data, otherData, ...)
+      def initialize(data, otherData, *options)          let myClassObj = {}
+        self.data = data                                 let myClassObj.data = a:data
+        self.otherData = otherData                       let myClassObj.otherData = a:otherData
+        self.options = options                           let myClassObj.options = a:000
+      end                                                function! myClassObj.getData() dict
+                                                           return self.data
+      defm getData                                       endfunction
+        return self.data                                 function! myClassObj.getOtherData() dict
+      end                                                  return self.otherData
+                                                         endfunction
+      defm getOtherData                                  return myClassObj
+        return self.otherData                          endfunction
       end
     end
 
-    class FrenchToEnglishTranslation < Translation
-      defm translate
-        if (self.input == "Bonjour!")
-          echo "Hello!"
-        else
-          echo "Sorry, I don't know that word."
-        end
-      end
-    end
+###Class with Inheritance
 
-    translation = new FrenchToEnglishTranslation("Bonjour!")
-    translation.translate()
+    class Translation                                  function! g:TranslationConstructor(input)
+      def initialize(input)                              let translationObj = {}
+        self.input = input                               let translationObj.input = a:input
+      end                                                return translationObj
+    end                                                endfunction
 
-###VimL example 2
+    class FrenchToEnglishTranslation < Translation     function! g:FrenchToEnglishTranslationConstructor(input)
+      defm translate                                     let frenchToEnglishTranslationObj = {}
+        if (self.input == "Bonjour!")                    let translationObj = g:TranslationConstructor(a:input)
+          echo "Hello!"                                  call extend(frenchToEnglishTranslationObj, translationObj)
+        else                                             function! frenchToEnglishTranslationObj.translate() dict
+          echo "Sorry, I don't know that word."            if (self.input ==# "Bonjour!")
+        end                                                  echo "Hello!"
+      end                                                  else
+    end                                                      echo "Sorry, I don't know that word."
+                                                           endif
+    translation = new                                    endfunction
+    \ FrenchToEnglishTranslation("Bonjour!")             return frenchToEnglishTranslationObj
+    translation.translate()                            endfunction
+                                                       let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
+                                                       call s:translation.translate()
 
-    function! g:TranslationConstructor(input)
-      let translationObj = {}
-      let translationObj.input = a:input
-      return translationObj
-    endfunction
 
-    function! g:FrenchToEnglishTranslationConstructor(input)
-      let frenchToEnglishTranslationObj = {}
-      let translationObj = g:TranslationConstructor(a:input)
-      call extend(frenchToEnglishTranslationObj, translationObj)
-      function! frenchToEnglishTranslationObj.translate() dict
-        if (self.input ==# "Bonjour!")
-          echo "Hello!"
-        else
-          echo "Sorry, I don't know that word."
-        endif
-      endfunction
-      return frenchToEnglishTranslationObj
-    endfunction
-
-    let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
-    call s:translation.translate()
-
-Hacking
--------
-
-Make sure to generate the parser before running tests or developing on Riml.
-Also, make sure to regenerate the parser after modifiying the grammar file.
-
-1. `bundle install`
-2. Go to the lib directory and enter `racc -o parser.rb grammar.y`
+Coming soon: for a full list of the language's rules complete with examples, check out the Wiki
