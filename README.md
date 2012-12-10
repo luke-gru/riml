@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/luke-gru/riml.png)](https://travis-ci.org/luke-gru/riml)
+[![Build Status](https://secure.travis-ci.org/luke-gru/riml.png?branch=master)](https://travis-ci.org/luke-gru/riml)
 
 Riml, a relaxed version of Vimscript
 ====================================
