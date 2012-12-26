@@ -1,8 +1,8 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    racc (1.4.8)
-    rake (0.8.7)
+    racc (1.4.9)
+    rake (10.0.3)
 
 PLATFORMS
   ruby

@@ -79,8 +79,8 @@ module Riml
       def replace(node)
         binary_op = node.nodes[0].rhs
         old_set_var = node.nodes[0]
-        assign_true  = old_set_var.clone.tap {|assign_t| assign_t.rhs = TrueNode.new }
-        assign_false = old_set_var.clone.tap {|assign_f| assign_f.rhs = FalseNode.new }
+        assign_true  = old_set_var.dup.tap {|assign_t| assign_t.rhs = TrueNode.new}
+        assign_false = old_set_var.dup.tap {|assign_f| assign_f.rhs = FalseNode.new}
         node.nodes = [
           IfNode.new(binary_op, Nodes.new([
             assign_true, ElseNode.new(Nodes.new([
@@ -112,7 +112,7 @@ module Riml
         )
 
         SuperToObjectExtension.new(constructor, classes, node).rewrite_on_match
-        MethodToNestedFunction.new(node, classes, constructor, dict_name).rewrite_on_match
+        ExtendObjectWithMethods.new(node, classes).rewrite_on_match
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
 
         constructor.expressions.push(
@@ -121,26 +121,39 @@ module Riml
         reestablish_parents(constructor)
       end
 
-      class MethodToNestedFunction < AST_Rewriter
-        attr_reader :constructor, :dict_name
-        def initialize(class_node, classes, constructor, dict_name)
-          super(class_node, classes)
-          @dict_name, @constructor = dict_name, constructor
-        end
-
+      class ExtendObjectWithMethods < AST_Rewriter
         def match?(node)
           DefMethodNode === node
         end
 
         def replace(node)
           def_node = node.to_def_node
-          node.parent_node = ast.expressions
-          def_node.parent_node = ast.expressions
+          class_expressions = ast.expressions
+          class_expressions.insert_after(class_expressions.last, def_node)
+          def_node.parent = class_expressions
+          # to remove it
+          node.parent = class_expressions
           node.remove
-          def_node.name.insert(0, "#{dict_name}.")
-          def_node.parent_node = constructor.expressions
-          constructor.expressions << def_node
+          def_node.original_name = def_node.name.dup
+          def_node.name.insert(0, "#{ast.name}_")
           reestablish_parents(def_node)
+          extend_obj_with_methods(def_node)
+        end
+
+        def extend_obj_with_methods(def_node)
+          constructor = ast.constructor
+          extension =
+            AssignNode.new('=',
+              DictGetDotNode.new(
+                GetVariableNode.new(nil, ast.constructor_obj_name),
+                [def_node.original_name]
+              ),
+              CallNode.new(
+                nil, 'function', [StringNode.new("#{def_node.scope_modifier}#{def_node.name}", :s)]
+              )
+          )
+          constructor.expressions << extension
+          extension.parent = constructor.expressions
         end
       end
 

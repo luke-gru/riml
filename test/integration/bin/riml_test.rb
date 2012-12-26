@@ -12,10 +12,12 @@ class BinRimlTest < Riml::TestCase
 
   test "fails when given a file that doesn't exist with -c option" do
     bad_path = './nonexistent_file.riml'
-    capture_subprocess_io do
+    out, err = capture_subprocess_io do
       `#{EXEC} -c #{bad_path}`
     end
     assert_equal 1, $?.exitstatus
+    assert out.empty?
+    refute err.empty?
   end
 
   test "compiles riml paths to viml files with -c option, outputting them into cwd" do

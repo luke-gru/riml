@@ -159,7 +159,7 @@ module Riml
 
       private
       def string_surround(string_node)
-        case string_node.type
+        case string_node.type.to_sym
         when :d
           '"' << string_node.value << '"'
         when :s
@@ -283,16 +283,45 @@ module Riml
       def compile(node)
         set_modifier(node)
         node.compiled_output = node.scope_modifier
-        node.variable.parts.each do |part|
-          node.compiled_output <<
-          if part.interpolated?
+        node.compiled_output << compile_parts(node.variable.parts)
+      end
+
+      def compile_parts(parts)
+        compiled = ""
+        parts.each do |part|
+          output = if CurlyBraceVariable === part
+            compile_parts(part)
+          elsif part.nested?
+            compile_nested_parts(part.value, part)
+            part.compiled_output
+          elsif part.interpolated?
             part.value.accept(visitor_for_node(part.value))
             "{#{part.value.compiled_output}}"
           else
             "#{part.value}"
           end
+          compiled << output
         end
-        node.compiled_output
+        compiled
+      end
+
+      def compile_nested_parts(parts, root_part)
+        nested = 0
+        parts.each do |part|
+          if !part.respond_to?(:value)
+            part.accept(visitor_for_node(part, :propagate_up_tree => false))
+            root_part.compiled_output << "{#{part.compiled_output}"
+            nested += 1
+            next
+          end
+          if part.value.is_a?(Array)
+            compile_nested_parts(part.value, root_part)
+            next
+          end
+          part.value.accept(visitor_for_node(part.value, :propagate_up_tree => false))
+          root_part.compiled_output << "{#{part.value.compiled_output}}"
+        end
+        root_part.compiled_output << ('}' * nested)
       end
     end
 

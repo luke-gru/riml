@@ -110,4 +110,20 @@ Riml
     assert_equal expected, parse(riml)
   end
 
+  test "ERROR: curly-brace names don't parse unless prefix or suffix parts are present" do
+    riml = <<Riml
+let {color} = 138
+Riml
+
+    riml2 = <<Riml
+let {bright{color}} = 138
+Riml
+
+    [riml, riml2].each do |source|
+      assert_raises Riml::ParseError do
+        parse(source)
+      end
+    end
+  end
+
 end

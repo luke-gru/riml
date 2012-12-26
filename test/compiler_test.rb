@@ -453,7 +453,19 @@ Viml
   assert_equal expected, compile(riml)
   end
 
-  test "list unpack in let" do
+  test "list unpack" do
+    riml = <<Riml
+let [var1, var2, last] = mylist
+Riml
+
+    expected = <<Viml
+let [s:var1, s:var2, s:last] = s:mylist
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "list unpack with rest" do
     riml = <<Riml
 let [var1, var2; rest] = mylist
 Riml
@@ -616,18 +628,6 @@ Riml
 
     expected = <<Viml
 call s:myFunction(s:arg1, s:arg2)
-Viml
-
-    assert_equal expected, compile(riml)
-  end
-
-  test "multiple variable initialization" do
-    riml = <<Riml
-[a, b, c] = expression()
-Riml
-
-    expected = <<Viml
-let [s:a, s:b, s:c] = s:expression()
 Viml
 
     assert_equal expected, compile(riml)
@@ -880,13 +880,41 @@ echo s:my_{s:background}_message
 Viml
 
 riml2 = <<Riml
-echo my_{&background}_message
+echo my_{&background}_{&other}_message
 Riml
     expected2 = <<Viml
-echo s:my_{&background}_message
+echo s:my_{&background}_{&other}_message
 Viml
     assert_equal expected, compile(riml)
     assert_equal expected2, compile(riml2)
+  end
+
+  test "nested curly-brace variable names" do
+    riml = <<Riml
+call my_{&color{size}}_fn()
+Riml
+
+    expected = <<Viml
+call s:my_{&color{s:size}}_fn()
+Viml
+    riml2 = <<Riml
+call my_{color{size}}_fn()
+Riml
+
+    expected2 = <<Viml
+call s:my_{s:color{s:size}}_fn()
+Viml
+
+    riml3 = <<Riml
+let bright{color} = 255
+Riml
+
+    expected3 = <<Viml
+let s:bright{s:color} = 255
+Viml
+    assert_equal expected,  compile(riml)
+    assert_equal expected2, compile(riml2)
+    assert_equal expected3, compile(riml3)
   end
 
   test "curly-braces function definition" do
@@ -1104,6 +1132,17 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "set list item to result of expr" do
+    riml = <<Riml
+let list[item] = expr()
+Riml
+
+    expected = <<Viml
+let s:list[s:item] = s:expr()
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "list sublists" do
     riml = <<Riml
 let myList = otherList[0:-1]
@@ -1113,6 +1152,17 @@ Riml
 let s:myList = s:otherList[0 : -1]
 Viml
 
+    assert_equal expected, compile(riml)
+  end
+
+  test "set sublist items to result of expr" do
+    riml = <<Riml
+let list[0:-1] = expr()
+Riml
+
+    expected = <<Viml
+let s:list[0 : -1] = s:expr()
+Viml
     assert_equal expected, compile(riml)
   end
 
@@ -1177,13 +1227,15 @@ Riml
     expected = <<Viml
 function! g:MyClassConstructor(arg1, arg2, ...)
   let myClassObj = {}
-  function! myClassObj.getData() dict
-    return self.data
-  endfunction
-  function! myClassObj.getOtherData() dict
-    return self.otherData
-  endfunction
+  let myClassObj.getData = function('g:MyClass_getData')
+  let myClassObj.getOtherData = function('g:MyClass_getOtherData')
   return myClassObj
+endfunction
+function! g:MyClass_getData() dict
+  return self.data
+endfunction
+function! g:MyClass_getOtherData() dict
+  return self.otherData
 endfunction
 Viml
 
@@ -1222,14 +1274,15 @@ function! g:FrenchToEnglishTranslationConstructor(input)
   let frenchToEnglishTranslationObj = {}
   let translationObj = g:TranslationConstructor(a:input)
   call extend(frenchToEnglishTranslationObj, translationObj)
-  function! frenchToEnglishTranslationObj.translate() dict
-    if self.input ==# "Bonjour!"
-      echo "Hello!"
-    else
-      echo "Sorry, I don't know that word."
-    endif
-  endfunction
+  let frenchToEnglishTranslationObj.translate = function('g:FrenchToEnglishTranslation_translate')
   return frenchToEnglishTranslationObj
+endfunction
+function! g:FrenchToEnglishTranslation_translate() dict
+  if self.input ==# "Bonjour!"
+    echo "Hello!"
+  else
+    echo "Sorry, I don't know that word."
+  endif
 endfunction
 let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
 call s:translation.translate()
@@ -1280,14 +1333,15 @@ function! g:HotRodConstructor(make, model, color, topSpeed)
   let hotRodObj.topSpeed = a:topSpeed
   let carObj = g:CarConstructor(a:make, a:model, a:color)
   call extend(hotRodObj, carObj)
-  function! hotRodObj.drive() dict
-    if self.topSpeed ># 140
-      echo "Ahhhhhhh!"
-    else
-      echo "Nice"
-    endif
-  endfunction
+  let hotRodObj.drive = function('g:HotRod_drive')
   return hotRodObj
+endfunction
+function! g:HotRod_drive() dict
+  if self.topSpeed ># 140
+    echo "Ahhhhhhh!"
+  else
+    echo "Nice"
+  endif
 endfunction
 let s:newCar = g:HotRodConstructor("chevy", "mustang", "red", 160)
 call s:newCar.drive()
@@ -1307,7 +1361,7 @@ end
 class B < A
   def initialize(foo, bar)
     super
-    self.other = other
+    self.other = totalCost(foo, bar)
   end
 end
 Riml
@@ -1323,7 +1377,7 @@ function! g:BConstructor(foo, bar)
   let bObj = {}
   let aObj = g:AConstructor(a:foo, a:bar)
   call extend(bObj, aObj)
-  let bObj.other = other
+  let bObj.other = s:totalCost(a:foo, a:bar)
   return bObj
 endfunction
 Viml

@@ -76,7 +76,7 @@ rule
   | Assign                                { result = val[0] }
   | DictGet                               { result = val[0] }
   | ListOrDictGet                         { result = val[0] }
-  | VariableRetrieval                     { result = val[0] }
+  | AllVariableRetrieval                  { result = val[0] }
   | Literal                               { result = val[0] }
   | Call                                  { result = val[0] }
   | Ternary                               { result = val[0] }
@@ -164,7 +164,7 @@ rule
 
   DictGet:
     Dictionary DictGetWithDotLiteral             { result = DictGetDotNode.new(val[0], val[1]) }
-  | VariableRetrieval DictGetWithDot             { result = DictGetDotNode.new(val[0], val[1]) }
+  | AllVariableRetrieval DictGetWithDot          { result = DictGetDotNode.new(val[0], val[1]) }
   | ListOrDictGet DictGetWithDot                 { result = DictGetDotNode.new(val[0], val[1]) }
   ;
 
@@ -295,7 +295,7 @@ rule
   ;
 
   AssignLHS:
-    VariableRetrieval                          { result = val[0] }
+    AllVariableRetrieval                       { result = val[0] }
   | DictGet                                    { result = val[0] }
   | List                                       { result = val[0] }
   | ListUnpack                                 { result = val[0] }
@@ -306,6 +306,10 @@ rule
   VariableRetrieval:
     Scope IDENTIFIER                           { result = GetVariableNode.new(val[0], val[1]) }
   | SPECIAL_VAR_PREFIX IDENTIFIER              { result = GetSpecialVariableNode.new(val[0], val[1]) }
+  ;
+
+  AllVariableRetrieval:
+    VariableRetrieval                          { result = val[0] }
   | Scope CurlyBraceName                       { result = GetCurlyBraceNameNode.new(val[0], val[1]) }
   ;
 
@@ -316,18 +320,25 @@ rule
   ;
 
   CurlyBraceName:
-    IDENTIFIER '{' VariableRetrieval '}'       { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[0]), CurlyBracePart.new(val[2]) ]) }
-  | '{' VariableRetrieval '}' IDENTIFIER       { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[1]), CurlyBracePart.new(val[3]) ]) }
+    CurlyBraceVarPart                          { result = CurlyBraceVariable.new([ val[0] ]) }
+  | IDENTIFIER CurlyBraceName                  { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[0]), val[1] ]) }
   | CurlyBraceName IDENTIFIER                  { result = val[0] << CurlyBracePart.new(val[1]) }
+  | CurlyBraceName CurlyBraceVarPart           { result = val[0] << val[1] }
+  ;
+
+  CurlyBraceVarPart:
+    '{' VariableRetrieval '}'                     { result = CurlyBracePart.new(val[1]) }
+  | '{' VariableRetrieval CurlyBraceVarPart '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
+  | '{' CurlyBraceVarPart VariableRetrieval '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
   ;
 
   # Method definition
   # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType Scope DefCallIdentifier Keyword Block END                               { result = Object.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' Keyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' Keyword Block END   { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType Scope DefCallIdentifier DefKeyword Block END                               { result = Object.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ')' DefKeyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' DefKeyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeyword Block END   { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   FunctionType:
@@ -343,7 +354,7 @@ rule
   ;
 
   # Example: 'range', 'dict' or 'abort' after function definition
-  Keyword:
+  DefKeyword:
     IDENTIFIER            { result = val[0] }
   | /* nothing */         { result = nil }
   ;

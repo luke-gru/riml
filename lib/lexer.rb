@@ -221,7 +221,7 @@ module Riml
       when :if, :unless
         if one_line_conditional?(chunk)
           @one_line_conditional_end_pending = true
-        elsif !statement_modifier?(chunk)
+        elsif !statement_modifier?
           @current_indent += 2
           @indent_pending = true
         end
@@ -274,7 +274,7 @@ module Riml
       Lexer.new(code).tokenize
     end
 
-    def statement_modifier?(chunk)
+    def statement_modifier?
       old_i = @i
       # backtrack until the beginning of the line
       @i -= 1 while @code[@i-1] =~ /[^\n\r]/ && !@code[@i-1].empty?

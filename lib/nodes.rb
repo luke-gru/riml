@@ -391,27 +391,49 @@ class GetSpecialVariableNode < Struct.new(:prefix, :name)
   include FullyNameable
 end
 
-class CurlyBracePart < Struct.new(:value)
-  def interpolated?
-    GetVariableNode === value || GetSpecialVariableNode === value
-  end
-
-  def regular?
-    not interpolated?
-  end
-end
-class CurlyBraceVariable < Struct.new(:parts)
-  def <<(part)
-    parts << part
-    self
-  end
-end
 class GetCurlyBraceNameNode < Struct.new(:scope_modifier, :variable)
   include Visitable
   include Walkable
 
   def children
     [variable]
+  end
+end
+
+class CurlyBraceVariable < Struct.new(:parts)
+  include Visitable
+  include Walkable
+
+  def <<(part)
+    parts << part
+    self
+  end
+
+  def children
+    parts
+  end
+end
+
+class CurlyBracePart < Struct.new(:value)
+  include Visitable
+  include Walkable
+
+  def interpolated?
+    GetVariableNode === value || GetSpecialVariableNode === value || nested?
+  end
+
+  def nested?
+    value.is_a?(Array) && value.detect {|part| part.is_a?(CurlyBracePart)}
+  end
+
+  def regular?
+    not interpolated?
+  end
+
+  def children
+    return [] if regular?
+    return value if nested?
+    [value]
   end
 end
 
@@ -435,6 +457,8 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
   include Indentable
   include FullyNameable
   include Walkable
+
+  attr_accessor :original_name
 
   def initialize(*args)
     super
@@ -529,7 +553,7 @@ end
 
 class DefMethodNode < DefNode
   def to_def_node
-    def_node = DefNode.new(bang, scope_modifier, name, parameters, keyword, expressions)
+    def_node = DefNode.new(bang, 'g:', name, parameters, 'dict', expressions)
     def_node.parent = parent
     def_node
   end

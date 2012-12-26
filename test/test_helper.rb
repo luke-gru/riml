@@ -46,8 +46,26 @@ module Riml
           $stdout.reopen orig_stdout
           $stderr.reopen orig_stderr
         end
+      end unless instance_methods.include?(:capture_subprocess_io)
+    end
+
+    def assert_equal_debug(expected, actual)
+      if expected == actual
+        return assert_equal(expected, actual)
       end
-    end unless MiniTest::Assertions.instance_methods.include?(:capture_subprocess_io)
+
+      STDERR.puts <<EOS
+\nexpected:
+
+#{expected.each_line.to_a.join}
+
+actual:
+
+#{actual.each_line.to_a.join}
+EOS
+      STDERR.flush
+      assert_equal(expected, actual)
+    end
 
     def lex(code)
       Riml.lex(code)

@@ -1,6 +1,5 @@
 require File.expand_path('../lib/environment', __FILE__)
 require 'rake/testtask'
-require 'rake/clean'
 
 task :default => :test
 task :test => [:output_test_count]

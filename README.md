@@ -69,16 +69,18 @@ Classes
         self.data = data                                 let myClassObj.data = a:data
         self.otherData = otherData                       let myClassObj.otherData = a:otherData
         self.options = options                           let myClassObj.options = a:000
-      end                                                function! myClassObj.getData() dict
-                                                           return self.data
-      defm getData                                       endfunction
-        return self.data                                 function! myClassObj.getOtherData() dict
-      end                                                  return self.otherData
-                                                         endfunction
-      defm getOtherData                                  return myClassObj
+      end                                                let myClassObj.getData = function('g:MyClass_getData')
+                                                         let myClassObj.getOtherData = function('g:MyCLass_getOtherData')
+      defm getData                                       return myClassObj
+        return self.data                               endfunction
+      end
+                                                       function! g:MyClass_getdata() dict
+      defm getOtherData                                  return self.data
         return self.otherData                          endfunction
       end
-    end
+    end                                                function! g:MyClass_getOtherData() dict
+                                                         return self.otherData
+                                                       endfunction
 
 ###Class with Inheritance
 
@@ -92,16 +94,19 @@ Classes
       defm translate                                     let frenchToEnglishTranslationObj = {}
         if (self.input == "Bonjour!")                    let translationObj = g:TranslationConstructor(a:input)
           echo "Hello!"                                  call extend(frenchToEnglishTranslationObj, translationObj)
-        else                                             function! frenchToEnglishTranslationObj.translate() dict
-          echo "Sorry, I don't know that word."            if (self.input ==# "Bonjour!")
-        end                                                  echo "Hello!"
-      end                                                  else
-    end                                                      echo "Sorry, I don't know that word."
-                                                           endif
-    translation = new                                    endfunction
-    \ FrenchToEnglishTranslation("Bonjour!")             return frenchToEnglishTranslationObj
-    translation.translate()                            endfunction
-                                                       let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
+        else                                             let translationObj.translate = function('g:FrenchToEnglishTranslation_translate')
+          echo "Sorry, I don't know that word."          return frenchToEnglishTranslationObj
+        end                                            endfunction
+      end
+    end                                                function! g:FrenchToEnglishTranslation_translate() dict
+                                                         if (self.input ==# "Bonjour!")
+    translation = new                                      echo "Hello!"
+    \ FrenchToEnglishTranslation("Bonjour!")             else
+    translation.translate()                                echo "Sorry, I don't know that word."
+                                                         endif
+                                                       endfunction
+
+                                                       let s:translation = g:TranslationConstructor("Bonjour!")
                                                        call s:translation.translate()
 
 
