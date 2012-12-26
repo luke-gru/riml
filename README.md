@@ -70,7 +70,7 @@ Classes
         self.otherData = otherData                       let myClassObj.otherData = a:otherData
         self.options = options                           let myClassObj.options = a:000
       end                                                let myClassObj.getData = function('g:MyClass_getData')
-                                                         let myClassObj.getOtherData = function('g:MyCLass_getOtherData')
+                                                         let myClassObj.getOtherData = function('g:MyClass_getOtherData')
       defm getData                                       return myClassObj
         return self.data                               endfunction
       end
