@@ -1,9 +1,7 @@
-#!/usr/bin/env ruby
+require 'minitest/autorun'
 
 $VERBOSE = 1
-
 require File.expand_path('../../lib/riml', __FILE__)
-require 'minitest/autorun'
 
 module Riml
   class TestCase < MiniTest::Unit::TestCase

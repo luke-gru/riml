@@ -72,17 +72,24 @@ rule
 
   # Expressions that evaluate to a value
   ValueExpression:
+    ValueExpressionWithoutDictLiteral     { result = val[0] }
+  | Dictionary                            { result = val[0] }
+  | Dictionary DictGetWithDotLiteral      { result = DictGetDotNode.new(val[0], val[1]) }
+  | BinaryOperator                        { result = val[0] }
+  | Ternary                               { result = val[0] }
+  | '(' ValueExpression ')'               { result = WrapInParensNode.new(val[1]) }
+  ;
+
+  ValueExpressionWithoutDictLiteral:
     UnaryOperator                         { result = val[0] }
   | Assign                                { result = val[0] }
   | DictGet                               { result = val[0] }
   | ListOrDictGet                         { result = val[0] }
   | AllVariableRetrieval                  { result = val[0] }
-  | Literal                               { result = val[0] }
+  | LiteralWithoutDictLiteral             { result = val[0] }
   | Call                                  { result = val[0] }
-  | Ternary                               { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
-  | BinaryOperator                        { result = val[0] }
-  | '(' ValueExpression ')'               { result = WrapInParensNode.new(val[1]) }
+  | '(' ValueExpressionWithoutDictLiteral ')'               { result = WrapInParensNode.new(val[1]) }
   ;
 
   Terminator:
@@ -93,11 +100,15 @@ rule
 
   # All hard-coded values
   Literal:
+    LiteralWithoutDictLiteral             { result = val[0] }
+  | Dictionary                            { result = val[0] }
+  ;
+
+  LiteralWithoutDictLiteral:
     Number                                { result = val[0] }
   | String                                { result = val[0] }
   | Regexp                                { result = val[0] }
   | List                                  { result = val[0] }
-  | Dictionary                            { result = val[0] }
   | ScopeModifierLiteral                  { result = val[0] }
   | TRUE                                  { result = TrueNode.new }
   | FALSE                                 { result = FalseNode.new }
@@ -163,13 +174,14 @@ rule
   ;
 
   DictGet:
-    Dictionary DictGetWithDotLiteral             { result = DictGetDotNode.new(val[0], val[1]) }
-  | AllVariableRetrieval DictGetWithDot          { result = DictGetDotNode.new(val[0], val[1]) }
+    AllVariableRetrieval DictGetWithDot          { result = DictGetDotNode.new(val[0], val[1]) }
   | ListOrDictGet DictGetWithDot                 { result = DictGetDotNode.new(val[0], val[1]) }
+  | '(' ValueExpression ')' DictGetWithDot       { result = DictGetDotNode.new(WrapInParensNode.new(val[1]), val[3]) }
   ;
 
   ListOrDictGet:
-    ValueExpression ListOrDictGetWithBrackets    { result = ListOrDictGetNode.new(val[0], val[1]) }
+    ValueExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = ListOrDictGetNode.new(val[0], val[1]) }
+  | '(' ValueExpression ')' ListOrDictGetWithBrackets            { result = ListOrDictGetNode.new(WrapInParensNode.new(val[1]), val[3]) }
   ;
 
   ListOrDictGetWithBrackets:
@@ -296,9 +308,9 @@ rule
 
   AssignLHS:
     AllVariableRetrieval                       { result = val[0] }
-  | DictGet                                    { result = val[0] }
   | List                                       { result = val[0] }
   | ListUnpack                                 { result = val[0] }
+  | DictGet                                    { result = val[0] }
   | ListOrDictGet                              { result = val[0] }
   ;
 

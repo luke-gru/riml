@@ -119,11 +119,9 @@ Riml
 let {bright{color}} = 138
 Riml
 
-    [riml, riml2].each do |source|
-      assert_raises Riml::ParseError do
-        parse(source)
-      end
-    end
+    assert parse(riml)
+    assert parse(riml2)
+
   end
 
 end

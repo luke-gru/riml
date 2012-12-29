@@ -704,14 +704,14 @@ Riml
     riml = <<Riml
 echo {'key': 'value'}['key']
 Riml
-    expected = <<Viml
+    expected = <<Viml.chomp
 echo {'key': 'value'}['key']
 Viml
 
     riml2 = <<Riml
 echo {'key': {'key2': 'value2'}}['key']['key2']
 Riml
-    expected2 = <<Viml
+    expected2 = <<Viml.chomp
 echo {'key': {'key2': 'value2'}}['key']['key2']
 Viml
     assert_equal expected, compile(riml)
@@ -870,6 +870,46 @@ Viml
     assert_equal expected3, compile(riml3)
   end
 
+  test "list or dict get with parenthesized ternary operator" do
+    riml = <<Riml
+val = (len(list) > 1 ? list1 : list2)[0]
+Riml
+    expected = <<Viml
+let s:val = (len(s:list) ># 1 ? s:list1 : s:list2)[0]
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "list or dict get with parenthesized binary operator" do
+    riml = <<Riml
+val = (dir . sep)[0]
+Riml
+    expected = <<Viml
+let s:val = (s:dir . s:sep)[0]
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "dict get with parenthesized ternary operator" do
+    riml = <<Riml
+echo (len(list) > 1 ? {"a": "dict"} : {"a": "notherDict"}).a
+Riml
+    expected = <<Viml
+echo (len(s:list) ># 1 ? {"a": "dict"} : {"a": "notherDict"}).a
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "dict get with parenthesized binary operator" do
+    riml = <<Riml
+echo (dict1 && dict2).key
+Riml
+    expected = <<Viml
+echo (s:dict1 && s:dict2).key
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "curly-braces variable names" do
     riml = <<Riml
 echo my_{background}_message
@@ -912,9 +952,18 @@ Riml
     expected3 = <<Viml
 let s:bright{s:color} = 255
 Viml
+
+    riml4 = <<Riml
+let {n:color} = 100
+Riml
+
+    expected4 = <<Viml
+let s:{color} = 100
+Viml
     assert_equal expected,  compile(riml)
     assert_equal expected2, compile(riml2)
     assert_equal expected3, compile(riml3)
+    assert_equal expected4, compile(riml4)
   end
 
   test "curly-braces function definition" do
