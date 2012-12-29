@@ -6,4 +6,6 @@ module Riml
   CompileError = Class.new(RimlError)
 
   FileNotFound = Class.new(RimlError)
+
+  ClassRedefinitionError = Class.new(RimlError)
 end

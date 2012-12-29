@@ -1469,4 +1469,28 @@ Viml
 
     assert_equal expected, compile(riml)
   end
+
+  test "redefining existing class raises error" do
+    riml = <<Riml
+class A
+end
+
+class A
+end
+Riml
+
+    assert_raises Riml::ClassRedefinitionError do
+      compile(riml)
+    end
+  end
+
+  test "viml command (source)" do
+    riml = "source file.vim"
+    assert_equal riml, compile(riml).chomp
+  end
+
+  test "viml command (source!)" do
+    riml = "source! file.riml.vim"
+    assert_equal riml, compile(riml).chomp
+  end
 end

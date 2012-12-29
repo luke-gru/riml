@@ -156,6 +156,7 @@ class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or sin
 end
 
 class RegexpNode < LiteralNode; end
+
 class ListNode < LiteralNode
   include Walkable
   def self.wrap(value)
@@ -256,6 +257,9 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
   include FullyNameable
   include Walkable
 
+  ALL_BUILTIN_FUNCTIONS = BUILTIN_FUNCTIONS + BUILTIN_COMMANDS
+  ALL_BUILTIN_COMMANDS  = BUILTIN_COMMANDS  + RIML_COMMANDS + VIML_COMMANDS
+
   def initialize(scope_modifier, name, arguments)
     super
     remove_parens_wrapper if builtin_command?
@@ -269,12 +273,12 @@ class CallNode < Struct.new(:scope_modifier, :name, :arguments)
 
   def builtin_function?
     return false unless name.is_a?(String)
-    scope_modifier.nil? and (BUILTIN_FUNCTIONS + BUILTIN_COMMANDS).include?(name)
+    scope_modifier.nil? and ALL_BUILTIN_FUNCTIONS.include?(name)
   end
 
   def builtin_command?
     return false unless name.is_a?(String)
-    scope_modifier.nil? and (BUILTIN_COMMANDS + RIML_COMMANDS).include?(name)
+    scope_modifier.nil? and ALL_BUILTIN_COMMANDS.include?(name)
   end
 
   def must_be_explicit_call?
@@ -301,7 +305,7 @@ end
 #   call Method()
 #   call s:Method(argument1, argument2)
 class ExplicitCallNode < CallNode; end
-class RimlCommandNode < CallNode; end
+class RimlCommandNode  < CallNode; end
 
 class OperatorNode < Struct.new(:operator, :operands)
   include Visitable
@@ -426,12 +430,8 @@ class CurlyBracePart < Struct.new(:value)
     value.is_a?(Array) && value.detect {|part| part.is_a?(CurlyBracePart)}
   end
 
-  def regular?
-    not interpolated?
-  end
-
   def children
-    return [] if regular?
+    return [] unless interpolated?
     return value if nested?
     [value]
   end

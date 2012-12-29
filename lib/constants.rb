@@ -17,6 +17,8 @@ module Riml
       %w(echo echon echohl execute sleep)
     RIML_COMMANDS =
       %w(riml_source)
+    VIML_COMMANDS =
+      %w(source source!)
 
     IGNORECASE_CAPABLE_OPERATORS =
       %w(== != >= > <= < =~ !~)

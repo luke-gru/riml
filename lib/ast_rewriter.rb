@@ -98,6 +98,9 @@ module Riml
       end
 
       def replace(node)
+        if classes[node.name]
+          raise ClassRedefinitionError, "can't redefine class #{node.name.inspect}"
+        end
         classes[node.name] = node
 
         name, expressions = node.name, node.expressions

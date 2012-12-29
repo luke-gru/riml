@@ -446,7 +446,7 @@ module Riml
             node.name.accept(visitor_for_node(node.name))
             node.name.compiled_output
           else
-            "#{node.full_name}"
+            node.full_name
           end
         compile_arguments(node)
         node.compiled_output
@@ -494,6 +494,7 @@ module Riml
     class RimlCommandNodeVisitor < CallNodeVisitor
       def compile(node)
         if node.name == 'riml_source'
+          node.name = 'source'
           node.arguments.map(&:value).each do |file|
             unless File.exists?(File.join(Riml.source_path, file))
               raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
@@ -502,12 +503,12 @@ module Riml
 
             root_node(node).current_compiler.compile_queue << file
           end
-          node.compiled_output << 'source'
-          compile_arguments(node)
-          node.compiled_output.gsub!(/['"]/, '')
-          node.compiled_output.sub!('.riml', '.vim')
-          node.compiled_output
         end
+        node.compiled_output << node.name
+        compile_arguments(node)
+        node.compiled_output.gsub!(/['"]/, '')
+        node.compiled_output.sub!('.riml', '.vim')
+        node.compiled_output
       end
 
       def root_node(node)

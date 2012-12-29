@@ -111,6 +111,13 @@ module Riml
           @token_buf << [:BUILTIN_COMMAND, identifier]
         elsif RIML_COMMANDS.include? identifier
           @token_buf << [:RIML_COMMAND, identifier]
+        elsif VIML_COMMANDS.include?(identifier) && (prev_token.nil? || prev_token[0] == :NEWLINE)
+          @i += identifier.size
+          new_chunk = get_new_chunk
+          until_eol = new_chunk[/.*$/].to_s
+          @token_buf << [:EX_LITERAL, identifier + until_eol]
+          @i += until_eol.size
+          return
         # method names and variable names
         else
           @token_buf << [:IDENTIFIER, identifier]
