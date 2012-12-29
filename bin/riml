@@ -12,25 +12,28 @@ module Riml
 
   class Options
     def self.parse(argv)
+      ARGV << '--help' if ARGV.size.zero?
 
       # defaults
       options = OpenStruct.new
       options.compile_files = []
+      options.check_syntax_files = []
 
       OptionParser.new do |opts|
-        opts.banner = "Usage: riml [options]"
+        opts.banner = "Usage: riml [options] [file1][,file2]..."
         opts.separator ""
         opts.separator "Specific options:"
 
-        opts.on("-c", "--compile FILES", Array, "Compile riml file(s) to VimL.") do |files|
-          files.each do |f|
-            if File.exists?(f)
-              options.compile_files << f
-            else
-              warn "Couldn't find file #{f.inspect}."
-              exit 1
-            end
-          end
+        opts.on("-c", "--compile FILES", Array, "Compiles riml file(s) to VimL.") do |filenames|
+          append_filenames_to_list_if_all_exist(options.compile_files, *filenames)
+        end
+
+        opts.on("-s", "--stdio", "Takes Riml from stdin and outputs VimL to stdout.") do
+          options.stdio = true
+        end
+
+        opts.on("-k", "--check FILES", Array, "Checks riml syntax of file(s). Because Riml is a superset of VimL, this can be used to check VimL's syntax as well.") do |filenames|
+          append_filenames_to_list_if_all_exist(options.check_syntax_files, *filenames)
         end
 
         opts.on("-t", "--source-path PATH", "Path riml uses for `riml_source` to find files. Defaults to pwd.") do |path|
@@ -40,10 +43,6 @@ module Riml
             warn "Couldn't find directory #{path.inspect}."
             exit 1
           end
-        end
-
-        opts.on("-s", "--stdio", "Pipe in riml to STDIN and get back VimL on STDOUT.") do
-          options.stdio = true
         end
 
         opts.on_tail("-v", "--version", "Show riml version.") do
@@ -59,6 +58,19 @@ module Riml
 
       options
     end
+
+    private
+
+    def self.append_filenames_to_list_if_all_exist(list, *filenames)
+      filenames.each do |fname|
+        if File.exists?(fname)
+          list << fname
+        else
+          warn "Couldn't find file #{fname.inspect}."
+          exit 1
+        end
+      end
+    end
   end
 
   class Runner
@@ -70,6 +82,12 @@ module Riml
           puts Riml.compile($stdin.read)
         elsif options.compile_files.any?
           Riml.compile_files(*options.compile_files)
+        elsif options.check_syntax_files.any?
+          files = options.check_syntax_files
+          Riml.check_syntax_files(*files)
+          size = files.size
+          # "ok (1 file)" OR "ok (2 files)"
+          puts "ok (#{size} file#{'s' if size > 1})"
         end
       end
     end

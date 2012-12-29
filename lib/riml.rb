@@ -51,6 +51,20 @@ module Riml
     threads.each {|t| t.join}
   end
 
+  # checks syntax of `input` (lexes + parses) without going through ast rewriting or compilation
+  def self.check_syntax(input)
+    raise ArgumentError.new(input) unless input.is_a?(String)
+    parse(input, false)
+    true
+  end
+
+  def self.check_syntax_files(*filenames)
+    filenames.each do |fname|
+      File.open(fname) {|f| check_syntax(f.read)}
+    end
+    true
+  end
+
   def self.source_path
     @source_path ||= Dir.getwd
   end

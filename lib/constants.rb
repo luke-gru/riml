@@ -1,7 +1,7 @@
 module Riml
   module Constants
     VIML_KEYWORDS =
-      %w(function function! if else elseif while for in command command!
+      %w(function function! if else elseif while for in
          return is isnot finish break continue call let unlet unlet! try
          catch finally)
     VIML_END_KEYWORDS =
@@ -18,7 +18,7 @@ module Riml
     RIML_COMMANDS =
       %w(riml_source)
     VIML_COMMANDS =
-      %w(source source!)
+      %w(source source! command! command silent silent!)
 
     IGNORECASE_CAPABLE_OPERATORS =
       %w(== != >= > <= < =~ !~)
