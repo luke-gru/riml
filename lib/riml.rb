@@ -39,11 +39,11 @@ module Riml
   end
 
   # expects `file_names` to be readable files
-  def self.compile_files(*file_names)
+  def self.compile_files(*filenames)
     threads = []
-    file_names.each do |file_name|
+    filenames.each do |fname|
       threads << Thread.new do
-        f = File.open(file_name)
+        f = File.open(fname)
         # `compile` will close file handle
         compile(f)
       end
@@ -89,8 +89,8 @@ module Riml
 
   FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')
 
-  def self.write_file(output, file_name)
-    file_basename = File.basename(file_name)
+  def self.write_file(output, fname)
+    file_basename = File.basename(fname)
     unless File.extname(file_basename).empty?
       file_basename = file_basename.split(".").tap {|parts| parts.pop}.join(".")
     end

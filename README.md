@@ -94,7 +94,7 @@ Classes
       defm translate                                     let frenchToEnglishTranslationObj = {}
         if (self.input == "Bonjour!")                    let translationObj = g:TranslationConstructor(a:input)
           echo "Hello!"                                  call extend(frenchToEnglishTranslationObj, translationObj)
-        else                                             let translationObj.translate = function('g:FrenchToEnglishTranslation_translate')
+        else                                             let frenchToEnglishTranslationObj.translate = function('g:FrenchToEnglishTranslation_translate')
           echo "Sorry, I don't know that word."          return frenchToEnglishTranslationObj
         end                                            endfunction
       end
