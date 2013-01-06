@@ -19,7 +19,10 @@ module Riml
     end
 
     def set_start_state!
-      @i = 0 # number of characters consumed
+      # number of characters consumed
+      @i = 0
+      # array of doubles and triples: [tokenname, tokenval, lineno_to_add(optional)]
+      # ex: [[:NEWLINE, "\n"]] OR [[:NEWLINE, "\n", 1]]
       @token_buf = []
       @tokens = []
       @prev_token = nil
@@ -45,7 +48,11 @@ module Riml
         tokenize_chunk(get_new_chunk)
       end
       if !@token_buf.empty?
-        return @prev_token = @token_buf.shift
+        token = @token_buf.shift
+        if token.size == 3
+          @lineno += token.pop
+        end
+        return @prev_token = token
       end
       check_indentation
       nil
@@ -54,9 +61,9 @@ module Riml
     def tokenize_chunk(chunk)
       @chunk = chunk
       # deal with line continuations
-      if cont = chunk[/\A(\n*)\s*\\/]
+      if cont = chunk[/\A\n*\s*\\/m]
         @i += cont.size
-        @lineno += $1.size
+        @lineno += cont.each_line.to_a.size - 1
         return
       end
 
@@ -115,7 +122,7 @@ module Riml
           @i += identifier.size
           new_chunk = get_new_chunk
           until_eol = new_chunk[/.*$/].to_s
-          @token_buf << [:EX_LITERAL, identifier + until_eol]
+          @token_buf << [:EX_LITERAL, identifier << until_eol]
           @i += until_eol.size
           return
         # method names and variable names
@@ -152,12 +159,12 @@ module Riml
         parts = interpolation[1...-1].split(INTERPOLATION_SPLIT_REGEX)
         handle_interpolation(*parts)
         @i += interpolation.size
-      elsif single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX] && (prev_token.nil? || prev_token[0] == :NEWLINE)
-        comment = chunk[SINGLE_LINE_COMMENT_REGEX]
-        @i += comment.size + 1 # consume next newline character
-        @lineno += 1
+      elsif (single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX]) && (prev_token.nil? || prev_token[0] == :NEWLINE)
+        @i += single_line_comment.size + 1 # consume next newline character
+        @lineno += single_line_comment.each_line.to_a.size
       elsif inline_comment = chunk[/\A\s*"[^"]*?$/]
         @i += inline_comment.size # inline comment, don't consume newline character
+        @lineno += inline_comment.each_line.to_a.size - 1
       elsif string_double = chunk[/\A"(.*?)(?<!\\)"/, 1]
         @token_buf << [:STRING_D, string_double]
         @i += string_double.size + 2
@@ -191,12 +198,11 @@ module Riml
         else
           @token_buf << [:STRING_D, heredoc_string]
         end
-        @lineno += (1 + heredoc_string.each_line.to_a.size)
+        @lineno += heredoc_string.each_line.to_a.size
       # operators of more than 1 char
       elsif operator = chunk[OPERATOR_REGEX]
         @token_buf << [operator, operator]
         @i += operator.size
-      # FIXME: this doesn't work well enough
       elsif regexp = chunk[%r{\A/.*?[^\\]/}]
         @token_buf << [:REGEXP, regexp]
         @i += regexp.size
@@ -243,11 +249,11 @@ module Riml
     def parse_dict_vals!
       # dict.key OR dict.key.other_key
       new_chunk = get_new_chunk
-      if new_chunk[/\A\.([\w.]+)/]
-        parts = $1.split('.')
-        @i += $1.size + 1
+      if vals = new_chunk[/\A\.([\w.]+)/, 1]
+        parts = vals.split('.')
+        @i += vals.size + 1
         if @in_function_declaration
-          @token_buf.last[1] << ".#{$1}"
+          @token_buf.last[1] << ".#{vals}"
         else
           while key = parts.shift
             @token_buf << [:DICT_VAL, key]
