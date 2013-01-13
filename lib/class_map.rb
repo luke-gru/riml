@@ -35,10 +35,6 @@ module Riml
       @map.keys
     end
 
-    def clear
-      @map.clear
-    end
-
     protected
     def ensure_key_is_string!(key)
       unless key.is_a?(String)

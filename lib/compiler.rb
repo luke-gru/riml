@@ -111,8 +111,8 @@ module Riml
       def compile(nodes)
         nodes.each_with_index do |node, i|
           visitor = visitor_for_node(node)
-          next_node = nodes.nodes[i+1]
           node.parent_node = nodes
+          next_node = nodes.nodes[i+1]
           if ElseNode === next_node
             node.force_newline = true
           end
@@ -194,11 +194,11 @@ module Riml
     class ReturnNodeVisitor < Visitor
       def compile(node)
         node.compiled_output = "return"
-        return (node.compiled_output << "\n") if node.expression.nil?
+        node.force_newline = true
+        return node.compiled_output if node.expression.nil?
         node.expression.parent_node = node
         node.compiled_output << " "
         node.expression.accept(visitor_for_node(node.expression))
-        node.force_newline = true
         node.compiled_output
       end
     end
@@ -287,9 +287,8 @@ module Riml
       end
 
       def compile_parts(parts)
-        compiled = ""
-        parts.each do |part|
-          output = if CurlyBraceVariable === part
+        parts.map do |part|
+          if CurlyBraceVariable === part
             compile_parts(part)
           elsif part.nested?
             compile_nested_parts(part.value, part)
@@ -298,11 +297,9 @@ module Riml
             part.value.accept(visitor_for_node(part.value))
             "{#{part.value.compiled_output}}"
           else
-            "#{part.value}"
+            part.value
           end
-          compiled << output
-        end
-        compiled
+        end.join
       end
 
       def compile_nested_parts(parts, root_part)
@@ -319,9 +316,8 @@ module Riml
             next
           end
           part.value.accept(visitor_for_node(part.value, :propagate_up_tree => false))
-          root_part.compiled_output << "{#{part.value.compiled_output}}"
+          root_part.compiled_output << "{#{part.value.compiled_output}}#{'}' * nested}"
         end
-        root_part.compiled_output << ('}' * nested)
       end
     end
 

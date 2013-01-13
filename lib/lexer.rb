@@ -10,7 +10,9 @@ module Riml
     INTERPOLATION_REGEX = /\A"(.*?)(\#\{(.*?)\})(.*?)"/m
     INTERPOLATION_SPLIT_REGEX = /(\#{.*?})/m
 
-    attr_reader :tokens, :prev_token, :lineno, :chunk
+    attr_reader :tokens, :prev_token, :lineno, :chunk, :current_indent
+    # for REPL
+    attr_accessor :ignore_indentation_check
 
     def initialize(code)
       @code = code
@@ -54,7 +56,7 @@ module Riml
         end
         return @prev_token = token
       end
-      check_indentation
+      check_indentation unless ignore_indentation_check
       nil
     end
 

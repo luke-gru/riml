@@ -110,7 +110,7 @@ Riml
     assert_equal expected, parse(riml)
   end
 
-  test "ERROR: curly-brace names don't parse unless prefix or suffix parts are present" do
+  test "curly-brace names parse even if prefix and suffix parts of the variables are absent" do
     riml = <<Riml
 let {color} = 138
 Riml

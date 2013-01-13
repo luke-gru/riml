@@ -30,7 +30,7 @@ update all documentation related to the changes that you've made, including
 comments in the source code. If you don't know where all the affected areas
 might be, don't hesitate to ask.
 
-For documentation-related changes, please put '[ci skip]' somewhere in the
+For pure documentation-related changes, please put '[ci skip]' somewhere in the
 commit message so that Travis-ci skips the build.
 
 Note
