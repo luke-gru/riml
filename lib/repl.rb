@@ -9,6 +9,7 @@ module Riml
       @indent_amount = 0
       @line = nil
       Readline.vi_editing_mode if vi_readline
+      trap(:INT) { reset! }
     end
 
     def run
@@ -29,25 +30,38 @@ module Riml
     private
 
     def check_indents
-      @lexer = Lexer.new("#{line}\n")
-      @lexer.ignore_indentation_check = true
-      @lexer.tokenize
-      indent = @lexer.current_indent
-      @indent_amount += indent
+      lexer = Lexer.new("#{line}\n")
+      lexer.ignore_indentation_check = true
+      lexer.tokenize
+      @indent_amount += lexer.current_indent
+    rescue => e
+      puts e
+      reset!
     end
 
     def current_indent
-      " " * @indent_amount.abs
+      return '' if @indent_amount <= 0
+      ' ' * @indent_amount
     end
 
     def compile_unit!
-      @indent_amount = 0
       puts Riml.compile(current_compilation_unit.join("\n"))
+    rescue => e
+      raise unless e.class.name.split("::").first == 'Riml'
+      puts e
+    ensure
+      @indent_amount = 0
       current_compilation_unit.clear
     end
 
     def current_compilation_unit
       @current_compilation_unit ||= []
+    end
+
+    def reset!
+      @indent_amount = 0
+      current_compilation_unit.clear
+      print("\n")
     end
 
     def exit_repl

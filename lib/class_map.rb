@@ -1,6 +1,6 @@
-module Riml
-  class ClassNotFound < NameError; end
+require File.expand_path("../errors", __FILE__)
 
+module Riml
   # Map of {"ClassName" => ClassDefinitionNode}
   # Can also query object for superclass of a named class, etc...
   #
@@ -17,13 +17,18 @@ module Riml
 
     def []=(key, val)
       ensure_key_is_string!(key)
+      if @map[key]
+        raise ClassRedefinitionError, "can't redefine class #{key.inspect}."
+      end
       @map[key] = val
     end
 
     def superclass(key)
       ensure_key_is_string!(key)
       super_key = @map[key].superclass_name
-      raise ClassNotFound.new(super_key) unless @map[super_key]
+      unless @map[super_key]
+        raise ClassNotFound, "class #{super_key.inspect} not found."
+      end
       @map[super_key]
     end
 

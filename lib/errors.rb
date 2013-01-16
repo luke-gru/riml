@@ -7,5 +7,6 @@ module Riml
 
   FileNotFound = Class.new(RimlError)
 
+  ClassNotFound = Class.new(RimlError)
   ClassRedefinitionError = Class.new(RimlError)
 end
