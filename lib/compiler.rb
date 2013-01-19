@@ -77,7 +77,6 @@ module Riml
         node.body.compiled_output.each_line do |line|
           node.compiled_output << node.indent + line
         end
-        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
         node.force_newline = true
         node.compiled_output << "endwhile"
       end
@@ -267,7 +266,7 @@ module Riml
         # if `function doIt(*options)`, then:
         # *options OR options in function body becomes `a:000`
         if [ splat, splat[1..-1] ].include?(node.name)
-          node.scope_modifier = "a:"
+          node.scope_modifier = 'a:'
           node.name = '000'
         end
       end
@@ -597,7 +596,7 @@ module Riml
         node.keys.each do |key|
           node.compiled_output << '['
           key.accept(visitor_for_node(key))
-          node.compiled_output << "]"
+          node.compiled_output << ']'
         end
         node.compiled_output
       end

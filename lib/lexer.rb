@@ -198,7 +198,7 @@ module Riml
           parts = heredoc_string.split(INTERPOLATION_SPLIT_REGEX)
           handle_interpolation(*parts)
         else
-          @token_buf << [:STRING_D, heredoc_string]
+          @token_buf << [:STRING_D, escape_double_quotes(heredoc_string)]
         end
         @lineno += heredoc_string.each_line.to_a.size
       # operators of more than 1 char
@@ -278,11 +278,15 @@ module Riml
         if part[0..1] == '#{' && part[-1] == '}'
           @token_buf.concat tokenize_without_moving_pos(part[2...-1])
         else
-          @token_buf << [:STRING_D, part]
+          @token_buf << [:STRING_D, escape_double_quotes(part)]
         end
         # string-concatenate all the parts unless this is the last part
         @token_buf << ['.', '.'] unless parts[i + 1].nil?
       end
+    end
+
+    def escape_double_quotes(string)
+      string.gsub(/"/, '\"')
     end
 
     def tokenize_without_moving_pos(code)

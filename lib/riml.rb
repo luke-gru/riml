@@ -28,7 +28,7 @@ module Riml
       source = input.read
       nodes = parser.parse(source)
     else
-      raise ArgumentError, "input must be nodes, tokens or code, is #{input.class}"
+      raise ArgumentError, "input must be nodes, tokens, code or file, is #{input.class}"
     end
     output = compiler.compile(nodes)
     return output unless input.is_a?(File)

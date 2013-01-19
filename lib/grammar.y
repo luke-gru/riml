@@ -379,7 +379,7 @@ rule
 
   Return:
     RETURN ValueExpression                { result = ReturnNode.new(val[1]) }
-  | RETURN Terminator                     { result = ReturnNode.new(nil)    }
+  | RETURN                                { result = ReturnNode.new(nil) }
   ;
 
   EndScript:
@@ -390,7 +390,7 @@ rule
   If:
     IF ValueExpression IfBlock END                    { result = IfNode.new(val[1], val[2]) }
   | IF ValueExpression THEN ValueExpression END       { result = IfNode.new(val[1], Nodes.new([val[3]])) }
-  | ValueExpression IF ValueExpression                { result = IfNode.new(val[2], Nodes.new([val[0]])) }
+  | AnyExpression IF ValueExpression                  { result = IfNode.new(val[2], Nodes.new([val[0]])) }
   ;
 
   Unless:

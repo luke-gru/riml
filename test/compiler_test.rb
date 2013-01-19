@@ -146,6 +146,32 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "if statement modifier after return void" do
+    riml = <<Riml
+return if returnEarly == true
+Riml
+
+    expected = <<Viml
+if s:returnEarly ==# 1
+  return
+endif
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "if statement modifier after return value" do
+    riml = <<Riml
+return false if returnEarly == true
+Riml
+
+    expected = <<Viml
+if s:returnEarly ==# 1
+  return 0
+endif
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "override riml default scipt-local scoping for variables/functions" do
     riml     =   "n:a = 'no default scoping! Hooray!'"
     expected = "let a = 'no default scoping! Hooray!'\n"
@@ -1131,7 +1157,7 @@ EOS
     assert_equal expected, compile(riml).chomp
   end
 
-  test "heredoc string with interpolation" do
+  test "heredoc with interpolation" do
     riml = '
 heredoc = <<EOS
 Hello there, #{name}, how are you?
@@ -1143,7 +1169,7 @@ EOS
     assert_equal expected, compile(riml).chomp
   end
 
-  test "heredoc string with more than one interpolated expression" do
+  test "heredoc with more than one interpolated expression" do
     riml = '
 lineFromMovie = <<EOS
 Holy #{loudExpletive()} it\'s freaking #{superhero}!
@@ -1151,6 +1177,30 @@ EOS
 '.strip
 
     expected = %{let s:lineFromMovie = "Holy " . s:loudExpletive() . " it's freaking " . s:superhero . "!\n"}
+
+    assert_equal expected, compile(riml).chomp
+  end
+
+  test "double quotes in heredocs get escaped with interpolation" do
+    riml = '
+lineFromMovie = <<EOS
+Holy "#{loudExpletive()}" it\'s freaking #{superhero}!
+EOS
+'.strip
+
+    expected = %{let s:lineFromMovie = "Holy \\"" . s:loudExpletive() . "\\" it's freaking " . s:superhero . "!\n"}
+
+    assert_equal expected, compile(riml).chomp
+  end
+
+  test "double quotes in heredocs without interpolation" do
+    riml = '
+quote = <<EOS
+"I still watch Duckman!"
+EOS
+'.strip
+
+    expected = %{let s:quote = "\\"I still watch Duckman!\\"\n"}
 
     assert_equal expected, compile(riml).chomp
   end
