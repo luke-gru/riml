@@ -35,7 +35,7 @@ module Riml
       lexer.tokenize
       @indent_amount += lexer.current_indent
     rescue => e
-      puts e
+      print_error(e)
       reset!
     end
 
@@ -47,8 +47,8 @@ module Riml
     def compile_unit!
       puts Riml.compile(current_compilation_unit.join("\n"))
     rescue => e
-      raise unless e.class.name.split("::").first == 'Riml'
-      puts e
+      raise unless e.kind_of?(RimlError)
+      print_error(e)
     ensure
       @indent_amount = 0
       current_compilation_unit.clear
@@ -62,6 +62,10 @@ module Riml
       @indent_amount = 0
       current_compilation_unit.clear
       print("\n")
+    end
+
+    def print_error(e)
+      puts "#{e.class}: #{e}"
     end
 
     def exit_repl

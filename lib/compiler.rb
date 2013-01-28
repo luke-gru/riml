@@ -407,7 +407,7 @@ module Riml
       def walk_node!(node)
         node.each do |expr|
           expr.accept(self) if expr.respond_to?(:accept)
-        end
+        end if node.respond_to?(:each)
       end
     end
 
@@ -426,7 +426,7 @@ module Riml
         else
           node.scope = @scope
         end
-        walk_node!(node) if node.respond_to?(:each)
+        walk_node!(node)
       end
     end
 

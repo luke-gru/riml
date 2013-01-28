@@ -12,7 +12,7 @@ module Riml
 
   class Options
     def self.parse(argv)
-      ARGV << '--help' if ARGV.size.zero?
+      argv << '--help' if argv.size.zero?
 
       # defaults
       options = OpenStruct.new
@@ -34,7 +34,7 @@ module Riml
           options.stdio = true
         end
 
-        opts.on("-k", "--check FILES", Array, "Checks syntax of file(s). Because Riml is a superset of VimL, this can be used to check VimL's syntax as well.") do |filenames|
+        opts.on("-k", "--check FILES", Array, "Checks syntax of file(s). Because Riml is (almost) a superset of VimL, this can be used to check VimL's syntax as well.") do |filenames|
           append_filenames_to_list_if_all_exist(options.check_syntax_files, *filenames)
         end
 
@@ -42,18 +42,16 @@ module Riml
           if Dir.exists?(path)
             Riml.source_path = path
           else
-            warn "Couldn't find directory #{path.inspect}."
-            exit 1
+            abort "Couldn't find directory #{path.inspect}."
           end
         end
 
         opts.on("-i", "--interactive", "Start an interactive riml session (REPL).") do
-          require 'repl'
           options.repl = true
         end
 
         opts.on("--vi", "Use vi readline settings during interactive session.") do
-          options.vi_readline = true
+          options.vi_readline = options.repl =  true
         end
 
         opts.on_tail("-v", "--version", "Show riml version.") do
@@ -77,8 +75,7 @@ module Riml
         if File.exists?(fname)
           list << fname
         else
-          warn "Couldn't find file #{fname.inspect}."
-          exit 1
+          abort "Couldn't find file #{fname.inspect}."
         end
       end
     end
@@ -100,6 +97,7 @@ module Riml
           # "ok (1 file)" OR "ok (2 files)"
           puts "ok (#{size} file#{'s' if size > 1})"
         elsif options.repl
+          require 'repl'
           Riml::Repl.new(options.vi_readline).run
         end
       end
