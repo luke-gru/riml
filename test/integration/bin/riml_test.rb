@@ -35,7 +35,7 @@ class BinRimlTest < Riml::TestCase
   end
 
   test "checks syntax with -k option (success)" do
-    source_file = File.expand_path("../../riml_source/file1.riml", __FILE__)
+    source_file = File.expand_path("../../riml_commands/file1.riml", __FILE__)
     out, err = capture_subprocess_io do
       system "#{EXEC} -k #{Shellwords.escape(source_file)}"
     end
@@ -46,7 +46,7 @@ class BinRimlTest < Riml::TestCase
   end
 
   test "checks syntax with -k option (failure)" do
-    source_file = File.expand_path("../../riml_source/compiler_test.rb", __FILE__)
+    source_file = File.expand_path("../../riml_commands/compiler_test.rb", __FILE__)
     out, err = capture_subprocess_io do
       system "#{EXEC} -k #{Shellwords.escape(source_file)}"
     end

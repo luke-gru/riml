@@ -1,7 +1,7 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
-class RimlSourceCompilerTest < Riml::TestCase
-  test "throws error if the file is not in Riml.source_path" do
+class RimlCommandsCompilerTest < Riml::TestCase
+  test "riml_source raises error if the file is not in Riml.source_path" do
     riml = <<Riml
 riml_source "nonexistent_file.riml"
 Riml
@@ -10,7 +10,16 @@ Riml
     end
   end
 
-  test "compiles and sources file if file exists in Riml.source_path" do
+  test "riml_include raises error if the file is not in Riml.source_path" do
+    riml = <<Riml
+riml_include "nonexistent_file.riml"
+Riml
+    assert_raises Riml::FileNotFound do
+      compile(riml)
+    end
+  end
+
+  test "riml_source compiles and sources file if file exists in Riml.source_path" do
     riml = <<Riml
 riml_source "file1.riml"
 Riml
@@ -61,7 +70,7 @@ Viml
 
   end
 
-  test "ClassNotFound is thrown if the sourced file references undeclared class" do
+  test "riml_source raises ClassNotFound if the sourced file references undefined class" do
     riml = <<Riml
 riml_source 'faster_car.riml'
 Riml
@@ -109,6 +118,15 @@ Viml
       assert_equal expected, compile(riml)
       faster_car_vim = File.join(Riml.source_path, "faster_car.vim")
       refute File.exists?(faster_car_vim)
+    end
+  end
+
+  test "riml_include raises ClassNotFound if class referenced in included file is undefined" do
+    riml = "riml_include 'faster_car.riml'"
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      assert_raises(Riml::ClassNotFound) do
+        compile(riml)
+      end
     end
   end
 end

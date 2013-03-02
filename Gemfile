@@ -1,4 +1,4 @@
-source :rubygems
+source 'http://rubygems.org'
 
 group :development do
   # create the parser by going to the lib directory

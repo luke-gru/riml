@@ -1544,4 +1544,12 @@ Riml
     riml = "source! file.riml.vim"
     assert_equal riml, compile(riml).chomp
   end
+
+  test "echo can take multiple arguments separated by whitespace" do
+    riml = <<Riml
+echo "hello " "world"
+Riml
+    skip
+    assert compile(riml)
+  end
 end
