@@ -1,4 +1,9 @@
-require 'readline'
+begin
+  require 'readline'
+rescue LoadError => e
+  $stderr.puts e, "Readline is required to run repl."
+  exit 1
+end
 require_relative 'riml'
 
 module Riml

@@ -807,6 +807,7 @@ let s:dict = {'key': {'key2': 'value2'}}
 let s:myKey = 'key'
 let s:dict[s:myKey] = {'key3': 'value3'}
 Viml
+    assert_equal expected, compile(riml)
   end
 
   test "list or dict get with variable" do

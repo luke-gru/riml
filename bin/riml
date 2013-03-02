@@ -38,7 +38,7 @@ module Riml
           append_filenames_to_list_if_all_exist(options.check_syntax_files, *filenames)
         end
 
-        opts.on("-t", "--source-path PATH", "Path riml uses for `riml_source` to find files. Defaults to pwd.") do |path|
+        opts.on("-t", "--source-path PATH", "Path riml uses for `riml_source` and `riml_include` to find files. Defaults to pwd.") do |path|
           if Dir.exists?(path)
             Riml.source_path = path
           else

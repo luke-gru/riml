@@ -3,6 +3,7 @@ require File.expand_path('../nodes', __FILE__)
 # visits AST nodes and translates them into VimL
 module Riml
   class Compiler
+    attr_accessor :parser
 
     # Base abstract visitor
     class Visitor
@@ -490,20 +491,36 @@ module Riml
       def compile(node)
         if node.name == 'riml_source'
           node.name = 'source'
-          node.arguments.map(&:value).each do |file|
-            unless File.exists?(File.join(Riml.source_path, file))
-              raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
-                "source path (#{Riml.source_path.inspect})"
-            end
-
+          each_existing_file!(node) do |file|
             root_node(node).current_compiler.compile_queue << file
           end
+        elsif node.name == 'riml_include'
+          each_existing_file!(node) do |file|
+            full_path = File.join(Riml.source_path, file)
+            riml_src = File.read(full_path)
+            node.compiled_output << root_node(node).current_compiler.compile_include(riml_src, file)
+          end
+          return node.compiled_output
         end
         node.compiled_output << node.name
         compile_arguments(node)
         node.compiled_output.gsub!(/['"]/, '')
         node.compiled_output.sub!('.riml', '.vim')
         node.compiled_output
+      end
+
+      def each_existing_file!(node)
+        files = []
+        node.arguments.map(&:value).each do |file|
+          if File.exists?(File.join(Riml.source_path, file))
+            files << file
+          else
+            raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
+              "source path (#{Riml.source_path.inspect})"
+          end
+        end
+        # all files exist
+        files.each {|f| yield f} if block_given?
       end
 
       def root_node(node)
@@ -640,6 +657,13 @@ module Riml
 
     def compile_queue
       @compile_queue ||= []
+    end
+
+    def compile_include(source, from_file = nil)
+      root_node = parser.parse(source)
+      output = compile(root_node)
+      return output unless from_file
+      (Riml::INCLUDE_COMMENT_FMT % from_file) + output
     end
 
     # compiles nodes into output code

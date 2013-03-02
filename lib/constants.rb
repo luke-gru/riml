@@ -4,11 +4,16 @@ module Riml
       %w(function function! if else elseif while for in
          return is isnot finish break continue call let unlet unlet! try
          catch finally)
+
     VIML_END_KEYWORDS =
       %w(endfunction endif endwhile endfor endtry)
+    RIML_END_KEYWORDS = %w(end)
+    END_KEYWORDS = VIML_END_KEYWORDS + RIML_END_KEYWORDS
+
     RIML_KEYWORDS =
       %w(def defm super end then unless until true false nil class new)
     DEFINE_KEYWORDS = %w(def def! defm defm! function function!)
+
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS
 
     SPECIAL_VARIABLE_PREFIXES =
@@ -16,7 +21,7 @@ module Riml
     BUILTIN_COMMANDS  =
       %w(echo echon echohl execute sleep)
     RIML_COMMANDS =
-      %w(riml_source)
+      %w(riml_source riml_include)
     VIML_COMMANDS =
       %w(source source! command! command silent silent!)
 

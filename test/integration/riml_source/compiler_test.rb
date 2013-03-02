@@ -74,4 +74,41 @@ Riml
       end
     end
   end
+
+  test "riml_include #includes the compiled output of the included file inline in the code" do
+    riml = <<Riml
+class Car
+  def initialize(*args)
+    self.maxSpeed = 100
+    self.options = args
+  end
+end
+
+riml_include 'faster_car.riml'
+Riml
+
+    expected = <<Viml
+function! g:CarConstructor(...)
+  let carObj = {}
+  let carObj.maxSpeed = 100
+  let carObj.options = a:000
+  return carObj
+endfunction
+
+" included: 'faster_car.riml'
+function! g:FasterCarConstructor(...)
+  let fasterCarObj = {}
+  let carObj = g:CarConstructor(a:000)
+  call extend(fasterCarObj, carObj)
+  let fasterCarObj.maxSpeed = 200
+  return fasterCarObj
+endfunction
+Viml
+
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      assert_equal expected, compile(riml)
+      faster_car_vim = File.join(Riml.source_path, "faster_car.vim")
+      refute File.exists?(faster_car_vim)
+    end
+  end
 end

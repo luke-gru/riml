@@ -30,12 +30,13 @@ module Riml
     else
       raise ArgumentError, "input must be nodes, tokens, code or file, is #{input.class}"
     end
+    compiler.parser = parser
     output = compiler.compile(nodes)
     return output unless input.is_a?(File)
     write_file(output, input.path)
   ensure
     input.close if input.is_a?(File)
-    process_compile_queue!(parser, compiler)
+    process_compile_queue!(compiler)
   end
 
   # expects `file_names` to be readable files
@@ -79,15 +80,16 @@ module Riml
   # and we process this queue after each source we compile. We pass the same
   # parser instance to share Class state, as this state belongs to the
   # AST_Rewriter's `ClassMap`.
-  def self.process_compile_queue!(parser, compiler)
+  def self.process_compile_queue!(compiler)
     return true if compiler.compile_queue.empty?
 
     file_name = compiler.compile_queue.shift
-    compile(File.open(File.join(Riml.source_path, file_name)), parser)
-    process_compile_queue!(parser, compiler)
+    compile(File.open(File.join(Riml.source_path, file_name)), compiler.parser)
+    process_compile_queue!(compiler)
   end
 
   FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')
+  INCLUDE_COMMENT_FMT = File.read(File.expand_path("../included.vim", __FILE__))
 
   def self.write_file(output, fname)
     file_basename = File.basename(fname)

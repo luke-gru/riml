@@ -100,7 +100,6 @@ module Riml
       def replace(node)
         classes[node.name] = node
 
-        name, expressions = node.name, node.expressions
         InsertInitializeMethod.new(node, classes).rewrite_on_match
         constructor = node.constructor
         constructor.scope_modifier = 'g:' unless constructor.scope_modifier

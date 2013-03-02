@@ -5,7 +5,7 @@ task :default => :test
 task :test => [:output_test_count]
 
 desc 'Run all *_tests and *_specs (default)'
-test = Rake::TestTask.new(:test) do |t|
+Rake::TestTask.new(:test) do |t|
   TEST_LIST = FileList['test/**/*_test.rb'].to_a
   t.test_files = TEST_LIST
 end
