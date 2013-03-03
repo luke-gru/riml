@@ -7,15 +7,19 @@ module Riml
     include Riml::Constants
 
     attr_accessor :ast
-    attr_reader   :classes
+    attr_reader   :classes, :rewritten_include_files
 
     def initialize(ast = nil, classes = nil)
       @ast = ast
       @classes = classes || ClassMap.new
+      @rewritten_include_files = {}
     end
 
-
-    def rewrite
+    def rewrite(file = nil)
+      if rewritten_ast = rewritten_include_files[file]
+        return rewritten_ast
+      end
+      rewrite_included_files!
       establish_parents(ast)
       rewriters = [
         StrictEqualsComparisonOperator.new(ast, classes),
@@ -47,6 +51,21 @@ module Riml
 
     def do_rewrite_on_match(node)
       replace node if match?(node)
+    end
+
+    def rewrite_included_files!
+      old_ast = ast
+      ast.children.each do |node|
+        next unless RimlCommandNode === node && node.name == 'riml_include'
+        node.each_existing_file! do |file|
+          full_path = File.join(Riml.source_path, file)
+          riml_src = File.read(full_path)
+          rewritten_ast = Parser.new.parse(riml_src, self)
+          rewritten_include_files[file] = rewritten_ast
+        end
+      end
+    ensure
+      self.ast = old_ast
     end
 
     def repeatable?

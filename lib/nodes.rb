@@ -305,7 +305,21 @@ end
 #   call Method()
 #   call s:Method(argument1, argument2)
 class ExplicitCallNode < CallNode; end
-class RimlCommandNode  < CallNode; end
+class RimlCommandNode  < CallNode
+  def each_existing_file!
+    files = []
+    arguments.map(&:value).each do |file|
+      if File.exists?(File.join(Riml.source_path, file))
+        files << file
+      else
+        raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
+          "source path (#{Riml.source_path.inspect})"
+      end
+    end
+    # all files exist
+    files.each {|f| yield f} if block_given?
+  end
+end
 
 class OperatorNode < Struct.new(:operator, :operands)
   include Visitable

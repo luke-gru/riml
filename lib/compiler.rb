@@ -491,11 +491,11 @@ module Riml
       def compile(node)
         if node.name == 'riml_source'
           node.name = 'source'
-          each_existing_file!(node) do |file|
+          node.each_existing_file! do |file|
             root_node(node).current_compiler.compile_queue << file
           end
         elsif node.name == 'riml_include'
-          each_existing_file!(node) do |file|
+          node.each_existing_file! do |file|
             full_path = File.join(Riml.source_path, file)
             riml_src = File.read(full_path)
             node.compiled_output << root_node(node).current_compiler.compile_include(riml_src, file)
@@ -507,20 +507,6 @@ module Riml
         node.compiled_output.gsub!(/['"]/, '')
         node.compiled_output.sub!('.riml', '.vim')
         node.compiled_output
-      end
-
-      def each_existing_file!(node)
-        files = []
-        node.arguments.map(&:value).each do |file|
-          if File.exists?(File.join(Riml.source_path, file))
-            files << file
-          else
-            raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
-              "source path (#{Riml.source_path.inspect})"
-          end
-        end
-        # all files exist
-        files.each {|f| yield f} if block_given?
       end
 
       def root_node(node)
@@ -660,7 +646,7 @@ module Riml
     end
 
     def compile_include(source, from_file = nil)
-      root_node = parser.parse(source)
+      root_node = parser.parse(source, parser.ast_rewriter, from_file)
       output = compile(root_node)
       return output unless from_file
       (Riml::INCLUDE_COMMENT_FMT % from_file) + output

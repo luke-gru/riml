@@ -19,7 +19,7 @@ module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 487)
   attr_accessor :ast_rewriter
 
   # parses tokens or code into output nodes
-  def parse(object, ast_rewriter = AST_Rewriter.new)
+  def parse(object, ast_rewriter = AST_Rewriter.new, include_file = nil)
     if tokens?(object)
       @tokens = object
     elsif code?(object)
@@ -36,7 +36,7 @@ module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 487)
     @ast_rewriter ||= ast_rewriter
     return ast unless @ast_rewriter
     @ast_rewriter.ast = ast
-    @ast_rewriter.rewrite
+    @ast_rewriter.rewrite(include_file)
   end
 
   # get the next token from either the list of tokens provided, or
@@ -2473,7 +2473,7 @@ module_eval(<<'.,.,', 'grammar.y', 380)
 
 module_eval(<<'.,.,', 'grammar.y', 381)
   def _reduce_179(val, _values, result)
-     result = ReturnNode.new(nil)    
+     result = ReturnNode.new(nil) 
     result
   end
 .,.,

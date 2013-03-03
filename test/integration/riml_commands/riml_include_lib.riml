@@ -1,0 +1,3 @@
+riml_include 'riml_include_lib2.riml'
+class Lib1 < Lib2
+end

@@ -86,6 +86,7 @@ Riml
 
   test "riml_include #includes the compiled output of the included file inline in the code" do
     riml = <<Riml
+riml_include 'file1.riml'
 class Car
   def initialize(*args)
     self.maxSpeed = 100
@@ -93,24 +94,16 @@ class Car
   end
 end
 
-riml_include 'faster_car.riml'
 Riml
 
     expected = <<Viml
+" included: 'file1.riml'
+echo "hi"
 function! g:CarConstructor(...)
   let carObj = {}
   let carObj.maxSpeed = 100
   let carObj.options = a:000
   return carObj
-endfunction
-
-" included: 'faster_car.riml'
-function! g:FasterCarConstructor(...)
-  let fasterCarObj = {}
-  let carObj = g:CarConstructor(a:000)
-  call extend(fasterCarObj, carObj)
-  let fasterCarObj.maxSpeed = 200
-  return fasterCarObj
 endfunction
 Viml
 
@@ -127,6 +120,27 @@ Viml
       assert_raises(Riml::ClassNotFound) do
         compile(riml)
       end
+    end
+  end
+
+  test "riml_include is recursive" do
+    riml = "riml_include 'riml_include_lib.riml'"
+    expected = <<Riml
+" included: 'riml_include_lib.riml'
+" included: 'riml_include_lib2.riml'
+function! g:Lib2Constructor()
+  let lib2Obj = {}
+  return lib2Obj
+endfunction
+function! g:Lib1Constructor()
+  let lib1Obj = {}
+  let lib2Obj = g:Lib2Constructor()
+  call extend(lib1Obj, lib2Obj)
+  return lib1Obj
+endfunction
+Riml
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      assert_equal expected, compile(riml)
     end
   end
 end
