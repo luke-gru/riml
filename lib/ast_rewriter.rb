@@ -13,13 +13,15 @@ module Riml
       @ast = ast
       @classes = classes || ClassMap.new
       @rewritten_include_files = {}
+      # keeps track of which files included which, to prevent infinite loops
+      @included_file_refs ||= {}
     end
 
-    def rewrite(file = nil)
-      if rewritten_ast = rewritten_include_files[file]
+    def rewrite(from_file = nil)
+      if rewritten_ast = rewritten_include_files[from_file]
         return rewritten_ast
       end
-      rewrite_included_files!
+      rewrite_included_files!(from_file)
       establish_parents(ast)
       rewriters = [
         StrictEqualsComparisonOperator.new(ast, classes),
@@ -53,14 +55,28 @@ module Riml
       replace node if match?(node)
     end
 
-    def rewrite_included_files!
+    # We need to rewrite the included files before anything else. This is in
+    # order to keep track of any classes defined in the included files (and
+    # files included in those, etc...). We keep a cache of rewritten asts
+    # because the 'riml_include'd files are parsed more than once. They're
+    # parsed first before anything else, plus whenever the compiler visits a
+    # 'compile_include' node in order to compile it on the spot.
+    def rewrite_included_files!(from_file)
       old_ast = ast
       ast.children.each do |node|
         next unless RimlCommandNode === node && node.name == 'riml_include'
         node.each_existing_file! do |file|
+          if from_file && @included_file_refs[file] == from_file
+            msg = "#{from_file.inspect} can't include #{file.inspect}, as " \
+                  " #{file.inspect} already included #{from_file.inspect}"
+            raise IncludeFileLoop, msg
+          end
+          @included_file_refs[from_file] = file
           full_path = File.join(Riml.source_path, file)
           riml_src = File.read(full_path)
-          rewritten_ast = Parser.new.parse(riml_src, self)
+          # recursively parse included files with this ast_rewriter in order
+          # to pick up any classes that are defined there
+          rewritten_ast = Parser.new.parse(riml_src, self, file)
           rewritten_include_files[file] = rewritten_ast
         end
       end

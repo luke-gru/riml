@@ -1,4 +1,5 @@
 require File.expand_path('../constants', __FILE__)
+require File.expand_path('../errors', __FILE__)
 require 'set'
 
 module Visitable
@@ -306,6 +307,14 @@ end
 #   call s:Method(argument1, argument2)
 class ExplicitCallNode < CallNode; end
 class RimlCommandNode  < CallNode
+
+  def initialize(*)
+    super
+    if arguments.empty? || !arguments.all? { |arg| arg.is_a?(StringNode) }
+      raise Riml::ArgumentError, "#{name.inspect} error: must pass string (name of file)"
+    end
+  end
+
   def each_existing_file!
     files = []
     arguments.map(&:value).each do |file|
@@ -316,8 +325,15 @@ class RimlCommandNode  < CallNode
           "source path (#{Riml.source_path.inspect})"
       end
     end
+    return unless block_given?
     # all files exist
-    files.each {|f| yield f} if block_given?
+    files.each do |f|
+      begin
+        yield f
+      rescue Riml::IncludeFileLoop
+        arguments.delete_if { |arg| arg.value == f }
+      end
+    end
   end
 end
 

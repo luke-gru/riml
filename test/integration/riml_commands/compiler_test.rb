@@ -143,4 +143,50 @@ Riml
       assert_equal expected, compile(riml)
     end
   end
+
+  test "riml_include doesn't get stuck in infinite loop when two files include each other" do
+    riml = %Q(riml_include 'riml_include_loop1.riml' " loop1 includes loop2 which includes loop1...)
+    expected = <<Viml
+" included: 'riml_include_loop1.riml'
+" included: 'riml_include_loop2.riml'
+Viml
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      assert_equal expected, compile(riml)
+    end
+  end
+
+  test "riml_include raises error if not called from top-level" do
+    riml = <<Riml
+if includeFile1
+  riml_include 'file1.riml'
+end
+Riml
+    assert_raises(Riml::IncludeNotTopLevel) do
+      compile(riml)
+    end
+  end
+
+  test "riml_source raises ArgumentError if argument not a string" do
+    riml = "riml_source file"
+    assert_raises(Riml::ArgumentError) do
+      compile(riml)
+    end
+
+    riml2 = "riml_source"
+    assert_raises(Riml::ArgumentError) do
+      compile(riml2)
+    end
+  end
+
+  test "riml_include raises ArgumentError if argument not a string" do
+    riml = "riml_include file"
+    assert_raises(Riml::ArgumentError) do
+      compile(riml)
+    end
+
+    riml2 = "riml_include"
+    assert_raises(Riml::ArgumentError) do
+      compile(riml2)
+    end
+  end
 end

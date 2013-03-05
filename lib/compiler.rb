@@ -495,6 +495,11 @@ module Riml
             root_node(node).current_compiler.compile_queue << file
           end
         elsif node.name == 'riml_include'
+          # riml_include has to be top-level
+          unless node.parent == root_node(node)
+            error_msg = %Q(riml_include error, has to be called at top-level)
+            raise IncludeNotTopLevel, error_msg
+          end
           node.each_existing_file! do |file|
             full_path = File.join(Riml.source_path, file)
             riml_src = File.read(full_path)
@@ -510,8 +515,10 @@ module Riml
       end
 
       def root_node(node)
-        node = node.parent until node.parent.nil?
-        node
+        @root_node ||= begin
+          node = node.parent until node.parent.nil?
+          node
+        end
       end
     end
 

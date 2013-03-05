@@ -59,6 +59,7 @@ module Riml
     rescue => e
       print_error(e)
       reset!
+      reload!
     end
 
     def current_indent
@@ -71,6 +72,7 @@ module Riml
     rescue => e
       raise unless e.kind_of?(RimlError)
       print_error(e)
+      reload!
     ensure
       reset!
     end
