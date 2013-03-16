@@ -155,6 +155,15 @@ Viml
     end
   end
 
+  test "riml_include raises error when including itself" do
+    riml = %Q(riml_include 'riml_include_self.riml')
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      assert_raises(Riml::UserArgumentError) do
+        compile(riml)
+      end
+    end
+  end
+
   test "riml_include raises error if not called from top-level" do
     riml = <<Riml
 if includeFile1
@@ -168,24 +177,24 @@ Riml
 
   test "riml_source raises ArgumentError if argument not a string" do
     riml = "riml_source file"
-    assert_raises(Riml::ArgumentError) do
+    assert_raises(Riml::UserArgumentError) do
       compile(riml)
     end
 
     riml2 = "riml_source"
-    assert_raises(Riml::ArgumentError) do
+    assert_raises(Riml::UserArgumentError) do
       compile(riml2)
     end
   end
 
   test "riml_include raises ArgumentError if argument not a string" do
     riml = "riml_include file"
-    assert_raises(Riml::ArgumentError) do
+    assert_raises(Riml::UserArgumentError) do
       compile(riml)
     end
 
     riml2 = "riml_include"
-    assert_raises(Riml::ArgumentError) do
+    assert_raises(Riml::UserArgumentError) do
       compile(riml2)
     end
   end

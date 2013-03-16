@@ -311,7 +311,7 @@ class RimlCommandNode  < CallNode
   def initialize(*)
     super
     if arguments.empty? || !arguments.all? { |arg| arg.is_a?(StringNode) }
-      raise Riml::ArgumentError, "#{name.inspect} error: must pass string (name of file)"
+      raise Riml::UserArgumentError, "#{name.inspect} error: must pass string (name of file)"
     end
   end
 
@@ -494,7 +494,7 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     super
     # max number of arguments in viml
     if parameters.size > 20
-      raise ArgumentError, "can't have more than 20 parameters for #{full_name}"
+      raise Riml::UserArgumentError, "can't have more than 20 parameters for #{full_name}"
     end
   end
 

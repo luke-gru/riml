@@ -70,6 +70,8 @@ module Riml
             msg = "#{from_file.inspect} can't include #{file.inspect}, as " \
                   " #{file.inspect} already included #{from_file.inspect}"
             raise IncludeFileLoop, msg
+          elsif from_file == file
+            raise UserArgumentError, "#{file.inspect} can't include itself"
           end
           @included_file_refs[from_file] = file
           full_path = File.join(Riml.source_path, file)
