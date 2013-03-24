@@ -198,4 +198,18 @@ Riml
       compile(riml2)
     end
   end
+
+  test "riml_source only compiles a sourced file once per compilation process, across all files that reference each other" do
+    riml = <<RIML
+riml_source 'sourced1.riml'
+RIML
+    expected = "source sourced1.vim\n"
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      with_file_cleanup('sourced1.vim', 'sourced2.vim') do
+        assert_equal expected, compile(riml)
+        assert File.exists?('sourced1.vim')
+        assert File.exists?('sourced2.vim')
+      end
+    end
+  end
 end

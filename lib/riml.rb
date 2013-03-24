@@ -41,15 +41,16 @@ module Riml
 
   # expects `file_names` to be readable files
   def self.compile_files(*filenames)
-    threads = []
-    filenames.each do |fname|
-      threads << Thread.new do
-        f = File.open(fname)
-        # `compile` will close file handle
-        compile(f)
-      end
+    if filenames.size > 1
+      threaded_compile_files(*filenames)
+    elsif filenames.size == 1
+      fname = filenames.first
+      f = File.open(fname)
+      # `compile` will close file handle
+      compile(f)
+    else
+      raise ArgumentError, "need filenames to compile"
     end
-    threads.each {|t| t.join}
   end
 
   # checks syntax of `input` (lexes + parses) without going through ast rewriting or compilation
@@ -75,17 +76,25 @@ module Riml
 
   private
 
-  # This is for when another file is sourced within a file we're compiling.
-  # We have to share the same `ClassMap`, thus we have a queue for the compiler,
-  # and we process this queue after each source we compile. We pass the same
-  # parser instance to share Class state, as this state belongs to the
-  # AST_Rewriter's `ClassMap`.
-  def self.process_compile_queue!(compiler)
-    return true if compiler.compile_queue.empty?
+  def self.threaded_compile_files(*filenames)
+    threads = []
+    filenames.each do |fname|
+      threads << Thread.new do
+        f = File.open(fname)
+        compile(f)
+      end
+    end
+    threads.each {|t| t.join}
+  end
 
-    file_name = compiler.compile_queue.shift
-    compile(File.open(File.join(Riml.source_path, file_name)), compiler.parser)
-    process_compile_queue!(compiler)
+  # This is for when another file is sourced within a file we're compiling.
+  def self.process_compile_queue!(compiler)
+    while filename = compiler.compile_queue.shift
+      unless compiler.sourced_files_compiled.include?(filename)
+        compiler.sourced_files_compiled << filename
+        compile(File.open(File.join(Riml.source_path, filename)), compiler.parser, compiler)
+      end
+    end
   end
 
   FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')

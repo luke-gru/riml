@@ -652,10 +652,13 @@ module Riml
       @compile_queue ||= []
     end
 
-    def compile_include(source, from_file = nil)
+    def sourced_files_compiled
+      @sourced_files_compiled ||= []
+    end
+
+    def compile_include(source, from_file)
       root_node = parser.parse(source, parser.ast_rewriter, from_file)
       output = compile(root_node)
-      return output unless from_file
       (Riml::INCLUDE_COMMENT_FMT % from_file) + output
     end
 

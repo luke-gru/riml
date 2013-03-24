@@ -14,14 +14,16 @@ module Riml
       @classes = classes || ClassMap.new
       @rewritten_include_files = {}
       # keeps track of which files included which, to prevent infinite loops
-      @included_file_refs ||= {}
+      @included_file_refs = {}
     end
 
     def rewrite(from_file = nil)
-      if rewritten_ast = rewritten_include_files[from_file]
-        return rewritten_ast
+      if from_file
+        if rewritten_ast = rewritten_include_files[from_file]
+          return rewritten_ast
+        end
+        rewrite_included_files!(from_file)
       end
-      rewrite_included_files!(from_file)
       establish_parents(ast)
       rewriters = [
         StrictEqualsComparisonOperator.new(ast, classes),

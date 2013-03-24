@@ -30,9 +30,8 @@ module Visitable
       super
     end
   end
-  def respond_to_missing?(method, include_private = false)
-    return true if method =~ DESCENDANT_OF_REGEX
-    super
+  def respond_to?(method, include_private = false)
+    super || method =~ DESCENDANT_OF_REGEX
   end
 end
 
@@ -128,9 +127,8 @@ class Nodes < Struct.new(:nodes)
     end
   end
 
-  def respond_to_missing?(method, include_private = false)
-    return true if nodes.respond_to?(method)
-    super
+  def respond_to?(method, include_private = false)
+    super || nodes.respond_to?(method, include_private)
   end
 
   def children
@@ -507,14 +505,15 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
 
   # returns the splat argument or nil
   def splat
-    @splat ||= begin
-      parameters.select(&SPLAT).first
-    end
+    @splat ||= parameters.detect(&SPLAT)
   end
 
   def keyword
-    return super unless name.include?(".")
-    "dict"
+    if name.include?('.')
+      'dict'
+    else
+      super
+    end
   end
 
   def autoload?
