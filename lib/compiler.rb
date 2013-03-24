@@ -185,6 +185,19 @@ module Riml
     ContinueNodeVisitor = LiteralNodeVisitor
     BreakNodeVisitor = LiteralNodeVisitor
 
+    class StringLiteralConcatNodeVisitor < Visitor
+      def compile(nodes)
+        nodes.each_with_index do |node, i|
+          visitor = visitor_for_node(node)
+          node.parent_node = nodes
+          next_node = nodes.nodes[i+1]
+          node.accept(visitor)
+          nodes.compiled_output << ' ' if next_node
+        end
+        nodes.compiled_output
+      end
+    end
+
     class ListUnpackNodeVisitor < ListNodeVisitor
       def compile(node)
         node.compiled_output = super.reverse.sub(',', ';').reverse

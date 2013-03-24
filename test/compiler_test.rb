@@ -1546,10 +1546,9 @@ Riml
   end
 
   test "echo can take multiple arguments separated by whitespace" do
-    riml = <<Riml
-echo "hello " "world"
-Riml
-    skip
+    riml = 'echo "hello " "world" "!"'
+    expected = riml + "\n"
     assert compile(riml)
+    assert_equal expected, compile(riml)
   end
 end

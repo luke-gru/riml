@@ -154,6 +154,20 @@ class StringNode < Struct.new(:value, :type) # type: :d or :s for double- or sin
   include Visitable
 end
 
+class StringLiteralConcatNode < Struct.new(:string_nodes)
+  include Visitable
+  include Walkable
+
+  def initialize(*string_nodes)
+    super(string_nodes)
+  end
+  alias nodes string_nodes
+
+  def children
+    string_nodes
+  end
+end
+
 class RegexpNode < LiteralNode; end
 
 class ListNode < LiteralNode

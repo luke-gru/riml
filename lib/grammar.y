@@ -122,6 +122,8 @@ rule
   String:
     STRING_S                              { result = StringNode.new(val[0], :s) }
   | STRING_D                              { result = StringNode.new(val[0], :d) }
+  | String STRING_S                       { result = StringLiteralConcatNode.new(val[0], StringNode.new(val[1], :s)) }
+  | String STRING_D                       { result = StringLiteralConcatNode.new(val[0], StringNode.new(val[1], :d)) }
   ;
 
   Regexp:
