@@ -1535,6 +1535,19 @@ Riml
     end
   end
 
+  test "warns when defining an initalize method in a class with defm instead of def" do
+    riml = <<Riml
+class Human
+  defm initialize(eyeColor)
+  end
+end
+Riml
+    expected = compile(riml.sub('defm', 'def'))
+    assert_riml_warning do
+      assert_equal expected, compile(riml)
+    end
+  end
+
   test "viml command (source)" do
     riml = "source file.vim"
     assert_equal riml, compile(riml).chomp

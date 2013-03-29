@@ -65,6 +65,17 @@ EOS
       assert_equal(expected, actual)
     end
 
+    def assert_riml_warning(expected_warning = /Warning:/i, &block)
+      out, err = capture_io { yield }
+      if Regexp === expected_warning
+        assert expected_warning =~ err
+      elsif expected_warning.respond_to?(:to_s)
+        assert expected_warning.to_s == err
+      else
+        raise ArgumentError
+      end
+    end
+
     def lex(code)
       Riml.lex(code)
     end

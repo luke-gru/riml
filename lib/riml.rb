@@ -74,6 +74,10 @@ module Riml
     @source_path = path
   end
 
+  def self.warn(warning)
+    $stderr.puts "Warning: #{warning}"
+  end
+
   private
 
   def self.threaded_compile_files(*filenames)

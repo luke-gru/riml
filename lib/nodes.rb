@@ -779,7 +779,14 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
 
   def constructor
     expressions.detect do |n|
-      DefNode === n && (n.name == 'initialize' || n.name.match(/Constructor\Z/))
+      next(false) unless DefNode === n && (n.name == 'initialize' || n.name.match(/Constructor\Z/))
+      if n.instance_of?(DefMethodNode)
+        Riml.warn("class #{name} has an initialize function declared with 'defm'. Please use 'def'.")
+        new_node = n.to_def_node
+        new_node.keyword = nil
+        n.replace_with(new_node)
+      end
+      true
     end
   end
   alias constructor? constructor
