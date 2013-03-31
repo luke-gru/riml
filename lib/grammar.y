@@ -376,7 +376,13 @@ rule
   ParamList:
     /* nothing */                         { result = [] }
   | IDENTIFIER                            { result = val }
+  | DefaultParam                          { result = val }
   | ParamList ',' IDENTIFIER              { result = val[0] << val[2] }
+  | ParamList ',' DefaultParam            { result = val[0] << val[2] }
+  ;
+
+  DefaultParam:
+    IDENTIFIER '=' ValueExpression        { result = DefaultParamNode.new(val[0], val[2]) }
   ;
 
   Return:

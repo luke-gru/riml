@@ -30,6 +30,9 @@ module Riml
     COMPARISON_OPERATORS = IGNORECASE_CAPABLE_OPERATORS.map do |o|
       [o + '#', o + '?', o]
     end.flatten
+
+    SPLAT_LITERAL = '...'
+
     # :h function-list
     BUILTIN_FUNCTIONS =
     %w(

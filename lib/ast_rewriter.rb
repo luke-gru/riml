@@ -30,7 +30,8 @@ module Riml
         VarEqualsComparisonOperator.new(ast, classes),
         ClassDefinitionToFunctions.new(ast, classes),
         ObjectInstantiationToCall.new(ast, classes),
-        CallToExplicitCall.new(ast, classes)
+        CallToExplicitCall.new(ast, classes),
+        DefaultParamToIfNode.new(ast, classes)
       ]
       rewriters.each do |rewriter|
         rewriter.rewrite_on_match
@@ -314,6 +315,51 @@ module Riml
       def replace(node)
         explicit = node.replace_with(ExplicitCallNode.new(node[0], node[1], node[2]))
         reestablish_parents(explicit)
+      end
+    end
+
+    class DefaultParamToIfNode < AST_Rewriter
+      def match?(node)
+        DefaultParamNode === node
+      end
+
+      def replace(node)
+        def_node = node.parent
+        param_idx = def_node.parameters.index(node)
+        first_default_param = def_node.parameters.detect(&DefNode::DEFAULT_PARAMS)
+        first_default_param_idx = def_node.parameters.index(first_default_param)
+
+        last_default_param = def_node.parameters.reverse.detect(&DefNode::DEFAULT_PARAMS)
+        insert_idx = param_idx - first_default_param_idx
+
+        while param = def_node.parameters[param_idx += 1]
+          unless param == def_node.splat || DefaultParamNode === param
+            raise UserArgumentError, "can't have regular parameter after default parameter in function #{def_node.name.inspect}"
+          end
+        end
+
+        if_expression = construct_if_expression(node)
+
+        if last_default_param == node
+          def_node.parameters.delete_if(&DefNode::DEFAULT_PARAMS)
+          def_node.parameters << SPLAT_LITERAL unless def_node.splat
+        end
+        def_node.expressions.insert(insert_idx, if_expression)
+        reestablish_parents(def_node)
+      end
+
+      def construct_if_expression(node)
+        get_splat_node = CallNode.new(nil, 'get', [ GetVariableNode.new('a:', '000'), NumberNode.new(0), StringNode.new('rimldefault', :s) ])
+        condition_node = BinaryOperatorNode.new('!=#', [ get_splat_node, StringNode.new('rimldefault', :s) ])
+        remove_from_splat_node = CallNode.new(nil, 'remove', [ GetVariableNode.new('a:', '000'), NumberNode.new(0) ])
+        IfNode.new(condition_node,
+          Nodes.new([
+            AssignNode.new('=', GetVariableNode.new(nil, node.parameter), remove_from_splat_node),
+          ElseNode.new(Nodes.new([
+            AssignNode.new('=', GetVariableNode.new(nil, node.parameter), node.expression)
+          ]))
+          ])
+        )
       end
     end
 

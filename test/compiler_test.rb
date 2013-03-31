@@ -1564,4 +1564,110 @@ Riml
     assert compile(riml)
     assert_equal expected, compile(riml)
   end
+
+  test "function can take one default parameter" do
+    riml = <<Riml
+def HttpGet(url = 'www.geocities.net')
+  return DoHttpGet(url)
+end
+Riml
+    expected = <<Viml
+function! s:HttpGet(...)
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let url = remove(a:000, 0)
+  else
+    let url = 'www.geocities.net'
+  endif
+  return s:DoHttpGet(url)
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "function can take multiple default parameters" do
+    riml = <<Riml
+def HttpGet(url = 'www.geocities.net', method='get')
+  return DoHttpGet(url, method)
+end
+Riml
+    expected = <<Viml
+function! s:HttpGet(...)
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let url = remove(a:000, 0)
+  else
+    let url = 'www.geocities.net'
+  endif
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let method = remove(a:000, 0)
+  else
+    let method = 'get'
+  endif
+  return s:DoHttpGet(url, method)
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "can't have non-default param after default param" do
+    riml = <<Riml
+def HttpGet(url = 'www.geocities.net', method)
+  return DoHttpGet(url, method)
+end
+Riml
+
+    assert_raises(Riml::UserArgumentError) do
+      compile(riml)
+    end
+  end
+
+  test "can have a splat literal after default parameters" do
+    riml = <<Riml
+def HttpGet(url = 'www.geocities.net', method='get', ...)
+  return DoHttpGet(url, method)
+end
+Riml
+    expected = <<Viml
+function! s:HttpGet(...)
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let url = remove(a:000, 0)
+  else
+    let url = 'www.geocities.net'
+  endif
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let method = remove(a:000, 0)
+  else
+    let method = 'get'
+  endif
+  return s:DoHttpGet(url, method)
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "can have a *splat after default parameters" do
+    riml = <<Riml
+def HttpGet(url = 'www.geocities.net', method='get', *options)
+  return DoHttpGet(url, method, options)
+end
+Riml
+    expected = <<Viml
+function! s:HttpGet(...)
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let url = remove(a:000, 0)
+  else
+    let url = 'www.geocities.net'
+  endif
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let method = remove(a:000, 0)
+  else
+    let method = 'get'
+  endif
+  return s:DoHttpGet(url, method, a:000)
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
 end

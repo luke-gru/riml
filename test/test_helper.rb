@@ -47,22 +47,27 @@ module Riml
       end unless instance_methods.include?(:capture_subprocess_io)
     end
 
+    alias assert_equal_orig assert_equal
+
     def assert_equal_debug(expected, actual)
       if expected == actual
-        return assert_equal(expected, actual)
+        return assert_equal_orig(expected, actual)
       end
 
       STDERR.puts <<EOS
 \nexpected:
 
-#{expected.each_line.to_a.join}
+#{expected.to_s.each_line.to_a.join}
 
 actual:
 
-#{actual.each_line.to_a.join}
+#{actual.to_s.each_line.to_a.join}
 EOS
-      STDERR.flush
-      assert_equal(expected, actual)
+      assert_equal_orig(expected, actual)
+    end
+
+    if ENV['DEBUG']
+      alias assert_equal assert_equal_debug
     end
 
     def assert_riml_warning(expected_warning = /Warning:/i, &block)

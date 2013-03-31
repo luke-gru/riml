@@ -505,21 +505,22 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
   def initialize(*args)
     super
     # max number of arguments in viml
-    if parameters.size > 20
+    if parameters.reject(&DEFAULT_PARAMS).size > 20
       raise Riml::UserArgumentError, "can't have more than 20 parameters for #{full_name}"
     end
   end
 
-  SPLAT = lambda {|arg| arg == '...' || arg[0] == "*"}
+  SPLAT = lambda {|arg| arg == Riml::Constants::SPLAT_LITERAL || arg[0] == "*"}
+  DEFAULT_PARAMS = lambda {|p| DefaultParamNode === p}
 
   # ["arg1", "arg2"}
   def argument_variable_names
-    @argument_variable_names ||= parameters.reject(&SPLAT)
+    parameters.reject(&SPLAT)
   end
 
   # returns the splat argument or nil
   def splat
-    @splat ||= parameters.detect(&SPLAT)
+    parameters.detect(&SPLAT)
   end
 
   def keyword
@@ -545,8 +546,13 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     end
   end
 
+  def default_param_nodes
+    parameters.select(&DEFAULT_PARAMS)
+  end
+
   def children
-     [expressions]
+    children = [expressions]
+    children.concat(default_param_nodes)
   end
 
   def method_missing(method, *args, &blk)
@@ -555,6 +561,15 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     else
       super
     end
+  end
+end
+
+class DefaultParamNode < Struct.new(:parameter, :expression)
+  include Visitable
+  include Walkable
+
+  def children
+    [parameter, expression]
   end
 end
 
@@ -781,7 +796,7 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
     expressions.detect do |n|
       next(false) unless DefNode === n && (n.name == 'initialize' || n.name.match(/Constructor\Z/))
       if n.instance_of?(DefMethodNode)
-        Riml.warn("class #{name} has an initialize function declared with 'defm'. Please use 'def'.")
+        Riml.warn("class #{name.inspect} has an initialize function declared with 'defm'. Please use 'def'.")
         new_node = n.to_def_node
         new_node.keyword = nil
         n.replace_with(new_node)

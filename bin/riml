@@ -99,6 +99,9 @@ module Riml
         elsif options.repl
           require 'repl'
           Riml::Repl.new(options.vi_readline).run
+        else
+          ARGV << '--help'
+          start
         end
       end
     end
