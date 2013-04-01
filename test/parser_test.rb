@@ -124,4 +124,15 @@ Riml
 
   end
 
+  test "for loop iterating over all variables in a certain scope" do
+    # :help internal-variables
+    riml = <<Riml
+for k in keys(s:)
+    unlet s:[k]
+endfor
+Riml
+
+    assert parse(riml)
+  end
+
 end

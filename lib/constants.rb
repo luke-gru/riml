@@ -33,7 +33,21 @@ module Riml
 
     SPLAT_LITERAL = '...'
 
-    # :h function-list
+    # :help registers
+    REGISTERS = [
+      '"',
+      (0..9).to_a.map(&:to_s),
+      '-',
+      ('a'..'z').to_a.map(&:to_s),
+      ('A'..'Z').to_a.map(&:to_s),
+      ':', '.', '%', '#',
+      '=',
+      '*', '+', '~',
+      '_',
+      '/'
+    ].flatten
+
+    # :help function-list
     BUILTIN_FUNCTIONS =
     %w(
 abs

@@ -531,6 +531,43 @@ Riml
     assert_equal expected, compile(riml).chomp
   end
 
+  test "for list in multi-list" do
+    riml = <<Riml
+for [lnum, col] in [[1, 3], [2, 8], [3, 0]]
+  call Doit(lnum, col)
+endfor
+Riml
+    expected = <<Viml
+for [lnum, col] in [[1, 3], [2, 8], [3, 0]]
+  call s:Doit(lnum, col)
+endfor
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "for list-unpack in expr" do
+    riml = <<Riml
+for [i, j; rest] in listlist
+  call Doit(i, j)
+  if !empty(rest)
+    echo "remainder: " . string(rest)
+  endif
+endfor
+Riml
+
+    expected = <<Viml
+for [i, j; rest] in s:listlist
+  call s:Doit(i, j)
+  if !empty(rest)
+    echo "remainder: " . string(rest)
+  endif
+endfor
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
   test "multi dimensional lists compile correctly" do
     riml = '_2d = ["one", ["two", "three"]]'
     expected = 'let s:_2d = ["one", ["two", "three"]]'
@@ -574,6 +611,18 @@ Viml
 
   assert_equal expected, compile(riml)
   assert_equal expected2, compile(riml2)
+  end
+
+  test "positive exponents work" do
+    riml = "echo 1.4e10"
+    riml2 = "echo 1.4e+10"
+    assert_equal riml, compile(riml).chomp
+    assert_equal riml2, compile(riml2).chomp
+  end
+
+  test "negative exponents" do
+    riml = "echo 1.4e-10"
+    assert_equal riml, compile(riml).chomp
   end
 
   test "basic dictionaries compile correctly" do
@@ -680,6 +729,33 @@ endif
 echo "hi"
 Viml
     assert_equal expected, compile(riml)
+  end
+
+  test "register variables compile correctly" do
+    Riml::Constants::REGISTERS.each do |reg|
+      riml = "@#{reg} = 'val'"
+      expected = "let @#{reg} = 'val'"
+      assert_equal expected, compile(riml).chomp
+    end
+  end
+
+  test "options prefixed with scope (:help expr-option)" do
+    riml = "echo &g:option"
+    riml2 = "echo &l:option"
+
+    assert_equal riml, compile(riml).chomp
+    assert_equal riml2, compile(riml2).chomp
+  end
+
+  test "get and set variable with scope literal and key" do
+    riml = "echo s:[key]"
+    riml2 = "g:['key'] = val"
+
+    expected = "echo s:[s:key]"
+    expected2 = "let g:['key'] = s:val"
+
+    assert_equal expected, compile(riml).chomp
+    assert_equal expected2, compile(riml2).chomp
   end
 
   test "compile line-continuations, but don't (yet) preserve spaces to keep compiled viml readable" do
@@ -1194,7 +1270,7 @@ EOS
     assert_equal expected, compile(riml).chomp
   end
 
-  test "double quotes in heredocs without interpolation" do
+  test "double quotes get escaped in heredocs without interpolation" do
     riml = '
 quote = <<EOS
 "I still watch Duckman!"

@@ -320,6 +320,7 @@ rule
   VariableRetrieval:
     Scope IDENTIFIER                           { result = GetVariableNode.new(val[0], val[1]) }
   | SPECIAL_VAR_PREFIX IDENTIFIER              { result = GetSpecialVariableNode.new(val[0], val[1]) }
+  | ScopeModifierLiteral ListOrDictGetWithBrackets { result = GetVariableByScopeAndDictNameNode.new(val[0], val[1]) }
   ;
 
   AllVariableRetrieval:
@@ -427,6 +428,7 @@ rule
   For:
     FOR IDENTIFIER IN ValueExpression Block END     { result = ForNode.new(val[1], val[3], val[4]) }
   | FOR List IN ValueExpression Block END           { result = ForNode.new(val[1], val[3], val[4]) }
+  | FOR ListUnpack IN ValueExpression Block END     { result = ForNode.new(val[1], val[3], val[4]) }
   ;
 
   Try:

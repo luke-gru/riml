@@ -88,8 +88,17 @@ module Riml
         @token_buf << [:SCOPE_MODIFIER_LITERAL, scope_modifier_literal]
       elsif special_var_prefix = chunk[/\A(&(\w:)?(?!&)|\$|@)/]
         @token_buf << [:SPECIAL_VAR_PREFIX, special_var_prefix.strip]
-        @expecting_identifier = true
         @i += special_var_prefix.size
+        if special_var_prefix == '@'
+          new_chunk = get_new_chunk
+          next_char = new_chunk[0]
+          if REGISTERS.include?(next_char)
+            @token_buf << [:IDENTIFIER, next_char]
+            @i += 1
+          end
+        else
+          @expecting_identifier = true
+        end
       elsif function_method = chunk[/\A(function)\(/, 1]
         @token_buf << [:IDENTIFIER, function_method]
         @i += function_method.size
@@ -153,7 +162,7 @@ module Riml
         @token_buf << [:NUMBER, hex]
         @i += hex.size
       # integer or float (decimal)
-      elsif decimal = chunk[/\A[0-9]+(\.[0-9]+)?/]
+      elsif decimal = chunk[/\A[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/]
         @token_buf << [:NUMBER, decimal]
         @i += decimal.size
       elsif interpolation = chunk[INTERPOLATION_REGEX]

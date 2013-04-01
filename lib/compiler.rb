@@ -232,7 +232,9 @@ module Riml
       def set_modifier(node)
         # Ex: n:myVariable = "override riml default scoping" compiles into:
         #       myVariable = "override riml default scoping"
-        node.scope_modifier = "" if node.scope_modifier == "n:"
+        if node.scope_modifier == "n:"
+          node.scope_modifier = ""
+        end
         return node.scope_modifier if node.scope_modifier
         node.scope_modifier = scope_modifier_for_node(node)
       end
@@ -633,6 +635,20 @@ module Riml
         node.dict.accept(visitor_for_node(node.dict))
         node.keys.each do |key|
           node.compiled_output << ".#{key}"
+        end
+        node.compiled_output
+      end
+    end
+
+    class GetVariableByScopeAndDictNameNodeVisitor < Visitor
+      def compile(node)
+        node.scope_modifier.parent = node
+        node.scope_modifier.accept(visitor_for_node(node.scope_modifier))
+        node.keys.each do |key|
+          key.parent = node
+          node.compiled_output << '['
+          key.accept(visitor_for_node(key))
+          node.compiled_output << ']'
         end
         node.compiled_output
       end

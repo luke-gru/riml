@@ -765,6 +765,15 @@ class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
   end
 end
 
+class GetVariableByScopeAndDictNameNode < Struct.new(:scope_modifier, :keys)
+  include Visitable
+  include Walkable
+
+  def children
+    [scope_modifier] + keys
+  end
+end
+
 class TryNode < Struct.new(:try_block, :catch_nodes, :finally_block)
   include Visitable
   include Indentable
