@@ -1467,7 +1467,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "super with parens in initialize method" do
+  test "super with parens in initialize function" do
     riml = <<Riml
 class Car
   def initialize(make, model, color)
@@ -1525,7 +1525,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "super without parens passes all arguments" do
+  test "super without parens in initialize function passes all arguments" do
     riml = <<Riml
 class A
   def initialize(foo, bar)
@@ -1561,7 +1561,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "implicit super works when inside function that's given a splat parameter" do
+  test "implicit super works when inside initialize function that's given a splat parameter" do
     riml = <<Riml
 class A
   def initialize(foo, *options)
@@ -1595,6 +1595,79 @@ endfunction
 Viml
 
     assert_equal expected, compile(riml)
+  end
+
+  test "super works in non initialize functions" do
+    riml = <<Riml
+class Job
+  defm doIt()
+    echo "Doing job \#{speed}."
+  end
+  defm setSpeed(speed)
+    self.speed = speed
+  end
+end
+
+class FastJob < Job
+  defm doIt()
+    self.setSpeed('fast')
+    super
+  end
+end
+Riml
+
+    expected = <<Viml
+function! g:JobConstructor()
+  let jobObj = {}
+  let jobObj.doIt = function('g:Job_doIt')
+  let jobObj.setSpeed = function('g:Job_setSpeed')
+  return jobObj
+endfunction
+function! g:Job_doIt() dict
+  echo "Doing job " . speed . "."
+endfunction
+function! g:Job_setSpeed(speed) dict
+  let self.speed = a:speed
+endfunction
+function! g:FastJobConstructor()
+  let fastJobObj = {}
+  let jobObj = g:JobConstructor()
+  call extend(fastJobObj, jobObj)
+  let fastJobObj.doIt = function('g:FastJob_doIt')
+  let fastJobObj.Job_doIt = function('g:Job_doIt')
+  return fastJobObj
+endfunction
+function! g:FastJob_doIt() dict
+  call self.setSpeed('fast')
+  call self.Job_doIt()
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "raises error when calling super but no method of that name exists in superclass(es)" do
+    riml = <<Riml
+class Job
+  defm doIt(speed)
+    echo "Doing job"
+  end
+  defm setSpeed(speed)
+    self.speed = speed
+  end
+end
+
+class FastJob < Job
+  defm doItFast()
+    self.setSpeed('fast')
+    super
+  end
+end
+Riml
+
+    assert_raises(Riml::UserFunctionNotFoundError) do
+      compile(riml)
+    end
   end
 
   test "redefining existing class raises error" do

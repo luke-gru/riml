@@ -150,9 +150,10 @@ module Riml
           AssignNode.new('=', GetVariableNode.new(nil, dict_name), DictionaryNode.new({}))
         )
 
-        SuperToObjectExtension.new(constructor, classes, node).rewrite_on_match
+        InitializeSuperToObjectExtension.new(constructor, classes, node).rewrite_on_match
         ExtendObjectWithMethods.new(node, classes).rewrite_on_match
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
+        SuperToSuperclassFunction.new(node, classes).rewrite_on_match
 
         constructor.expressions.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
@@ -241,7 +242,7 @@ module Riml
         end
       end
 
-      class SuperToObjectExtension < AST_Rewriter
+      class InitializeSuperToObjectExtension < AST_Rewriter
         attr_reader :class_node
         def initialize(constructor, classes, class_node)
           super(constructor, classes)
@@ -289,6 +290,64 @@ module Riml
 
         def repeatable?
           false
+        end
+      end
+
+      # rewrites calls to 'super' in non-initialize function
+      class SuperToSuperclassFunction < AST_Rewriter
+        def match?(node)
+          return false unless SuperNode === node
+          n = node
+          n = n.parent until DefNode === n || n.nil?
+          return false if n.nil? || ast.constructor == n
+          @function_node = n
+        end
+
+        def replace(node)
+          func_scope = @function_node.scope_modifier
+          superclass = classes[ast.superclass_name]
+          while superclass && !superclass.has_function?(func_scope, superclass_func_name(superclass)) && superclass.superclass?
+            superclass = classes[superclass.superclass_name]
+          end
+          if superclass.nil? || !superclass.has_function?(func_scope, superclass_func_name(superclass))
+            raise Riml::UserFunctionNotFoundError,
+              "super was called in class #{ast.name} in " \
+              "function #{@function_node.original_name}, but there are no " \
+              "functions with this name in that class's superclass hierarchy."
+          end
+          call_node = CallNode.new(
+            nil,
+            DictGetDotNode.new(
+              GetVariableNode.new(nil, 'self'),
+              [superclass_func_name(superclass)]
+            ),
+            node.arguments
+          )
+
+          node.replace_with(call_node)
+          add_superclass_func_ref_to_constructor(superclass)
+          reestablish_parents(@function_node)
+        end
+
+        def superclass_func_name(superclass)
+          "#{superclass.name}_#{@function_node.original_name}"
+        end
+
+        def add_superclass_func_ref_to_constructor(superclass)
+          super_func_name = superclass_func_name(superclass)
+          assign_node = AssignNode.new('=',
+            DictGetDotNode.new(
+              GetVariableNode.new(nil, ast.constructor_obj_name),
+              [super_func_name]
+            ),
+            CallNode.new(
+              nil,
+              'function',
+              [StringNode.new("g:#{super_func_name}", :s)]
+            )
+          )
+          ast.constructor.expressions << assign_node
+          reestablish_parents(ast.constructor)
         end
       end
     end # ClassDefinitionToFunctions

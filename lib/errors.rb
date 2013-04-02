@@ -10,6 +10,7 @@ module Riml
   IncludeNotTopLevel = Class.new(RimlError)
   # bad user arguments to Riml functions
   UserArgumentError = Class.new(RimlError)
+  UserFunctionNotFoundError = Class.new(RimlError)
 
   ClassNotFound = Class.new(RimlError)
   ClassRedefinitionError = Class.new(RimlError)

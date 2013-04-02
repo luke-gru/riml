@@ -500,8 +500,6 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
   include FullyNameable
   include Walkable
 
-  attr_accessor :original_name
-
   def initialize(*args)
     super
     # max number of arguments in viml
@@ -512,6 +510,11 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
 
   SPLAT = lambda {|arg| arg == Riml::Constants::SPLAT_LITERAL || arg[0] == "*"}
   DEFAULT_PARAMS = lambda {|p| DefaultParamNode === p}
+
+  def original_name
+    @original_name ||= name
+  end
+  attr_writer :original_name
 
   # ["arg1", "arg2"}
   def argument_variable_names
@@ -797,6 +800,8 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
   include Visitable
   include Walkable
 
+  FUNCTIONS = lambda {|expr| DefNode === expr}
+
   def superclass?
     not superclass_name.nil?
   end
@@ -814,6 +819,13 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
     end
   end
   alias constructor? constructor
+
+  def find_function(scope_modifier, name)
+    expressions.nodes.select(&FUNCTIONS).detect do |def_node|
+      def_node.name == name && def_node.scope_modifier == scope_modifier
+    end
+  end
+  alias has_function? find_function
 
   def constructor_name
     "#{name}Constructor"
