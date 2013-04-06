@@ -303,6 +303,20 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  # :h expr-quote
+  test "double-quoted string escape sequences" do
+    escape_sequences = [
+      '\n', '\r', '\f', '\316', '\07', '\7', '\x1f',
+      '\xf', '\X1f', '\Xf', '\u02a4', '\U02a4', '\b',
+      '\e', '\t', '\"', '\\\\' '\<C-W>'
+    ]
+    escape_sequences.each do |sequence|
+      riml = "voice = \"hey dude!#{sequence}\""
+      expected = "let s:voice = \"hey dude!#{sequence}\""
+      assert_equal expected, compile(riml).chomp
+    end
+  end
+
   test "functions can take expressions" do
     riml = 'echo "found #{n} words"'
     expected = 'echo "found " . s:n . " words"'
@@ -1229,7 +1243,7 @@ omg this is a heredoc
 EOS
 '.strip
 
-    expected = %{let s:heredoc = "omg this is a heredoc\n"}
+    expected = %{let s:heredoc = "omg this is a heredoc\\n"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1241,7 +1255,7 @@ Hello there, #{name}, how are you?
 EOS
 '.strip
 
-    expected = %{let s:heredoc = "Hello there, " . s:name . ", how are you?\n"}
+    expected = %{let s:heredoc = "Hello there, " . s:name . ", how are you?\\n"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1253,9 +1267,37 @@ Holy #{loudExpletive()} it\'s freaking #{superhero}!
 EOS
 '.strip
 
-    expected = %{let s:lineFromMovie = "Holy " . s:loudExpletive() . " it's freaking " . s:superhero . "!\n"}
+    expected = %{let s:lineFromMovie = "Holy " . s:loudExpletive() . " it's freaking " . s:superhero . "!\\n"}
 
     assert_equal expected, compile(riml).chomp
+  end
+
+  test "multiline (poetic) heredoc" do
+    riml = <<Riml
+poem = <<endpoem
+M
+u
+l
+tiline\\n
+endpoem
+Riml
+    expected = <<Viml
+let s:poem = "M\\nu\\nl\\ntiline\\n\\n"
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "interpolation in multiline heredoc" do
+    riml = <<Riml
+dogTalk = <<EOS
+hey there cute
+\#{dog.breed}
+EOS
+Riml
+    expected = <<Viml
+let s:dogTalk = "hey there cute\\n" . s:dog.breed . "\\n"
+Viml
+    assert_equal expected, compile(riml)
   end
 
   test "double quotes in heredocs get escaped with interpolation" do
@@ -1265,7 +1307,7 @@ Holy "#{loudExpletive()}" it\'s freaking #{superhero}!
 EOS
 '.strip
 
-    expected = %{let s:lineFromMovie = "Holy \\"" . s:loudExpletive() . "\\" it's freaking " . s:superhero . "!\n"}
+    expected = %{let s:lineFromMovie = "Holy \\"" . s:loudExpletive() . "\\" it's freaking " . s:superhero . "!\\n"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1277,7 +1319,7 @@ quote = <<EOS
 EOS
 '.strip
 
-    expected = %{let s:quote = "\\"I still watch Duckman!\\"\n"}
+    expected = %{let s:quote = "\\"I still watch Duckman!\\"\\n"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1812,6 +1854,31 @@ function! s:HttpGet(...)
     let method = remove(a:000, 0)
   else
     let method = 'get'
+  endif
+  return s:DoHttpGet(url, method, a:000)
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "default function param as method call" do
+    riml = <<Riml
+def HttpGet(url = 'www.geocities.net', method = determineMethod(), *options)
+  return DoHttpGet(url, method, options)
+end
+Riml
+    expected = <<Viml
+function! s:HttpGet(...)
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let url = remove(a:000, 0)
+  else
+    let url = 'www.geocities.net'
+  endif
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let method = remove(a:000, 0)
+  else
+    let method = s:determineMethod()
   endif
   return s:DoHttpGet(url, method, a:000)
 endfunction

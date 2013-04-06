@@ -69,7 +69,6 @@ module Riml
 
     def compile_unit!
       viml = Riml.compile(current_compilation_unit.join("\n"), parser, compiler).chomp
-      escape_newlines_in_strings!(viml)
       puts viml, "\n"
     rescue => e
       raise unless e.kind_of?(RimlError)
@@ -90,10 +89,6 @@ module Riml
 
     def print_error(e)
       puts "#{e.class}: #{e}"
-    end
-
-    def escape_newlines_in_strings!(viml)
-      viml.gsub!(/("[^"]*?)\n+([^"]?")/, '\1\\n\2')
     end
 
     def exit_repl

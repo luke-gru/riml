@@ -33,7 +33,6 @@ module Riml
       @indent_pending = false
       @dedent_pending = false
       @one_line_conditional_end_pending = false
-      @splat_allowed = false
       @in_function_declaration = false
     end
 
@@ -149,9 +148,7 @@ module Riml
           @in_function_declaration = false unless DEFINE_KEYWORDS.include?(identifier) && @token_buf.size == 1
         end
       elsif splat = chunk[/\A(\.{3}|\*[a-zA-Z_]\w*)/]
-        raise SyntaxError, "unexpected splat, has to be enclosed in parentheses" unless @splat_allowed
         @token_buf << [:SPLAT, splat]
-        @splat_allowed = false
         @i += splat.size
       # integer (octal)
       elsif octal = chunk[/\A0[0-7]+/]
@@ -201,13 +198,13 @@ module Riml
         pattern = $1
         @i += heredoc_pattern.size
         new_chunk = get_new_chunk
-        heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|, 1]
+        heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|m, 1]
         @i += heredoc_string.size + pattern.size
         if ('"' + heredoc_string + '"') =~ INTERPOLATION_REGEX
           parts = heredoc_string.split(INTERPOLATION_SPLIT_REGEX)
           handle_interpolation(*parts)
         else
-          @token_buf << [:STRING_D, escape_double_quotes(heredoc_string)]
+          @token_buf << [:STRING_D, escape_chars!(heredoc_string)]
         end
         @lineno += heredoc_string.each_line.to_a.size
       # operators of more than 1 char
@@ -227,8 +224,6 @@ module Riml
         else
           @token_buf << [value, value]
         end
-        @splat_allowed = true  if value == '('
-        @splat_allowed = false if value == ')'
         @i += 1
         if value == ']' || value == ')' && chunk[1, 1] == '.'
           parse_dict_vals!
@@ -287,15 +282,17 @@ module Riml
         if part[0..1] == '#{' && part[-1] == '}'
           @token_buf.concat tokenize_without_moving_pos(part[2...-1])
         else
-          @token_buf << [:STRING_D, escape_double_quotes(part)]
+          @token_buf << [:STRING_D, escape_chars!(part)]
         end
         # string-concatenate all the parts unless this is the last part
         @token_buf << ['.', '.'] unless parts[i + 1].nil?
       end
     end
 
-    def escape_double_quotes(string)
-      string.gsub(/"/, '\"')
+    def escape_chars!(string)
+      string.gsub!(/"/, '\"')
+      string.gsub!(/\n/, "\\n")
+      string
     end
 
     def tokenize_without_moving_pos(code)
