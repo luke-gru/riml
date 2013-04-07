@@ -242,10 +242,15 @@ module Riml
       private
       def scope_modifier_for_node(node)
         if node.scope
-          return "a:" if node.scope.argument_variable_names.include?(node.name)
-          return "" unless node.is_a?(CallNode)
+          if node.scope.function && DefNode === node && !node.defined_on_dictionary?
+            return "s:"
+          elsif node.scope.argument_variable_names.include?(node.name)
+            return "a:"
+          elsif !node.is_a?(CallNode)
+            return ""
+          end
         end
-        return "" if (node.is_a?(CallNode) || node.is_a?(DefNode)) && node.autoload?
+        return "" if node.respond_to?(:autoload?) && node.autoload?
         "s:"
       end
     end
@@ -376,7 +381,11 @@ module Riml
 
     class DefNodeVisitor < ScopedVisitor
       def visit(node)
-        setup_local_scope_for_descendants(node)
+        options = {}
+        if node.nested_function?
+          options[:nested_function] = true
+        end
+        setup_local_scope_for_descendants(node, options)
         super
       end
 
@@ -406,8 +415,9 @@ module Riml
       end
 
       private
-      def setup_local_scope_for_descendants(node)
-        node.expressions.accept(EstablishScopeVisitor.new(:scope => node.to_scope))
+      def setup_local_scope_for_descendants(node, options)
+        options.merge!(:scope => node.to_scope)
+        node.expressions.accept(EstablishScopeVisitor.new(options))
       end
 
       def process_parameters!(node)
@@ -430,6 +440,7 @@ module Riml
     class EstablishScopeVisitor < DrillDownVisitor
       def initialize(options)
         @scope = options[:scope]
+        @nested_function = options[:nested_function]
       end
 
       def visit(node)
@@ -437,7 +448,7 @@ module Riml
       end
 
       def establish_scope(node)
-        if node.scope
+        if node.scope && !@nested_function
           node.scope = node.scope.merge @scope
         else
           node.scope = @scope

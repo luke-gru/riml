@@ -506,6 +506,9 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     if parameters.reject(&DEFAULT_PARAMS).size > 20
       raise Riml::UserArgumentError, "can't have more than 20 parameters for #{full_name}"
     end
+    expressions.nodes.select { |node| DefNode === node}.each do |nested_func|
+      nested_func.nested_within.unshift(self)
+    end
   end
 
   SPLAT = lambda {|arg| arg == Riml::Constants::SPLAT_LITERAL || arg[0] == "*"}
@@ -521,6 +524,14 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     parameters.reject(&SPLAT)
   end
 
+  def nested_within
+    @nested_within ||= []
+  end
+
+  def nested_function?
+    not nested_within.empty?
+  end
+
   # returns the splat argument or nil
   def splat
     parameters.detect(&SPLAT)
@@ -532,6 +543,10 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     else
       super
     end
+  end
+
+  def defined_on_dictionary?
+    keyword == 'dict'
   end
 
   def autoload?
@@ -607,7 +622,7 @@ class ScopeNode
     end
     self.for_node_variable_names += other.for_node_variable_names
     self.argument_variable_names -= for_node_variable_names
-    self.function = other.function if function.nil? && other.function
+    self.function = other.function
     self
   end
 end

@@ -1886,4 +1886,34 @@ Viml
 
     assert_equal expected, compile(riml)
   end
+
+  test "nested function scopes are correct" do
+    riml = <<Riml
+def func(hey)
+  echo hey
+  def func2(hey2)
+    echo hey2
+    echo hey " undefined in this function (error)
+    for i in expr()
+      echo i
+      echo hey2
+    end
+  end
+end
+Riml
+    expected = <<Viml
+function! s:func(hey)
+  echo a:hey
+  function! s:func2(hey2)
+    echo a:hey2
+    echo hey
+    for i in s:expr()
+      echo i
+      echo a:hey2
+    endfor
+  endfunction
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
 end
