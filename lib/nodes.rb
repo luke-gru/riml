@@ -323,7 +323,7 @@ class RimlCommandNode  < CallNode
   def initialize(*)
     super
     if arguments.empty? || !arguments.all? { |arg| arg.is_a?(StringNode) }
-      raise Riml::UserArgumentError, "#{name.inspect} error: must pass string (name of file)"
+      raise Riml::UserArgumentError, "#{name.inspect} error: must pass string(s) (name of file(s))"
     end
   end
 
@@ -554,7 +554,7 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
   end
 
   def super_node
-    expressions.detect {|n| SuperNode === n}
+    expressions.nodes.detect {|n| SuperNode === n}
   end
 
   def to_scope
@@ -822,8 +822,8 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
   end
 
   def constructor
-    expressions.detect do |n|
-      next(false) unless DefNode === n && (n.name == 'initialize' || n.name.match(/Constructor\Z/))
+    expressions.nodes.detect do |n|
+      next(false) unless DefNode === n && (n.name == 'initialize' || n.name == constructor_name)
       if n.instance_of?(DefMethodNode)
         Riml.warn("class #{name.inspect} has an initialize function declared with 'defm'. Please use 'def'.")
         new_node = n.to_def_node
