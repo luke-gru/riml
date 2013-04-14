@@ -44,7 +44,8 @@ module Riml
       '=',
       '*', '+', '~',
       '_',
-      '/'
+      '/',
+      '@'
     ].flatten
 
     # :help function-list

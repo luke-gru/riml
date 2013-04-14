@@ -47,6 +47,7 @@ rule
   | Expressions Terminator AnyExpression  { result = val[0] << val[2] }
   | Expressions Terminator                { result = val[0] }
   | Terminator                            { result = Nodes.new([]) }
+  | Terminator Expressions                { result = Nodes.new(val[1]) }
   ;
 
   # All types of expressions in Riml
@@ -90,6 +91,17 @@ rule
   | Call                                  { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
   | '(' ValueExpressionWithoutDictLiteral ')'               { result = WrapInParensNode.new(val[1]) }
+  ;
+
+  # for inside curly-brace variable names
+  PossibleStringValue:
+    String                                { result = val[0] }
+  | DictGet                               { result = val[0] }
+  | ListOrDictGet                         { result = val[0] }
+  | AllVariableRetrieval                  { result = val[0] }
+  | BinaryOperator                        { result = val[0] }
+  | Ternary                               { result = val[0] }
+  | Call                                  { result = val[0] }
   ;
 
   Terminator:
@@ -283,6 +295,7 @@ rule
   | ValueExpression '*' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
   | ValueExpression '/' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
   | ValueExpression '.' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '%' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
   | ValueExpression IS    ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
   | ValueExpression ISNOT ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
@@ -342,9 +355,9 @@ rule
   ;
 
   CurlyBraceVarPart:
-    '{' VariableRetrieval '}'                     { result = CurlyBracePart.new(val[1]) }
-  | '{' VariableRetrieval CurlyBraceVarPart '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
-  | '{' CurlyBraceVarPart VariableRetrieval '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
+    '{' PossibleStringValue '}'                     { result = CurlyBracePart.new(val[1]) }
+  | '{' PossibleStringValue CurlyBraceVarPart '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
+  | '{' CurlyBraceVarPart PossibleStringValue '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
   ;
 
   # Method definition
@@ -510,7 +523,7 @@ end
       ast = do_parse
     rescue Racc::ParseError => e
       raise unless @lexer
-      raise Riml::ParseError,  "line #{@lexer.lineno}: #{e.message}"
+      raise Riml::ParseError,  "on line #{@lexer.lineno}: #{e.message}"
     end
 
     @ast_rewriter ||= ast_rewriter

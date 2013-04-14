@@ -100,7 +100,7 @@ module Riml
           require 'repl'
           Riml::Repl.new(options.vi_readline).run
         else
-          ARGV << '--help'
+          ARGV.replace ['--help']
           start
         end
       end

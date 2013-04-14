@@ -232,6 +232,7 @@ module Riml
     end
 
     private
+
     def track_indent_level(chunk, identifier)
       case identifier.to_sym
       when :def, :def!, :defm, :defm!, :while, :until, :for, :try, :class

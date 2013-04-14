@@ -99,7 +99,30 @@ end
 
 module Indentable
   def indent
-    @indent ||= " " * 2
+    @indent ||= ' ' * 2
+  end
+  def indented?
+    indent.size > 0
+  end
+  def outdent
+    size = indent.size
+    return '' unless size > 0
+    ' ' * (size - 2)
+  end
+end
+
+module NotNestedUnder
+  def non_nested?(klass = not_nested_under_class)
+    n = self
+    while (n = n.parent) != nil
+      return false if n.is_a?(klass)
+    end
+    true
+  end
+
+  # override if applicable
+  def not_nested_under_class
+    self.class
   end
 end
 
@@ -111,6 +134,10 @@ class Nodes < Struct.new(:nodes)
   def <<(node)
     nodes << node
     self
+  end
+
+  def [](idx)
+    nodes[idx]
   end
 
   def concat(list_of_nodes)
@@ -653,7 +680,9 @@ class ControlStructure < Struct.new(:condition, :body)
   end
 end
 
-class IfNode < ControlStructure; end
+class IfNode < ControlStructure
+  include NotNestedUnder
+end
 class WhileNode < ControlStructure; end
 
 class UnlessNode < ControlStructure
@@ -798,17 +827,19 @@ class TryNode < Struct.new(:try_block, :catch_nodes, :finally_block)
   include Walkable
 
   def children
-    [try_block, catch_nodes, finally_block]
+    [try_block] + catch_nodes.to_a + [finally_block].compact
   end
 end
 
 class CatchNode < Struct.new(:regexp, :expressions)
   include Visitable
   include Walkable
+  include NotNestedUnder
 
   def children
     [expressions]
   end
+
 end
 
 class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)

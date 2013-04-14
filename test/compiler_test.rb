@@ -1916,4 +1916,101 @@ endfunction
 Viml
     assert_equal expected, compile(riml)
   end
+
+    test "curly brace name node in for loop (tripped up compiler)" do
+    riml = <<Riml
+for i in range(7)
+  let repl_{i} = ''
+endfor
+Riml
+
+    assert_equal riml, compile(riml).chomp
+  end
+
+  test "nested ifs indent properly" do
+    riml = <<Riml
+if a
+  if b
+    echo b2
+  elseif c
+    if d
+      echo d2
+    elseif e
+      echo f
+    else
+      echo g
+    endif
+  else
+    echo h
+  endif
+elseif i
+  echo j
+else
+  echo k
+endif
+Riml
+
+    expected = <<Viml
+if s:a
+  if s:b
+    echo s:b2
+  elseif s:c
+    if s:d
+      echo s:d2
+    elseif s:e
+      echo s:f
+    else
+      echo s:g
+    endif
+  else
+    echo s:h
+  endif
+elseif s:i
+  echo s:j
+else
+  echo s:k
+endif
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "nested trys indent properly" do
+    riml = <<Riml
+try
+  something()
+catch /error/
+  try
+    somethingElse()
+  catch /otherError/
+    forChristsSake()
+  finally
+    try
+      innerCleanup()
+    end
+  end
+finally
+  outerCleanup()
+end
+Riml
+    expected = <<Viml
+try
+  call s:something()
+catch /error/
+  try
+    call s:somethingElse()
+  catch /otherError/
+    call s:forChristsSake()
+  finally
+    try
+      call s:innerCleanup()
+    endtry
+  endtry
+finally
+  call s:outerCleanup()
+endtry
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end

@@ -121,7 +121,17 @@ Riml
 
     assert parse(riml)
     assert parse(riml2)
+  end
 
+  test "curly-brace names parse non-variables inside braces" do
+    riml = <<Riml
+let insertion = repl_{char2nr(char)}
+Riml
+
+    expected = <<Viml
+let s:insertion = s:repl_{char2nr(s:char)}
+Viml
+    assert_equal expected,  compile(riml)
   end
 
   test "for loop iterating over all variables in a certain scope" do
@@ -133,6 +143,17 @@ endfor
 Riml
 
     assert parse(riml)
+  end
+
+  test "use of keywords as variables raises parse error" do
+    Riml::Constants::KEYWORDS.each do |keyword|
+      riml = <<Riml
+let #{keyword} = s:wrap(orig,a:char,type,special)
+Riml
+      assert_raises(Riml::ParseError) do
+        parse(riml)
+      end
+    end
   end
 
 end

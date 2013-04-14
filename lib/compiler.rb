@@ -41,7 +41,12 @@ module Riml
         node.body.accept(NodesVisitor.new(:propagate_up_tree => false))
 
         node.body.compiled_output.each_line do |line|
-          node.compiled_output << (line =~ /else|elseif\n\Z/ ? line : node.indent + line)
+          outdent = line =~ /\A(\s*)(else\s*|elseif .*)$/
+          if outdent && node.non_nested?
+            node.compiled_output << node.outdent + line
+          else
+            node.compiled_output << node.indent + line
+          end
         end
         node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
         node.force_newline = true
@@ -244,7 +249,7 @@ module Riml
         if node.scope
           if node.scope.function && DefNode === node && !node.defined_on_dictionary?
             return "s:"
-          elsif node.scope.argument_variable_names.include?(node.name)
+          elsif node.respond_to?(:name) && node.scope.argument_variable_names.include?(node.name)
             return "a:"
           elsif !node.is_a?(CallNode)
             return ""
@@ -317,7 +322,12 @@ module Riml
             part.value.accept(visitor_for_node(part.value))
             "{#{part.value.compiled_output}}"
           else
-            part.value
+            if String === part.value
+              part.value
+            else
+              part.value.accept(visitor_for_node(part.value))
+              "{#{part.value.compiled_output}}".gsub(/\n/, '')
+            end
           end
         end.join
       end
@@ -590,7 +600,12 @@ module Riml
         catches.each do |c|
           c.accept(visitor_for_node(c, :propagate_up_tree => false))
           c.compiled_output.each_line do |line|
-            node.compiled_output << ( line =~ /\A\s*catch/ ? line : node.indent + line )
+            outdent = line =~ /\A\s*catch/
+            if outdent && c.non_nested?
+              node.compiled_output << node.outdent + line
+            else
+              node.compiled_output << node.indent + line
+            end
           end
         end if catches
 
