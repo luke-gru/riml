@@ -107,13 +107,6 @@ rule
   Terminator:
     NEWLINE                               { result = nil }
   | ';'                                   { result = nil }
-  | '|'                                   { result = nil }
-  ;
-
-  # All hard-coded values
-  Literal:
-    LiteralWithoutDictLiteral             { result = val[0] }
-  | Dictionary                            { result = val[0] }
   ;
 
   LiteralWithoutDictLiteral:
@@ -184,7 +177,7 @@ rule
 
   # [key, value]
   DictItem:
-    Literal ':' Literal                   { result = [val[0], val[2]] }
+    ValueExpression ':' ValueExpression                   { result = [val[0], val[2]] }
   ;
 
   DictGet:
@@ -363,10 +356,10 @@ rule
   # Method definition
   # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType Scope DefCallIdentifier DefKeyword Block END                               { result = Object.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ')' DefKeyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' DefKeyword Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeyword Block END   { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType Scope DefCallIdentifier DefKeywords Block END                               { result = Object.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   FunctionType:
@@ -382,9 +375,10 @@ rule
   ;
 
   # Example: 'range', 'dict' or 'abort' after function definition
-  DefKeyword:
-    IDENTIFIER            { result = val[0] }
-  | /* nothing */         { result = nil }
+  DefKeywords:
+    IDENTIFIER             { result = [val[0]] }
+  | DefKeywords IDENTIFIER { result = val[0] << val[1] }
+  | /* nothing */          { result = nil }
   ;
 
   ParamList:

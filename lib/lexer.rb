@@ -79,7 +79,7 @@ module Riml
         @i += splat_var.size
         @token_buf << [:SCOPE_MODIFIER, 'a:'] << [:IDENTIFIER, splat_var[2..-1]]
       # the 'n' scope modifier is added by riml
-      elsif scope_modifier = chunk[/\A([bwtglsavn]:)\w/, 1]
+      elsif scope_modifier = chunk[/\A([bwtglsavn]:)(\w|{)/, 1]
         @i += 2
         @token_buf << [:SCOPE_MODIFIER, scope_modifier]
       elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
@@ -124,7 +124,7 @@ module Riml
           track_indent_level(chunk, identifier)
           @token_buf << [token_name.intern, identifier]
 
-        elsif BUILTIN_COMMANDS.include? identifier
+        elsif BUILTIN_COMMANDS.include?(identifier) && !chunk[/\A#{Regexp.escape(identifier)}\(/]
           @token_buf << [:BUILTIN_COMMAND, identifier]
         elsif RIML_COMMANDS.include? identifier
           @token_buf << [:RIML_COMMAND, identifier]
@@ -303,9 +303,9 @@ module Riml
     def statement_modifier?
       old_i = @i
       # backtrack until the beginning of the line
-      @i -= 1 while @code[@i-1] =~ /[^\n\r]/ && !@code[@i-1].empty?
+      @i -= 1 while @code && @code[@i-1] !~ /\n|\r/ && !@code[@i-1].to_s.empty?
       new_chunk = get_new_chunk
-      new_chunk[/^(.+?)(if|unless).+$/] && !$1.strip.empty?
+      new_chunk.to_s[/\A(.+?)(if|unless).+?$/] && !$1.strip.empty?
     ensure
       @i = old_i
     end

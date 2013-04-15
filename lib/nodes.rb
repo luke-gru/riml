@@ -521,7 +521,7 @@ class UnletVariableNode < Struct.new(:bang, :variables)
 end
 
 # Method definition.
-class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword, :expressions)
+class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keywords, :expressions)
   include Visitable
   include Indentable
   include FullyNameable
@@ -564,16 +564,16 @@ class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keyword,
     parameters.detect(&SPLAT)
   end
 
-  def keyword
+  def keywords
     if name.include?('.')
-      'dict'
+      (super.to_a + ['dict']).uniq
     else
-      super
+      super.to_a
     end
   end
 
   def defined_on_dictionary?
-    keyword == 'dict'
+    keywords.include?('dict')
   end
 
   def autoload?
@@ -656,7 +656,7 @@ end
 
 class DefMethodNode < DefNode
   def to_def_node
-    def_node = DefNode.new(bang, 'g:', name, parameters, 'dict', expressions)
+    def_node = DefNode.new(bang, 'g:', name, parameters, ['dict'], expressions)
     def_node.parent = parent
     def_node
   end
@@ -858,7 +858,7 @@ class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
       if n.instance_of?(DefMethodNode)
         Riml.warn("class #{name.inspect} has an initialize function declared with 'defm'. Please use 'def'.")
         new_node = n.to_def_node
-        new_node.keyword = nil
+        new_node.keywords = nil
         n.replace_with(new_node)
       end
       true

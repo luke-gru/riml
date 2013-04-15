@@ -19,7 +19,7 @@ module Riml
     SPECIAL_VARIABLE_PREFIXES =
       %w(& @ $)
     BUILTIN_COMMANDS  =
-      %w(echo echon echohl execute sleep)
+      %w(echo echon echomsg echoerr echohl execute sleep throw)
     RIML_COMMANDS =
       %w(riml_source riml_include)
     VIML_COMMANDS =

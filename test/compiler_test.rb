@@ -2013,4 +2013,26 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "curly brace names can start identifiers" do
+    riml = <<Riml
+let s:{a:namespace}_prototype[name] = s:function('s:' . a:namespace . '_' . name)
+Riml
+    expected = <<Viml
+let s:{a:namespace}_prototype[s:name] = s:function('s:' . a:namespace . '_' . s:name)
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "tripped up compiler" do
+    riml = <<Riml
+let repo = {'git_dir': dir}
+Riml
+
+    expected = <<Viml
+let s:repo = {'git_dir': s:dir}
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end

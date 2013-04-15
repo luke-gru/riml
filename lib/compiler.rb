@@ -411,7 +411,7 @@ module Riml
         else
           node.name
         end << "(#{params.join(', ')})"
-        declaration << (node.keyword ? " #{node.keyword}\n" : "\n")
+        declaration << (node.keywords.empty? ? "\n" : " #{node.keywords.join(' ')}\n")
         node.expressions.parent_node = node
         node.expressions.accept NodesVisitor.new(:propagate_up_tree => false)
 
