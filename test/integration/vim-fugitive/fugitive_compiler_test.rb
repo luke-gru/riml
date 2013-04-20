@@ -5,7 +5,7 @@ class FugitiveCompilerTest < Riml::TestCase
     source   = File.read File.expand_path("../fugitive.riml", __FILE__)
     compiled = File.read File.expand_path("../fugitive.vim",  __FILE__)
     viml = nil
-    assert_block { viml = compile(source) }
+    assert(viml = compile(source))
     assert_equal compiled, viml
   end
 

@@ -500,7 +500,8 @@ module Riml
                node.descendant_of_list_or_dict_get_node? ||
                node.descendant_of_operator_node? ||
                node.descendant_of_wrap_in_parens_node? ||
-               node.descendant_of_sublist_node?
+               node.descendant_of_sublist_node? ||
+               node.descendant_of_dict_get_dot_node?
           node.force_newline = true
         end
       end

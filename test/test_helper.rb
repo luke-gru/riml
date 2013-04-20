@@ -70,12 +70,16 @@ EOS
       alias assert_equal assert_equal_debug
     end
 
-    def assert_riml_warning(expected_warning = /Warning:/i, &block)
-      out, err = capture_io { yield }
+    def assert_riml_warning(expected_warning = /Warning:/i)
+      out, err = capture_subprocess_io do
+        yield
+        Riml.send(:flush_warnings)
+      end
+      warnings = err.each_line.to_a
       if Regexp === expected_warning
-        assert expected_warning =~ err
+        assert warnings.any? { |w| expected_warning =~ w }
       elsif expected_warning.respond_to?(:to_s)
-        assert expected_warning.to_s == err
+        assert warnings.any? { |w| expected_warning.to_s == w }
       else
         raise ArgumentError
       end

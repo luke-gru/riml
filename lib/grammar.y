@@ -183,6 +183,7 @@ rule
   DictGet:
     AllVariableRetrieval DictGetWithDot          { result = DictGetDotNode.new(val[0], val[1]) }
   | ListOrDictGet DictGetWithDot                 { result = DictGetDotNode.new(val[0], val[1]) }
+  | Call DictGetWithDot                          { result = DictGetDotNode.new(val[0], val[1]) }
   | '(' ValueExpression ')' DictGetWithDot       { result = DictGetDotNode.new(WrapInParensNode.new(val[1]), val[3]) }
   ;
 

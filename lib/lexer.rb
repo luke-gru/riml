@@ -225,7 +225,7 @@ module Riml
           @token_buf << [value, value]
         end
         @i += 1
-        if value == ']' || value == ')' && chunk[1, 1] == '.'
+        if value == ']' || value == ')' && (chunk[1, 1] == '.' && chunk[3, 1] != ':')
           parse_dict_vals!
         end
       end
@@ -256,7 +256,7 @@ module Riml
     def parse_dict_vals!
       # dict.key OR dict.key.other_key
       new_chunk = get_new_chunk
-      if vals = new_chunk[/\A\.([\w.]+)/, 1]
+      if vals = new_chunk[/\A\.([\w.]+)(?!:)/, 1]
         parts = vals.split('.')
         @i += vals.size + 1
         if @in_function_declaration

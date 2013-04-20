@@ -3,6 +3,7 @@ require 'nodes'
 require 'lexer'
 require 'parser'
 require 'compiler'
+require 'warning_buffer'
 
 module Riml
   # lex code into tokens
@@ -32,8 +33,11 @@ module Riml
     end
     compiler.parser = parser
     output = compiler.compile(nodes)
-    return output unless input.is_a?(File)
-    write_file(output, input.path)
+    if input.is_a?(File)
+      write_file(output, input.path)
+    else
+      output
+    end
   ensure
     input.close if input.is_a?(File)
     process_compile_queue!(compiler)
@@ -51,6 +55,8 @@ module Riml
     else
       raise ArgumentError, "need filenames to compile"
     end
+  ensure
+    flush_warnings
   end
 
   # checks syntax of `input` (lexes + parses) without going through ast rewriting or compilation
@@ -75,10 +81,27 @@ module Riml
   end
 
   def self.warn(warning)
-    $stderr.puts "Warning: #{warning}"
+    warning_buffer << warning
   end
 
+  class << self
+    attr_accessor :warnings
+  end
+  self.warnings = true
+
   private
+
+  def self.flush_warnings
+    if warnings
+      warning_buffer.flush
+    else
+      warning_buffer.clear
+    end
+  end
+
+  def self.warning_buffer
+    @warning_buffer ||= WarningBuffer.new
+  end
 
   def self.threaded_compile_files(*filenames)
     threads = []

@@ -2035,4 +2035,66 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "concatenation edge case 1: concatenate result of 2 function calls without scope modifiers, can't assume concatenation" do
+    # This is either string concatenation of the result of two function
+    # calls, or `call1()` returns a dictionary with the `call2()` method on it.
+    # The VimL interpreter deals with this by keeping track of types. Riml is
+    # forced to GUESS what you want. It makes the assumption that you want
+    # to call the method `call2()` of the dictionary which is the result of
+    # calling `s:call1()`. NOTE: to unambiguously mean string concatenation,
+    # use spaces between the dot. Ex: `call1() . call()`
+    riml = <<Riml
+res = call1().call2()
+Riml
+
+    expected = <<Viml
+let s:res = s:call1().call2()
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "concatenation edge case 2: concatenate result of 2 function calls with scope modifiers" do
+    # unambiguous string concatenation
+    riml = <<Riml
+res = s:call1().s:call2()
+Riml
+
+    expected = <<Viml
+let s:res = s:call1() . s:call2()
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "concatenation edge case 3: function call with dict key can't assume concatenation " do
+    # This is either string concatenation or dictionary indexing. The VimL
+    # interpreter deals with this ambiguity by keeping track of types.
+    # Riml does NOT do this, so assumes that you mean dictionary indexing.
+    # NOTE: to unambiguously mean string concatenation, put spaces between the
+    # dot. Ex: `res = s:getDict() . someString`
+    riml = <<Riml
+res = s:getDict().someKey
+Riml
+
+    expected = <<Viml
+let s:res = s:getDict().someKey
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "concatenation edge case 4: concatenate var or dict with scope modified variable or dict" do
+    # unambiguous string concatenation
+    riml = <<Riml
+res = arg.a:arg
+Riml
+
+    expected = <<Viml
+let s:res = s:arg . a:arg
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end

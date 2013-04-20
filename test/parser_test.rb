@@ -156,4 +156,22 @@ Riml
     end
   end
 
+  # concatenation edge cases
+
+  test "concatenate result of two function calls" do
+    riml = <<Riml
+call1().call2()
+Riml
+
+    assert parse(riml)
+  end
+
+  test "concatenate the result of two function calls with scope modifiers" do
+    riml = <<Riml
+s:call1().s:call2()
+Riml
+
+    assert parse(riml)
+  end
+
 end
