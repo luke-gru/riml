@@ -1,5 +1,6 @@
 require File.expand_path('../test_helper', __FILE__)
 
+module Riml
 class BasicLexerTest < Riml::TestCase
 
   test "if statement" do
@@ -199,4 +200,5 @@ Riml
     ]
     assert_equal expected, lex(riml)
   end
+end
 end

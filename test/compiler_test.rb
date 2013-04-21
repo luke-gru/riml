@@ -1,5 +1,6 @@
 require File.expand_path('../test_helper', __FILE__)
 
+module Riml
 class BasicCompilerTest < Riml::TestCase
 
   test "basic function compiles" do
@@ -2097,4 +2098,5 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+end
 end

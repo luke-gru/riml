@@ -37,17 +37,17 @@ preclow
 rule
 
   Root:
-    /* nothing */                         { result = Nodes.new([]) }
+    /* nothing */                         { result = Riml::Nodes.new([]) }
   | Expressions                           { result = val[0] }
   ;
 
   # any list of expressions
   Expressions:
-    AnyExpression                         { result = Nodes.new([ val[0] ]) }
+    AnyExpression                         { result = Riml::Nodes.new([ val[0] ]) }
   | Expressions Terminator AnyExpression  { result = val[0] << val[2] }
   | Expressions Terminator                { result = val[0] }
-  | Terminator                            { result = Nodes.new([]) }
-  | Terminator Expressions                { result = Nodes.new(val[1]) }
+  | Terminator                            { result = Riml::Nodes.new([]) }
+  | Terminator Expressions                { result = Riml::Nodes.new(val[1]) }
   ;
 
   # All types of expressions in Riml
@@ -75,10 +75,10 @@ rule
   ValueExpression:
     ValueExpressionWithoutDictLiteral     { result = val[0] }
   | Dictionary                            { result = val[0] }
-  | Dictionary DictGetWithDotLiteral      { result = DictGetDotNode.new(val[0], val[1]) }
+  | Dictionary DictGetWithDotLiteral      { result = Riml::DictGetDotNode.new(val[0], val[1]) }
   | BinaryOperator                        { result = val[0] }
   | Ternary                               { result = val[0] }
-  | '(' ValueExpression ')'               { result = WrapInParensNode.new(val[1]) }
+  | '(' ValueExpression ')'               { result = Riml::WrapInParensNode.new(val[1]) }
   ;
 
   ValueExpressionWithoutDictLiteral:
@@ -90,7 +90,7 @@ rule
   | LiteralWithoutDictLiteral             { result = val[0] }
   | Call                                  { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
-  | '(' ValueExpressionWithoutDictLiteral ')'               { result = WrapInParensNode.new(val[1]) }
+  | '(' ValueExpressionWithoutDictLiteral ')'               { result = Riml::WrapInParensNode.new(val[1]) }
   ;
 
   # for inside curly-brace variable names
@@ -115,36 +115,36 @@ rule
   | Regexp                                { result = val[0] }
   | List                                  { result = val[0] }
   | ScopeModifierLiteral                  { result = val[0] }
-  | TRUE                                  { result = TrueNode.new }
-  | FALSE                                 { result = FalseNode.new }
-  | NIL                                   { result = NilNode.new }
+  | TRUE                                  { result = Riml::TrueNode.new }
+  | FALSE                                 { result = Riml::FalseNode.new }
+  | NIL                                   { result = Riml::NilNode.new }
   ;
 
   Number:
-    NUMBER                                { result = NumberNode.new(val[0]) }
+    NUMBER                                { result = Riml::NumberNode.new(val[0]) }
   ;
 
   String:
-    STRING_S                              { result = StringNode.new(val[0], :s) }
-  | STRING_D                              { result = StringNode.new(val[0], :d) }
-  | String STRING_S                       { result = StringLiteralConcatNode.new(val[0], StringNode.new(val[1], :s)) }
-  | String STRING_D                       { result = StringLiteralConcatNode.new(val[0], StringNode.new(val[1], :d)) }
+    STRING_S                              { result = Riml::StringNode.new(val[0], :s) }
+  | STRING_D                              { result = Riml::StringNode.new(val[0], :d) }
+  | String STRING_S                       { result = Riml::StringLiteralConcatNode.new(val[0], Riml::StringNode.new(val[1], :s)) }
+  | String STRING_D                       { result = Riml::StringLiteralConcatNode.new(val[0], Riml::StringNode.new(val[1], :d)) }
   ;
 
   Regexp:
-    REGEXP                                { result = RegexpNode.new(val[0]) }
+    REGEXP                                { result = Riml::RegexpNode.new(val[0]) }
   ;
 
   ScopeModifierLiteral:
-    SCOPE_MODIFIER_LITERAL                { result = ScopeModifierLiteralNode.new(val[0]) }
+    SCOPE_MODIFIER_LITERAL                { result = Riml::ScopeModifierLiteralNode.new(val[0]) }
   ;
 
   List:
-    ListLiteral                           { result = ListNode.new(val[0]) }
+    ListLiteral                           { result = Riml::ListNode.new(val[0]) }
   ;
 
   ListUnpack:
-    '[' ListItems ';' ValueExpression ']' { result = ListUnpackNode.new(val[1] << val[3]) }
+    '[' ListItems ';' ValueExpression ']' { result = Riml::ListUnpackNode.new(val[1] << val[3]) }
   ;
 
   ListLiteral:
@@ -159,7 +159,7 @@ rule
   ;
 
   Dictionary:
-    DictionaryLiteral                     { result = DictionaryNode.new(val[0]) }
+    DictionaryLiteral                     { result = Riml::DictionaryNode.new(val[0]) }
   ;
 
   # {'key': 'value', 'key': 'value'}
@@ -181,15 +181,15 @@ rule
   ;
 
   DictGet:
-    AllVariableRetrieval DictGetWithDot          { result = DictGetDotNode.new(val[0], val[1]) }
-  | ListOrDictGet DictGetWithDot                 { result = DictGetDotNode.new(val[0], val[1]) }
-  | Call DictGetWithDot                          { result = DictGetDotNode.new(val[0], val[1]) }
-  | '(' ValueExpression ')' DictGetWithDot       { result = DictGetDotNode.new(WrapInParensNode.new(val[1]), val[3]) }
+    AllVariableRetrieval DictGetWithDot          { result = Riml::DictGetDotNode.new(val[0], val[1]) }
+  | ListOrDictGet DictGetWithDot                 { result = Riml::DictGetDotNode.new(val[0], val[1]) }
+  | Call DictGetWithDot                          { result = Riml::DictGetDotNode.new(val[0], val[1]) }
+  | '(' ValueExpression ')' DictGetWithDot       { result = Riml::DictGetDotNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
   ;
 
   ListOrDictGet:
-    ValueExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = ListOrDictGetNode.new(val[0], val[1]) }
-  | '(' ValueExpression ')' ListOrDictGetWithBrackets            { result = ListOrDictGetNode.new(WrapInParensNode.new(val[1]), val[3]) }
+    ValueExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = Riml::ListOrDictGetNode.new(val[0], val[1]) }
+  | '(' ValueExpression ')' ListOrDictGetWithBrackets            { result = Riml::ListOrDictGetNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
   ;
 
   ListOrDictGetWithBrackets:
@@ -200,10 +200,10 @@ rule
   ;
 
   SubList:
-    ValueExpression ':' ValueExpression          { result = SublistNode.new([val[0], LiteralNode.new(' : '), val[2]]) }
-  | ValueExpression ':'                          { result = SublistNode.new([val[0], LiteralNode.new(' :')]) }
-  | ':' ValueExpression                          { result = SublistNode.new([LiteralNode.new(': '), val[1]]) }
-  | ':'                                          { result = SublistNode.new([LiteralNode.new(':')]) }
+    ValueExpression ':' ValueExpression          { result = Riml::SublistNode.new([val[0], Riml::LiteralNode.new(' : '), val[2]]) }
+  | ValueExpression ':'                          { result = Riml::SublistNode.new([val[0], Riml::LiteralNode.new(' :')]) }
+  | ':' ValueExpression                          { result = Riml::SublistNode.new([Riml::LiteralNode.new(': '), val[1]]) }
+  | ':'                                          { result = Riml::SublistNode.new([Riml::LiteralNode.new(':')]) }
   ;
 
   DictGetWithDot:
@@ -217,21 +217,21 @@ rule
   ;
 
   Call:
-    Scope DefCallIdentifier '(' ArgList ')'       { result = CallNode.new(val[0], val[1], val[3]) }
-  | DictGet '(' ArgList ')'                       { result = CallNode.new(nil, val[0], val[2]) }
-  | BUILTIN_COMMAND '(' ArgList ')'               { result = CallNode.new(nil, val[0], val[2]) }
-  | BUILTIN_COMMAND ArgList                       { result = CallNode.new(nil, val[0], val[1]) }
-  | CALL '(' ArgList ')'                          { result = ExplicitCallNode.new(nil, nil, val[2]) }
+    Scope DefCallIdentifier '(' ArgList ')'       { result = Riml::CallNode.new(val[0], val[1], val[3]) }
+  | DictGet '(' ArgList ')'                       { result = Riml::CallNode.new(nil, val[0], val[2]) }
+  | BUILTIN_COMMAND '(' ArgList ')'               { result = Riml::CallNode.new(nil, val[0], val[2]) }
+  | BUILTIN_COMMAND ArgList                       { result = Riml::CallNode.new(nil, val[0], val[1]) }
+  | CALL '(' ArgList ')'                          { result = Riml::ExplicitCallNode.new(nil, nil, val[2]) }
   ;
 
   RimlCommand:
-    RIML_COMMAND '(' ArgList ')'                  { result = RimlCommandNode.new(nil, val[0], val[2]) }
-  | RIML_COMMAND ArgList                          { result = RimlCommandNode.new(nil, val[0], val[1]) }
+    RIML_COMMAND '(' ArgList ')'                  { result = Riml::RimlCommandNode.new(nil, val[0], val[2]) }
+  | RIML_COMMAND ArgList                          { result = Riml::RimlCommandNode.new(nil, val[0], val[1]) }
   ;
 
   ExplicitCall:
-    CALL Scope DefCallIdentifier '(' ArgList ')'  { result = ExplicitCallNode.new(val[1], val[2], val[4]) }
-  | CALL DictGet '(' ArgList ')'                  { result = ExplicitCallNode.new(nil, val[1], val[3]) }
+    CALL Scope DefCallIdentifier '(' ArgList ')'  { result = Riml::ExplicitCallNode.new(val[1], val[2], val[4]) }
+  | CALL DictGet '(' ArgList ')'                  { result = Riml::ExplicitCallNode.new(nil, val[1], val[3]) }
   ;
 
   Scope:
@@ -246,65 +246,65 @@ rule
   ;
 
   BinaryOperator:
-    ValueExpression '||' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '&&' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+    ValueExpression '||' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '&&' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '==' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '==#' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '==?' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '==' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '==#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '==?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
   # added by riml
-  | ValueExpression '===' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '===' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '!=' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!=#' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!=?' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '!=' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '!=#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '!=?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '=~' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '=~#' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '=~?' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '=~' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '=~#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '=~?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '!~' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!~#' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!~?' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '!~' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '!~#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '!~?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '>' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>#' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>?' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '>' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '>#' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '>?' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '>=' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>=#' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>=?' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '>=' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '>=#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '>=?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '<' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<#' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<?' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '<' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '<#' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '<?' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '<=' ValueExpression            { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<=#' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<=?' ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '<=' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '<=#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '<=?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '+' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '-' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '*' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '/' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '.' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '%' ValueExpression             { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '+' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '-' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '*' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '/' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '.' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression '%' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression IS    ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression ISNOT ValueExpression           { result = BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression IS    ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | ValueExpression ISNOT ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
   ;
 
   UnaryOperator:
-    '!' ValueExpression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
-  | '+' ValueExpression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
-  | '-' ValueExpression                        { result = UnaryOperatorNode.new(val[0], val[1]) }
+    '!' ValueExpression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
+  | '+' ValueExpression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
+  | '-' ValueExpression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
   ;
 
   # ['=', LHS, RHS]
   Assign:
-    LET AssignExpression                       { result = AssignNode.new(val[1][0], val[1][1], val[1][2]) }
-  | AssignExpression                           { result = AssignNode.new(val[0][0], val[0][1], val[0][2]) }
+    LET AssignExpression                       { result = Riml::AssignNode.new(val[1][0], val[1][1], val[1][2]) }
+  | AssignExpression                           { result = Riml::AssignNode.new(val[0][0], val[0][1], val[0][2]) }
   ;
 
   # ['=', AssignLHS, Expression]
@@ -325,42 +325,42 @@ rule
 
   # retrieving the value of a variable
   VariableRetrieval:
-    Scope IDENTIFIER                           { result = GetVariableNode.new(val[0], val[1]) }
-  | SPECIAL_VAR_PREFIX IDENTIFIER              { result = GetSpecialVariableNode.new(val[0], val[1]) }
-  | ScopeModifierLiteral ListOrDictGetWithBrackets { result = GetVariableByScopeAndDictNameNode.new(val[0], val[1]) }
+    Scope IDENTIFIER                           { result = Riml::GetVariableNode.new(val[0], val[1]) }
+  | SPECIAL_VAR_PREFIX IDENTIFIER              { result = Riml::GetSpecialVariableNode.new(val[0], val[1]) }
+  | ScopeModifierLiteral ListOrDictGetWithBrackets { result = Riml::GetVariableByScopeAndDictNameNode.new(val[0], val[1]) }
   ;
 
   AllVariableRetrieval:
     VariableRetrieval                          { result = val[0] }
-  | Scope CurlyBraceName                       { result = GetCurlyBraceNameNode.new(val[0], val[1]) }
+  | Scope CurlyBraceName                       { result = Riml::GetCurlyBraceNameNode.new(val[0], val[1]) }
   ;
 
   UnletVariable:
-    UNLET VariableRetrieval                    { result = UnletVariableNode.new('!', [ val[1] ]) }
-  | UNLET_BANG VariableRetrieval               { result = UnletVariableNode.new('!', [ val[1] ]) }
+    UNLET VariableRetrieval                    { result = Riml::UnletVariableNode.new('!', [ val[1] ]) }
+  | UNLET_BANG VariableRetrieval               { result = Riml::UnletVariableNode.new('!', [ val[1] ]) }
   | UnletVariable VariableRetrieval            { result = val[0] << val[1] }
   ;
 
   CurlyBraceName:
-    CurlyBraceVarPart                          { result = CurlyBraceVariable.new([ val[0] ]) }
-  | IDENTIFIER CurlyBraceName                  { result = CurlyBraceVariable.new([ CurlyBracePart.new(val[0]), val[1] ]) }
-  | CurlyBraceName IDENTIFIER                  { result = val[0] << CurlyBracePart.new(val[1]) }
+    CurlyBraceVarPart                          { result = Riml::CurlyBraceVariable.new([ val[0] ]) }
+  | IDENTIFIER CurlyBraceName                  { result = Riml::CurlyBraceVariable.new([ Riml::CurlyBracePart.new(val[0]), val[1] ]) }
+  | CurlyBraceName IDENTIFIER                  { result = val[0] << Riml::CurlyBracePart.new(val[1]) }
   | CurlyBraceName CurlyBraceVarPart           { result = val[0] << val[1] }
   ;
 
   CurlyBraceVarPart:
-    '{' PossibleStringValue '}'                     { result = CurlyBracePart.new(val[1]) }
-  | '{' PossibleStringValue CurlyBraceVarPart '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
-  | '{' CurlyBraceVarPart PossibleStringValue '}'   { result = CurlyBracePart.new([val[1], val[2]]) }
+    '{' PossibleStringValue '}'                     { result = Riml::CurlyBracePart.new(val[1]) }
+  | '{' PossibleStringValue CurlyBraceVarPart '}'   { result = Riml::CurlyBracePart.new([val[1], val[2]]) }
+  | '{' CurlyBraceVarPart PossibleStringValue '}'   { result = Riml::CurlyBracePart.new([val[1], val[2]]) }
   ;
 
   # Method definition
   # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType Scope DefCallIdentifier DefKeywords Block END                               { result = Object.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Object.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Object.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType Scope DefCallIdentifier DefKeywords Block END                               { result = Riml.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
+  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   FunctionType:
@@ -371,7 +371,7 @@ rule
 
   DefCallIdentifier:
     # use '' for first argument instead of nil in order to avoid a double scope-modifier
-    CurlyBraceName          { result = GetCurlyBraceNameNode.new('', val[0]) }
+    CurlyBraceName          { result = Riml::GetCurlyBraceNameNode.new('', val[0]) }
   | IDENTIFIER              { result = val[0] }
   ;
 
@@ -391,66 +391,66 @@ rule
   ;
 
   DefaultParam:
-    IDENTIFIER '=' ValueExpression        { result = DefaultParamNode.new(val[0], val[2]) }
+    IDENTIFIER '=' ValueExpression        { result = Riml::DefaultParamNode.new(val[0], val[2]) }
   ;
 
   Return:
-    RETURN ValueExpression                { result = ReturnNode.new(val[1]) }
-  | RETURN                                { result = ReturnNode.new(nil) }
+    RETURN ValueExpression                { result = Riml::ReturnNode.new(val[1]) }
+  | RETURN                                { result = Riml::ReturnNode.new(nil) }
   ;
 
   EndScript:
-    FINISH                                { result = FinishNode.new }
+    FINISH                                { result = Riml::FinishNode.new }
   ;
 
   # [expression, expressions]
   If:
-    IF ValueExpression IfBlock END                    { result = IfNode.new(val[1], val[2]) }
-  | IF ValueExpression THEN ValueExpression END       { result = IfNode.new(val[1], Nodes.new([val[3]])) }
-  | AnyExpression IF ValueExpression                  { result = IfNode.new(val[2], Nodes.new([val[0]])) }
+    IF ValueExpression IfBlock END                    { result = Riml::IfNode.new(val[1], val[2]) }
+  | IF ValueExpression THEN ValueExpression END       { result = Riml::IfNode.new(val[1], Riml::Nodes.new([val[3]])) }
+  | AnyExpression IF ValueExpression                  { result = Riml::IfNode.new(val[2], Riml::Nodes.new([val[0]])) }
   ;
 
   Unless:
-    UNLESS ValueExpression IfBlock END                { result = UnlessNode.new(val[1], val[2]) }
-  | UNLESS ValueExpression THEN ValueExpression END   { result = UnlessNode.new(val[1], Nodes.new([val[3]])) }
-  | ValueExpression UNLESS ValueExpression            { result = UnlessNode.new(val[2], Nodes.new([val[0]])) }
+    UNLESS ValueExpression IfBlock END                { result = Riml::UnlessNode.new(val[1], val[2]) }
+  | UNLESS ValueExpression THEN ValueExpression END   { result = Riml::UnlessNode.new(val[1], Riml::Nodes.new([val[3]])) }
+  | ValueExpression UNLESS ValueExpression            { result = Riml::UnlessNode.new(val[2], Riml::Nodes.new([val[0]])) }
   ;
 
   Ternary:
-    ValueExpression '?' ValueExpression ':' ValueExpression   { result = TernaryOperatorNode.new([val[0], val[2], val[4]]) }
+    ValueExpression '?' ValueExpression ':' ValueExpression   { result = Riml::TernaryOperatorNode.new([val[0], val[2], val[4]]) }
   ;
 
   While:
-    WHILE ValueExpression Block END                 { result = WhileNode.new(val[1], val[2]) }
+    WHILE ValueExpression Block END                 { result = Riml::WhileNode.new(val[1], val[2]) }
   ;
 
   LoopKeyword:
-    BREAK                                      { result = BreakNode.new }
-  | CONTINUE                                   { result = ContinueNode.new }
+    BREAK                                      { result = Riml::BreakNode.new }
+  | CONTINUE                                   { result = Riml::ContinueNode.new }
   ;
 
   Until:
-    UNTIL ValueExpression Block END                 { result = UntilNode.new(val[1], val[2]) }
+    UNTIL ValueExpression Block END                 { result = Riml::UntilNode.new(val[1], val[2]) }
   ;
 
   For:
-    FOR IDENTIFIER IN ValueExpression Block END     { result = ForNode.new(val[1], val[3], val[4]) }
-  | FOR List IN ValueExpression Block END           { result = ForNode.new(val[1], val[3], val[4]) }
-  | FOR ListUnpack IN ValueExpression Block END     { result = ForNode.new(val[1], val[3], val[4]) }
+    FOR IDENTIFIER IN ValueExpression Block END     { result = Riml::ForNode.new(val[1], val[3], val[4]) }
+  | FOR List IN ValueExpression Block END           { result = Riml::ForNode.new(val[1], val[3], val[4]) }
+  | FOR ListUnpack IN ValueExpression Block END     { result = Riml::ForNode.new(val[1], val[3], val[4]) }
   ;
 
   Try:
-    TRY Block END                              { result = TryNode.new(val[1], nil, nil) }
-  | TRY Block Catch END                        { result = TryNode.new(val[1], val[2], nil) }
-  | TRY Block Catch FINALLY Block END          { result = TryNode.new(val[1], val[2], val[4]) }
+    TRY Block END                              { result = Riml::TryNode.new(val[1], nil, nil) }
+  | TRY Block Catch END                        { result = Riml::TryNode.new(val[1], val[2], nil) }
+  | TRY Block Catch FINALLY Block END          { result = Riml::TryNode.new(val[1], val[2], val[4]) }
   ;
 
   Catch:
     /* nothing */                              { result = nil }
-  | CATCH Block                                { result = [ CatchNode.new(nil, val[1]) ] }
-  | CATCH Regexp Block                         { result = [ CatchNode.new(val[1], val[2]) ] }
-  | Catch CATCH Block                          { result = val[0] << CatchNode.new(nil, val[2]) }
-  | Catch CATCH Regexp Block                   { result = val[0] << CatchNode.new(val[2], val[3]) }
+  | CATCH Block                                { result = [ Riml::CatchNode.new(nil, val[1]) ] }
+  | CATCH Regexp Block                         { result = [ Riml::CatchNode.new(val[1], val[2]) ] }
+  | Catch CATCH Block                          { result = val[0] << Riml::CatchNode.new(nil, val[2]) }
+  | Catch CATCH Regexp Block                   { result = val[0] << Riml::CatchNode.new(val[2], val[3]) }
   ;
 
   # [expressions]
@@ -458,7 +458,7 @@ rule
   # itself
   Block:
     NEWLINE Expressions                        { result = val[1] }
-  | NEWLINE                                    { result = Nodes.new([]) }
+  | NEWLINE                                    { result = Riml::Nodes.new([]) }
   ;
 
   IfBlock:
@@ -469,30 +469,30 @@ rule
   ;
 
   ElseBlock:
-    ELSE NEWLINE Expressions                   { result = ElseNode.new(val[2]) }
+    ELSE NEWLINE Expressions                   { result = Riml::ElseNode.new(val[2]) }
   ;
 
   ElseifBlock:
-    ELSEIF ValueExpression NEWLINE Expressions                   { result = Nodes.new([ElseifNode.new(val[1], val[3])]) }
-  | ElseifBlock ELSEIF ValueExpression NEWLINE Expressions       { result = val[0] << ElseifNode.new(val[2], val[4]) }
+    ELSEIF ValueExpression NEWLINE Expressions                   { result = Riml::Nodes.new([Riml::ElseifNode.new(val[1], val[3])]) }
+  | ElseifBlock ELSEIF ValueExpression NEWLINE Expressions       { result = val[0] << Riml::ElseifNode.new(val[2], val[4]) }
   ;
 
   ClassDefinition:
-    CLASS IDENTIFIER Block END                   { result = ClassDefinitionNode.new(val[1], nil, val[2]) }
-  | CLASS IDENTIFIER '<' IDENTIFIER Block END    { result = ClassDefinitionNode.new(val[1], val[3], val[4]) }
+    CLASS IDENTIFIER Block END                   { result = Riml::ClassDefinitionNode.new(val[1], nil, val[2]) }
+  | CLASS IDENTIFIER '<' IDENTIFIER Block END    { result = Riml::ClassDefinitionNode.new(val[1], val[3], val[4]) }
   ;
 
   ObjectInstantiation:
-    NEW Call                  { result = ObjectInstantiationNode.new(val[1]) }
+    NEW Call                  { result = Riml::ObjectInstantiationNode.new(val[1]) }
   ;
 
   Super:
-    SUPER '(' ArgList ')'     { result = SuperNode.new(val[2], true) }
-  | SUPER                     { result = SuperNode.new([], false) }
+    SUPER '(' ArgList ')'     { result = Riml::SuperNode.new(val[2], true) }
+  | SUPER                     { result = Riml::SuperNode.new([], false) }
   ;
 
   ExLiteral:
-    EX_LITERAL                { result = ExLiteralNode.new(val[0])}
+    EX_LITERAL                { result = Riml::ExLiteralNode.new(val[0])}
   ;
 end
 
@@ -507,7 +507,7 @@ end
   attr_accessor :ast_rewriter
 
   # parses tokens or code into output nodes
-  def parse(object, ast_rewriter = AST_Rewriter.new, include_file = nil)
+  def parse(object, ast_rewriter = Riml::AST_Rewriter.new, include_file = nil)
     if tokens?(object)
       @tokens = object
     elsif code?(object)

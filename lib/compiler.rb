@@ -25,7 +25,7 @@ module Riml
       end
 
       def visitor_for_node(node, params={})
-        Compiler.const_get("#{node.class.name}Visitor").new(params)
+        Compiler.const_get("#{node.class.name.split('::').last}Visitor").new(params)
       end
     end
 

@@ -1,5 +1,6 @@
 require File.expand_path('../test_helper', __FILE__)
 
+module Riml
 class BasicParserTest < Riml::TestCase
 
   test "parsing basic method" do
@@ -173,5 +174,5 @@ Riml
 
     assert parse(riml)
   end
-
+end
 end
