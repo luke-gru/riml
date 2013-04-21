@@ -244,7 +244,6 @@ module Riml
         node.scope_modifier = scope_modifier_for_node(node)
       end
 
-      private
       def scope_modifier_for_node(node)
         if node.scope
           if node.scope.function && DefNode === node && !node.defined_on_dictionary?
