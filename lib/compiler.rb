@@ -248,8 +248,10 @@ module Riml
         if node.scope
           if node.scope.function && DefNode === node && !node.defined_on_dictionary?
             return "s:"
+          elsif node.scope.function && GetVariableNode === node && node.scope.function.shadowed_argument_variable_names.include?(node.full_name)
+            return ""
           elsif node.respond_to?(:name) && node.scope.argument_variable_names.include?(node.name) &&
-                !(node.parent && AssignNode === node.parent && node.parent.lhs == node)
+                !(AssignNode === node.parent && node.parent.lhs == node)
             return "a:"
           elsif !node.is_a?(CallNode)
             return ""
@@ -262,6 +264,11 @@ module Riml
 
     class AssignNodeVisitor < ScopedVisitor
       def compile(node)
+        if GetVariableNode === node.lhs && node.scope && (func = node.scope.function)
+          if func.argument_variable_names.include?(node.lhs.full_name)
+            func.shadowed_argument_variable_names << node.lhs.full_name
+          end
+        end
         node.lhs.accept(visitor_for_node(node.lhs, :propagate_up_tree => false))
         node.compiled_output = "let #{node.lhs.compiled_output} #{node.operator} "
         node.rhs.parent_node = node
@@ -277,9 +284,12 @@ module Riml
       def compile(node)
         set_modifier(node)
 
-        if node.scope && node.scope.function? && (splat = node.scope.function.splat)
-          check_for_splat_match!(node, splat)
+        if node.scope && node.scope.function?
+          if splat = node.scope.function.splat
+            check_for_splat_match!(node, splat)
+          end
         end
+
         if node.question_existence?
           node.compiled_output = %Q{exists("#{node.full_name}")}
         else

@@ -59,11 +59,11 @@ endfunction
 function! s:fixindent(str, spc)
   let str = substitute(a:str, '\t', repeat(' ', &sw), 'g')
   let spc = substitute(a:spc, '\t', repeat(' ', &sw), 'g')
-  let str = substitute(a:str, '\(\n\|\%^\).\@=', '\1' . a:spc, 'g')
+  let str = substitute(str, '\(\n\|\%^\).\@=', '\1' . spc, 'g')
   if !&et
-    let str = substitute(a:str, '\s\{' . &ts . '\}', "\t", 'g')
+    let str = substitute(str, '\s\{' . &ts . '\}', "\t", 'g')
   endif
-  return a:str
+  return str
 endfunction
 function! s:process(string)
   let i = 0
@@ -108,11 +108,11 @@ function! s:wrap(string, char, type, ...)
   let newchar = a:char
   let s:tag = ""
   let type = a:type
-  let linemode = a:type ==# 'V' ? 1 : 0
+  let linemode = type ==# 'V' ? 1 : 0
   let special = a:0 ? a:1 : 0
   let before = ""
   let after = ""
-  if a:type ==# "V"
+  if type ==# "V"
     let initspaces = matchstr(keeper, '\%^\s*')
   else
     let initspaces = matchstr(getline('.'), '\%^\s*')
@@ -174,10 +174,10 @@ function! s:wrap(string, char, type, ...)
         let after = '</' . substitute(tag, ' .*', '', '') . '>'
       endif
       if newchar ==# "\<C-T>" || newchar ==# ","
-        if a:type ==# "v" || a:type ==# "V"
+        if type ==# "v" || type ==# "V"
           let before .= "\n\t"
         endif
-        if a:type ==# "v"
+        if type ==# "v"
           let after = "\n" . after
         endif
       endif
@@ -221,7 +221,7 @@ function! s:wrap(string, char, type, ...)
     let after = ''
   endif
   let after = substitute(after, '\n', '\n' . initspaces, 'g')
-  if a:type ==# 'V' || (special && a:type ==# "v")
+  if type ==# 'V' || (special && type ==# "v")
     let before = substitute(before, ' \+$', '', '')
     let after = substitute(after, '^ \+', '', '')
     if after !~# '^\n'
@@ -239,18 +239,18 @@ function! s:wrap(string, char, type, ...)
       endif
     endif
   endif
-  if a:type ==# 'V'
+  if type ==# 'V'
     let before = initspaces.before
   endif
   if before =~# '\n\s*\%$'
-    if a:type ==# 'v'
+    if type ==# 'v'
       let keeper = initspaces.keeper
     endif
     let padding = matchstr(before, '\n\zs\s\+\%$')
     let before = substitute(before, '\n\s\+\%$', '\n', '')
     let keeper = s:fixindent(keeper, padding)
   endif
-  if a:type ==# 'V'
+  if type ==# 'V'
     let keeper = before.keeper.after
   elseif s:type =~# "^\<C-V>"
     let repl = substitute(before, '[\\~]', '\\&', 'g') . '\1' . substitute(after, '[\\~]', '\\&', 'g')
@@ -461,17 +461,17 @@ function! s:opfunc(type, ...)
     return s:beep()
   endif
   let keeper = getreg(reg)
-  if a:type ==# "v" && a:type !=# "v"
+  if type ==# "v" && a:type !=# "v"
     let append = matchstr(keeper, '\_s\@<!\s*$')
     let keeper = substitute(keeper, '\_s\@<!\s*$', '', '')
   endif
-  call setreg(reg, keeper, a:type)
+  call setreg(reg, keeper, type)
   call s:wrapreg(reg, char, a:0 && a:1)
-  if a:type ==# "v" && a:type !=# "v" && append !=# ""
+  if type ==# "v" && a:type !=# "v" && append !=# ""
     call setreg(reg, append, "ac")
   endif
   silent exe 'norm! gv'.(reg == '"' ? '' : '"' . reg).'p`['
-  if a:type ==# 'V' || (getreg(reg) =~# '\n' && a:type ==# 'v')
+  if type ==# 'V' || (getreg(reg) =~# '\n' && type ==# 'v')
     call s:reindent()
   endif
   call setreg(reg, reg_save, reg_type)

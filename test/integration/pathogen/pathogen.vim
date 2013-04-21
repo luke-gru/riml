@@ -128,10 +128,10 @@ command! -bar Helptags :call pathogen#helptags()
 function! pathogen#runtime_findfile(file, count)
   let rtp = pathogen#join(1, pathogen#split(&rtp))
   let file = findfile(a:file, rtp, a:count)
-  if a:file ==# ''
+  if file ==# ''
     return ''
   else
-    return fnamemodify(a:file, ':p')
+    return fnamemodify(file, ':p')
   endif
 endfunction
 function! pathogen#fnameescape(string)
@@ -149,14 +149,14 @@ endif
 function! s:find(count, cmd, file, lcd)
   let rtp = pathogen#join(1, pathogen#split(&runtimepath))
   let file = pathogen#runtime_findfile(a:file, a:count)
-  if a:file ==# ''
+  if file ==# ''
     return "echoerr 'E345: Can''t find file \"" . a:file . "\" in runtimepath'"
   elseif a:lcd
-    let path = a:file[0 : -strlen(a:file) - 2]
+    let path = file[0 : -strlen(a:file) - 2]
     execute 'lcd `=path`'
     return a:cmd . ' ' . pathogen#fnameescape(a:file)
   else
-    return a:cmd . ' ' . pathogen#fnameescape(a:file)
+    return a:cmd . ' ' . pathogen#fnameescape(file)
   endif
 endfunction
 function! s:Findcomplete(A, L, P)

@@ -627,22 +627,22 @@ function! nerdtree#saveScreenState()
 endfunction
 function! nerdtree#stripMarkupFromLine(line, removeLeadingSpaces)
   let line = a:line
-  let line = substitute(a:line, nerdtree#treeMarkupReg(), "", "")
-  let line = substitute(a:line, ' \[RO\]', "", "")
-  let line = substitute(a:line, ' {[^}]*}', "", "")
-  let line = substitute(a:line, '*\ze\($\| \)', "", "")
+  let line = substitute(line, nerdtree#treeMarkupReg(), "", "")
+  let line = substitute(line, ' \[RO\]', "", "")
+  let line = substitute(line, ' {[^}]*}', "", "")
+  let line = substitute(line, '*\ze\($\| \)', "", "")
   let wasdir = 0
-  if a:line =~# '/$'
+  if line =~# '/$'
     let wasdir = 1
   endif
-  let line = substitute(a:line, ' -> .*', "", "")
+  let line = substitute(line, ' -> .*', "", "")
   if wasdir ==# 1
-    let line = substitute(a:line, '/\?$', '/', "")
+    let line = substitute(line, '/\?$', '/', "")
   endif
   if a:removeLeadingSpaces
-    let line = substitute(a:line, '^ *', '', '')
+    let line = substitute(line, '^ *', '', '')
   endif
-  return a:line
+  return line
 endfunction
 function! s:activateAll()
   if getline(".") ==# nerdtree#treeUpDirLine()
@@ -885,11 +885,11 @@ function! s:refreshRoot()
 endfunction
 function! s:refreshCurrent(node)
   let node = a:node
-  if !a:node.path.isDirectory
-    let node = a:node.parent
+  if !node.path.isDirectory
+    let node = node.parent
   endif
   call nerdtree#echo("Refreshing node. This could take a while...")
-  call a:node.refresh()
+  call node.refresh()
   call nerdtree#renderView()
   redraw
   call nerdtree#echo("Refreshing node. This could take a while... DONE")
