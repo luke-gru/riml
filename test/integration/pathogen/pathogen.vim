@@ -92,7 +92,7 @@ function! pathogen#runtime_prepend_subdirectories(path)
   let before = filter(pathogen#glob_directories(a:path . sep . "*"), '!pathogen#is_disabled(v:val)')
   let after = filter(pathogen#glob_directories(a:path . sep . "*" . sep . "after"), '!pathogen#is_disabled(v:val[0:-7])')
   let rtp = pathogen#split(&rtp)
-  let a:path = expand(a:path)
+  let path = expand(a:path)
   call filter(rtp, 'v:val[0:strlen(path)-1] !=# path')
   let &rtp = pathogen#join(pathogen#uniq(before + rtp + after))
   return &rtp
@@ -127,7 +127,7 @@ endfunction
 command! -bar Helptags :call pathogen#helptags()
 function! pathogen#runtime_findfile(file, count)
   let rtp = pathogen#join(1, pathogen#split(&rtp))
-  let a:file = findfile(a:file, rtp, a:count)
+  let file = findfile(a:file, rtp, a:count)
   if a:file ==# ''
     return ''
   else
@@ -148,7 +148,7 @@ if exists(':Vedit')
 endif
 function! s:find(count, cmd, file, lcd)
   let rtp = pathogen#join(1, pathogen#split(&runtimepath))
-  let a:file = pathogen#runtime_findfile(a:file, a:count)
+  let file = pathogen#runtime_findfile(a:file, a:count)
   if a:file ==# ''
     return "echoerr 'E345: Can''t find file \"" . a:file . "\" in runtimepath'"
   elseif a:lcd

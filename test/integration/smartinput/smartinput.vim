@@ -138,7 +138,7 @@ function! s:decode_key_notation(s)
 endfunction
 function! s:find_the_most_proper_rule_in_command_line_mode(nrules, char, cl_text, cl_column, cl_type)
   let column = a:cl_column - 1
-  let a:cl_text = (column ==# 0 ? '' : a:cl_text[: (column - 1)]) . s:UNTYPABLE_CHAR . a:cl_text[(column) :]
+  let cl_text = (column ==# 0 ? '' : a:cl_text[: (column - 1)]) . s:UNTYPABLE_CHAR . a:cl_text[(column) :]
   for nrule in a:nrules
     if stridx(nrule.mode, a:cl_type) ==# -1
       continue

@@ -249,7 +249,8 @@ module Riml
         if node.scope
           if node.scope.function && DefNode === node && !node.defined_on_dictionary?
             return "s:"
-          elsif node.respond_to?(:name) && node.scope.argument_variable_names.include?(node.name)
+          elsif node.respond_to?(:name) && node.scope.argument_variable_names.include?(node.name) &&
+                !(node.parent && AssignNode === node.parent && node.parent.lhs == node)
             return "a:"
           elsif !node.is_a?(CallNode)
             return ""

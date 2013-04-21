@@ -29,13 +29,13 @@ module Riml
       BUFFER_WRITE_LOCK.synchronize do
         stream = self.class.stream
         buffer.each { |w| stream.puts WARNING_FMT % w }
-        clear
+        buffer.clear
         stream.flush
       end
     end
 
     def clear
-      buffer.clear
+      BUFFER_WRITE_LOCK.synchronize { buffer.clear }
     end
 
   end

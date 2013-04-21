@@ -57,11 +57,11 @@ function! s:extractafter(str)
   endif
 endfunction
 function! s:fixindent(str, spc)
-  let a:str = substitute(a:str, '\t', repeat(' ', &sw), 'g')
-  let a:spc = substitute(a:spc, '\t', repeat(' ', &sw), 'g')
-  let a:str = substitute(a:str, '\(\n\|\%^\).\@=', '\1' . a:spc, 'g')
+  let str = substitute(a:str, '\t', repeat(' ', &sw), 'g')
+  let spc = substitute(a:spc, '\t', repeat(' ', &sw), 'g')
+  let str = substitute(a:str, '\(\n\|\%^\).\@=', '\1' . a:spc, 'g')
   if !&et
-    let a:str = substitute(a:str, '\s\{' . &ts . '\}', "\t", 'g')
+    let str = substitute(a:str, '\s\{' . &ts . '\}', "\t", 'g')
   endif
   return a:str
 endfunction
@@ -107,7 +107,7 @@ function! s:wrap(string, char, type, ...)
   let keeper = a:string
   let newchar = a:char
   let s:tag = ""
-  let a:type = a:type
+  let type = a:type
   let linemode = a:type ==# 'V' ? 1 : 0
   let special = a:0 ? a:1 : 0
   let before = ""
@@ -433,13 +433,13 @@ function! s:opfunc(type, ...)
   set clipboard-=unnamed clipboard-=unnamedplus
   let reg_save = getreg(reg)
   let reg_type = getregtype(reg)
-  let a:type = a:type
+  let type = a:type
   if a:type ==# "char"
     silent exe 'norm! v`[o`]"'.reg.'y'
-    let a:type = 'v'
+    let type = 'v'
   elseif a:type ==# "line"
     silent exe 'norm! `[V`]"'.reg.'y'
-    let a:type = 'V'
+    let type = 'V'
   elseif a:type ==# "v" || a:type ==# "V" || a:type ==# "\<C-V>"
     let &selection = sel_save
     let ve = &virtualedit
@@ -449,7 +449,7 @@ function! s:opfunc(type, ...)
     silent exe 'norm! gv"'.reg.'y'
     let &virtualedit = ve
   elseif a:type =~# '^\d\+$'
-    let a:type = 'v'
+    let type = 'v'
     silent exe 'norm! ^v'.a:type.'$h"'.reg.'y'
     if mode() ==# 'v'
       norm! v

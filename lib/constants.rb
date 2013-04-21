@@ -36,10 +36,10 @@ module Riml
     # :help registers
     REGISTERS = [
       '"',
-      (0..9).to_a.map(&:to_s),
+      ('0'..'9').to_a,
       '-',
-      ('a'..'z').to_a.map(&:to_s),
-      ('A'..'Z').to_a.map(&:to_s),
+      ('a'..'z').to_a,
+      ('A'..'Z').to_a,
       ':', '.', '%', '#',
       '=',
       '*', '+', '~',

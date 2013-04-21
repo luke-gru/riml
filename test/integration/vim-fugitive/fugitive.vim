@@ -84,7 +84,7 @@ autocmd User Fugitive call s:define_commands()
 augroup END
 let s:abstract_prototype = {}
 function! fugitive#is_git_dir(path) abort
-  let a:path = s:sub(a:path, '[\/]$', '') . '/'
+  let path = s:sub(a:path, '[\/]$', '') . '/'
   return isdirectory(a:path . 'objects') && isdirectory(a:path . 'refs') && getfsize(a:path . 'HEAD') ># 10
 endfunction
 function! fugitive#extract_git_dir(path) abort
@@ -287,7 +287,7 @@ function! s:repo_rev_parse(rev) dict abort
 endfunction
 call s:add_methods('repo', ['git_command', 'git_chomp', 'git_chomp_in_tree', 'rev_parse'])
 function! s:repo_dirglob(base) dict abort
-  let a:base = s:sub(a:base, '^/', '')
+  let base = s:sub(a:base, '^/', '')
   let matches = split(glob(self.tree(s:gsub(a:base, '/', '*&') . '*/')), "\n")
   call map(matches, 'v:val[ strlen(self.tree())+(a:base !~ "^/") : -1 ]')
   return matches
@@ -302,7 +302,7 @@ function! s:repo_superglob(base) dict abort
       let results += heads
     endif
     if !self.bareself.bare()
-      let a:base = s:sub(a:base, '^/', '')
+      let base = s:sub(a:base, '^/', '')
       let matches = split(glob(self.tree(s:gsub(a:base, '/', '*&') . '*')), "\n")
       call map(matches, 's:shellslash(v:val)')
       call map(matches, 'v:val !~ "/$" && isdirectory(v:val) ? v:val."/" : v:val')
@@ -526,7 +526,7 @@ function! s:Git(bang, cmd) abort
   if has('gui_running') && !has('win32')
     let git .= ' --no-pager'
   endif
-  let a:cmd = matchstr(a:cmd, '\v\C.{-}%($|\\@<!%(\\\\)*\|)@=')
+  let cmd = matchstr(a:cmd, '\v\C.{-}%($|\\@<!%(\\\\)*\|)@=')
   call s:ExecuteInTree('!' . git . ' ' . a:cmd)
   call fugitive#reload_status()
   return matchstr(a:cmd, '\v\C\\@<!%(\\\\)*\|\zs.*')
@@ -601,14 +601,14 @@ function! fugitive#reload_status() abort
 endfunction
 function! s:stage_info(lnum) abort
   let filename = matchstr(getline(a:lnum), '^#\t\zs.\{-\}\ze\%( ([^()[:digit:]]\+)\)\=$')
-  let a:lnum = a:lnum
+  let lnum = a:lnum
   if has('multi_byte_encoding')
     let colon = '\%(:\|\%uff1a\)'
   else
     let colon = ':'
   endif
   while a:lnum && getline(a:lnum) !~# colon . '$'
-    let a:lnum -= 1
+    let lnum -= 1
   endwhile
   if !s:lnum
     return ['', '']
@@ -832,13 +832,13 @@ function! s:Commit(args) abort
       let errors = readfile(errorfile)
       let error = get(errors, -2, get(errors, -1, '!'))
       if error =~# '\<false''\=\.$'
-        let a:args = a:args
-        let a:args = s:gsub(a:args, '%(%(^| )-- )@<!%(^| )@<=%(-[es]|--edit|--interactive|--signoff)%($| )', '')
-        let a:args = s:gsub(a:args, '%(%(^| )-- )@<!%(^| )@<=%(-F|--file|-m|--message)%(\s+|\=)%(''[^'']*''|"%(\\.|[^"])*"|\\.|\S)*', '')
-        let a:args = s:gsub(a:args, '%(^| )@<=[%#]%(:\w)*', '\=expand(submatch(0))')
-        let a:args = '-F ' . s:shellesc(msgfile) . ' ' . a:args
+        let args = a:args
+        let args = s:gsub(a:args, '%(%(^| )-- )@<!%(^| )@<=%(-[es]|--edit|--interactive|--signoff)%($| )', '')
+        let args = s:gsub(a:args, '%(%(^| )-- )@<!%(^| )@<=%(-F|--file|-m|--message)%(\s+|\=)%(''[^'']*''|"%(\\.|[^"])*"|\\.|\S)*', '')
+        let args = s:gsub(a:args, '%(^| )@<=[%#]%(:\w)*', '\=expand(submatch(0))')
+        let args = '-F ' . s:shellesc(msgfile) . ' ' . a:args
         if a:args !~# '\%(^\| \)--cleanup\>'
-          let a:args = '--cleanup=strip ' . a:args
+          let args = '--cleanup=strip ' . a:args
         endif
         if bufname('%') ==# '' && line('$') ==# 1 && getline(1) ==# '' && !&mod
           execute 'keepalt edit ' . s:fnameescape(msgfile)
@@ -937,18 +937,18 @@ function! s:Log(cmd, ...)
   if path =~# '^/\.git\%(/\|$\)' || index(a:000, '--') !=# -1
     let path = ''
   endif
-  let a:cmd = ['--no-pager', 'log', '--no-color']
-  let a:cmd += ['--pretty=format:fugitive://' . s:repo() . s:dir() . '//%H' . path . '::' . g:fugitive_summary_format]
+  let cmd = ['--no-pager', 'log', '--no-color']
+  let cmd += ['--pretty=format:fugitive://' . s:repo() . s:dir() . '//%H' . path . '::' . g:fugitive_summary_format]
   if empty(filter(a:000[0 : index(a:000, '--')], 'v:val !~# "^-"'))
     if s:buffer() . s:commit() =~# '\x\{40\}'
-      let a:cmd += [s:buffer() . s:commit()]
+      let cmd += [s:buffer() . s:commit()]
     elseif s:buffer() . s:path() =~# '^\.git/refs/\|^\.git/.*HEAD$'
-      let a:cmd += [s:buffer() . s:path()[5 : -1]]
+      let cmd += [s:buffer() . s:path()[5 : -1]]
     endif
   endif
-  let a:cmd += map(copy(a:000), 's:sub(v:val,"^\\%(%(:\\w)*)","\\=fnamemodify(s:buffer().path(),submatch(1))")')
+  let cmd += map(copy(a:000), 's:sub(v:val,"^\\%(%(:\\w)*)","\\=fnamemodify(s:buffer().path(),submatch(1))")')
   if path =~# '/.'
-    let a:cmd += ['--', path[1 : -1]]
+    let cmd += ['--', path[1 : -1]]
   endif
   let grepformat = &grepformat
   let grepprg = &grepprg
@@ -1371,11 +1371,11 @@ function! s:Diff(bang, ...)
 endfunction
 function! s:Move(force, destination)
   if a:destination =~# '^/'
-    let a:destination = a:destination[1 : -1]
+    let destination = a:destination[1 : -1]
   else
-    let a:destination = fnamemodify(s:sub(a:destination, '[%#]%(:\w)*', '\=expand(submatch(0))'), ':p')
+    let destination = fnamemodify(s:sub(a:destination, '[%#]%(:\w)*', '\=expand(submatch(0))'), ':p')
     if a:destination[0 : strlen(s:repo() . s:tree())] ==# s:repo() . s:tree('')
-      let a:destination = a:destination[strlen(s:repo() . s:tree('')) : -1]
+      let destination = a:destination[strlen(s:repo() . s:tree('')) : -1]
     endif
   endif
   if isdirectory(s:buffer() . s:spec())
@@ -1386,9 +1386,9 @@ function! s:Move(force, destination)
     let v:errmsg = 'fugitive: ' . message
     return 'echoerr v:errmsg'
   endif
-  let a:destination = s:repo() . s:tree(a:destination)
+  let destination = s:repo() . s:tree(a:destination)
   if isdirectory(a:destination)
-    let a:destination = fnamemodify(s:sub(a:destination, '/$', '') . '/' . expand('%:t'), ':.')
+    let destination = fnamemodify(s:sub(a:destination, '/$', '') . '/' . expand('%:t'), ':.')
   endif
   call fugitive#reload_status()
   if s:buffer() . s:commit() ==# ''
@@ -1552,7 +1552,7 @@ function! s:Blame(bang, line1, line2, count, args) abort
   endtry
 endfunction
 function! s:BlameCommit(cmd) abort
-  let a:cmd = s:Edit(a:cmd, 0, matchstr(getline('.'), '\x\+'))
+  let cmd = s:Edit(a:cmd, 0, matchstr(getline('.'), '\x\+'))
   if a:cmd =~# '^echoerr'
     return a:cmd
   endif
@@ -1744,13 +1744,13 @@ function! s:Browse(bang, line1, count, ...) abort
   endtry
 endfunction
 function! s:github_url(repo, url, rev, commit, path, type, line1, line2) abort
-  let a:path = a:path
+  let path = a:path
   let domain_pattern = 'github\.com'
   let domains = exists('g:fugitive_github_domains') ? g:fugitive_github_domains : []
   for domain in domains
     let domain_pattern .= '\|' . escape(split(domain, '://')[-1], '.')
   endfor
-  let a:repo = matchstr(a:url, '^\%(https\=://\|git://\|git@\)\zs\(' . domain_pattern . '\)[/:].\{-\}\ze\%(\.git\)\=$')
+  let repo = matchstr(a:url, '^\%(https\=://\|git://\|git@\)\zs\(' . domain_pattern . '\)[/:].\{-\}\ze\%(\.git\)\=$')
   if a:repo ==# ''
     return ''
   endif
@@ -1774,30 +1774,30 @@ function! s:github_url(repo, url, rev, commit, path, type, line1, line2) abort
     return root
   endif
   if a:rev =~# '^[[:alnum:]._-]\+:'
-    let a:commit = matchstr(a:rev, '^[^:]*')
+    let commit = matchstr(a:rev, '^[^:]*')
   elseif a:commit =~# '^\d\=$'
     let local = matchstr(a:repo.head_ref(), '\<refs/heads/\zs.*')
-    let a:commit = a:repo.git_chomp('config', 'branch.' . local . '.merge')[11 : -1]
+    let commit = a:repo.git_chomp('config', 'branch.' . local . '.merge')[11 : -1]
     if a:commit ==# ''
-      let a:commit = local
+      let commit = local
     endif
   else
-    let a:commit = a:commit
+    let commit = a:commit
   endif
   if a:type ==# 'tree'
-    let a:url = s:sub(root . '/tree/' . a:commit . '/' . a:path, '/$', '')
+    let url = s:sub(root . '/tree/' . a:commit . '/' . a:path, '/$', '')
   elseif a:type ==# 'blob'
-    let a:url = root . '/blob/' . a:commit . '/' . a:path
+    let url = root . '/blob/' . a:commit . '/' . a:path
     if a:line2 ># 0 && a:line1 ==# a:line2
-      let a:url .= '#L' . a:line1
+      let url .= '#L' . a:line1
     elseif a:line2 ># 0
-      let a:url .= '#L' . a:line1 . '-' . a:line2
+      let url .= '#L' . a:line1 . '-' . a:line2
     endif
   elseif a:type ==# 'tag'
-    let a:commit = matchstr(getline(3), '^tag \zs.*')
-    let a:url = root . '/tree/' . a:commit
+    let commit = matchstr(getline(3), '^tag \zs.*')
+    let url = root . '/tree/' . a:commit
   else
-    let a:url = root . '/commit/' . a:commit
+    let url = root . '/commit/' . a:commit
   endif
   return a:url
 endfunction
