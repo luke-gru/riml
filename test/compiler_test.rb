@@ -2098,5 +2098,77 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "shadowed argument variable, simple" do
+    riml = <<Riml
+def func(arg)
+  arg = arg
+  echo arg
+end
+Riml
+
+    expected = <<Viml
+function! s:func(arg)
+  let arg = a:arg
+  echo arg
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "don't shadow argument when assigning key-value pair to argument variable dictionary (bracket syntax)" do
+    riml = <<Riml
+def func(arg, idx)
+  arg[idx] = 'omg'
+  echo arg[idx]
+end
+Riml
+
+    expected = <<Viml
+function! s:func(arg, idx)
+  let a:arg[a:idx] = 'omg'
+  echo a:arg[a:idx]
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "don't shadow argument when assigning key-value pair to argument variable dictionary (dot syntax)" do
+    riml = <<Riml
+def func(arg)
+  arg.msg = 'omg'
+  echo arg.msg
+end
+Riml
+
+    expected = <<Viml
+function! s:func(arg)
+  let a:arg.msg = 'omg'
+  echo a:arg.msg
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "shadowed argument variable with dictionary" do
+    riml = <<Riml
+def func(dict)
+  dict = dict
+  echo dict.echoMsg
+end
+Riml
+
+    expected = <<Viml
+function! s:func(dict)
+  let dict = a:dict
+  echo dict.echoMsg
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

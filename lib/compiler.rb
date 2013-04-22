@@ -248,7 +248,8 @@ module Riml
         if node.scope
           if node.scope.function && DefNode === node && !node.defined_on_dictionary?
             return "s:"
-          elsif node.scope.function && GetVariableNode === node && node.scope.function.shadowed_argument_variable_names.include?(node.full_name)
+          elsif node.scope.function && GetVariableNode === node &&
+                node.scope.function.shadowed_argument?(node.full_name)
             return ""
           elsif node.respond_to?(:name) && node.scope.argument_variable_names.include?(node.name) &&
                 !(AssignNode === node.parent && node.parent.lhs == node)
@@ -264,18 +265,36 @@ module Riml
 
     class AssignNodeVisitor < ScopedVisitor
       def compile(node)
+        first_shadow = nil
+
         if GetVariableNode === node.lhs && node.scope && (func = node.scope.function)
           if func.argument_variable_names.include?(node.lhs.full_name)
-            func.shadowed_argument_variable_names << node.lhs.full_name
+            if !func.shadowed_argument_variable_names.include?(node.lhs.full_name)
+              first_shadow = true
+            end
           end
         end
-        node.lhs.accept(visitor_for_node(node.lhs, :propagate_up_tree => false))
-        node.compiled_output = "let #{node.lhs.compiled_output} #{node.operator} "
-        node.rhs.parent_node = node
-        node.rhs.accept(visitor_for_node(node.rhs))
+
+        lhs = visit_lhs(node)
+        rhs = visit_rhs(node)
+        if first_shadow
+          func.shadowed_argument_variable_names << node.lhs.full_name
+        end
+
+        node.compiled_output = "#{lhs}#{rhs}"
         node.compiled_output = "unlet! #{node.lhs.compiled_output}" if node.rhs.compiled_output == 'nil'
         node.force_newline = true
         node.compiled_output
+      end
+
+      def visit_lhs(node)
+        node.lhs.accept(visitor_for_node(node.lhs, :propagate_up_tree => false))
+        "let #{node.lhs.compiled_output} #{node.operator} "
+      end
+
+      def visit_rhs(node)
+        node.rhs.accept(visitor_for_node(node.rhs, :propagate_up_tree => false))
+        node.rhs.compiled_output
       end
     end
 

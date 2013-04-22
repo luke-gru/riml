@@ -552,8 +552,12 @@ module Riml
       parameters.reject(&SPLAT)
     end
 
+    def shadowed_argument?(var_name)
+      shadowed_argument_variable_names.include?(var_name)
+    end
+
     def shadowed_argument_variable_names
-      @shadowed_argument_variable_names ||= []
+      @shadowed_argument_variable_names ||= Set.new
     end
 
     def nested_within
