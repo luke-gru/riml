@@ -27,12 +27,15 @@ Riml
     expected = <<Viml
 source file1.vim
 Viml
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
-      with_file_cleanup("file1.vim") do
-        assert_equal expected, compile(riml)
-        file1_vim = File.join(Riml.source_path, "file1.vim")
-        assert File.exists?(file1_vim)
-        assert_equal Riml::FILE_HEADER + File.read("./file1_expected.vim"), File.read(file1_vim)
+    cwd = File.expand_path("../", __FILE__)
+    with_riml_source_path(cwd) do
+      Dir.chdir(cwd) do
+        with_file_cleanup("file1.vim") do
+          assert_equal expected, compile(riml)
+          file1_vim = File.join(Riml.source_path.first, "file1.vim")
+          assert File.exists?(file1_vim)
+          assert_equal Riml::FILE_HEADER + File.read("./file1_expected.vim"), File.read(file1_vim)
+        end
       end
     end
   end
@@ -59,12 +62,14 @@ endfunction
 source faster_car.vim
 Viml
 
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
-      with_file_cleanup("faster_car.vim") do
-        assert_equal expected, compile(riml)
-        faster_car_vim = File.join(Riml.source_path, "faster_car.vim")
-        assert File.exists?(faster_car_vim)
-        assert_equal Riml::FILE_HEADER + File.read("./faster_car_expected.vim"), File.read(faster_car_vim)
+    cwd = File.expand_path("../", __FILE__)
+    with_riml_source_path(cwd) do
+      Dir.chdir(cwd) do
+        with_file_cleanup("faster_car.vim") do
+          assert_equal expected, compile(riml)
+          assert File.exists?("faster_car.vim")
+          assert_equal Riml::FILE_HEADER + File.read("faster_car_expected.vim"), File.read("faster_car.vim")
+        end
       end
     end
 
@@ -107,16 +112,16 @@ function! g:CarConstructor(...)
 endfunction
 Viml
 
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
       assert_equal expected, compile(riml)
-      faster_car_vim = File.join(Riml.source_path, "faster_car.vim")
+      faster_car_vim = File.join(Riml.include_path.first, "faster_car.vim")
       refute File.exists?(faster_car_vim)
     end
   end
 
   test "riml_include raises ClassNotFound if class referenced in included file is undefined" do
     riml = "riml_include 'faster_car.riml'"
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
       assert_raises(Riml::ClassNotFound) do
         compile(riml)
       end
@@ -139,7 +144,7 @@ function! g:Lib1Constructor()
   return lib1Obj
 endfunction
 Riml
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
       assert_equal expected, compile(riml)
     end
   end
@@ -150,14 +155,14 @@ Riml
 " included: 'riml_include_loop1.riml'
 " included: 'riml_include_loop2.riml'
 Viml
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
       assert_equal expected, compile(riml)
     end
   end
 
   test "riml_include raises error when including itself" do
     riml = %Q(riml_include 'riml_include_self.riml')
-    with_riml_source_path(File.expand_path("../", __FILE__)) do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
       assert_raises(Riml::UserArgumentError) do
         compile(riml)
       end
@@ -207,8 +212,22 @@ RIML
     with_riml_source_path(File.expand_path("../", __FILE__)) do
       with_file_cleanup('sourced1.vim', 'sourced2.vim') do
         assert_equal expected, compile(riml)
-        assert File.exists?('sourced1.vim')
-        assert File.exists?('sourced2.vim')
+        assert File.exists?(File.join(Riml.source_path.first, 'sourced1.vim'))
+        assert File.exists?(File.join(Riml.source_path.first, 'sourced2.vim'))
+      end
+    end
+  end
+
+  test "Riml.source_path looks up files in source_path order" do
+    riml = <<RIML
+riml_source 'sourced1.riml'
+RIML
+    expected = "source sourced1.vim\n"
+    with_riml_source_path(File.expand_path("../test_source_path", __FILE__), File.expand_path("../", __FILE__)) do
+      with_file_cleanup('sourced2.vim', 'sourced1.vim') do
+        assert_equal expected, compile(riml)
+        assert File.exists?(File.join(Riml.source_path.first, 'sourced2.vim')) # in test_source_path dir
+        assert File.exists?(File.join(Riml.source_path[1], 'sourced1.vim'))
       end
     end
   end

@@ -557,8 +557,8 @@ module Riml
       def compile(node)
         if node.name == 'riml_source'
           node.name = 'source'
-          node.each_existing_file! do |file|
-            root_node(node).current_compiler.compile_queue << file
+          node.each_existing_file! do |basename, full_path|
+            root_node(node).current_compiler.compile_queue << full_path
           end
         elsif node.name == 'riml_include'
           # riml_include has to be top-level
@@ -566,10 +566,9 @@ module Riml
             error_msg = %Q(riml_include error, has to be called at top-level)
             raise IncludeNotTopLevel, error_msg
           end
-          node.each_existing_file! do |file|
-            full_path = File.join(Riml.source_path, file)
+          node.each_existing_file! do |basename, full_path|
             riml_src = File.read(full_path)
-            node.compiled_output << root_node(node).current_compiler.compile_include(riml_src, file)
+            node.compiled_output << root_node(node).current_compiler.compile_include(riml_src, basename)
           end
           return node.compiled_output
         end

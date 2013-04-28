@@ -97,20 +97,26 @@ EOS
       Riml.compile(input)
     end
 
-    def with_riml_source_path(path)
-      old = Riml.source_path
-      Riml.source_path = path
-      Dir.chdir(path) { yield }
-    ensure
-      Riml.source_path = old
+    %w(source_path include_path).each do |path|
+      define_method "with_riml_#{path}" do |*new_paths, &block|
+        begin
+          old_path = Riml.send(path)
+          Riml.send("#{path}=", new_paths)
+          block.call
+        ensure
+          Riml.send("#{path}=", old_path)
+        end
+      end
     end
 
     def with_file_cleanup(*file_names)
       yield
     ensure
       file_names.each do |name|
-        full_path = File.join(Riml.source_path, name)
-        File.delete(full_path) if File.exists?(full_path)
+        Riml.source_path.each do |path|
+          full_path = File.join(path, name)
+          File.delete(full_path) if File.exists?(full_path)
+        end
       end
     end
   end

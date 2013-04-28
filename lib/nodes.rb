@@ -355,24 +355,36 @@ module Riml
       end
     end
 
+    # yields full file path for each existing file found in Riml.source_path
     def each_existing_file!
-      files = []
+      files = {}
       arguments.map(&:value).each do |file|
-        if File.exists?(File.join(Riml.source_path, file))
-          files << file
+        if base_path = paths.detect do |path|
+             full = File.join(path, file)
+             File.exists?(full)
+           end
+          files[file] = File.join(base_path, file)
         else
           raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
-            "source path (#{Riml.source_path.inspect})"
+            "#{name.upcase}_PATH (#{paths.join(':').inspect})"
         end
       end
-      return unless block_given?
+      return files.values unless block_given?
       # all files exist
-      files.each do |f|
+      files.each do |basename, full_path|
         begin
-          yield f
+          yield basename, full_path
         rescue Riml::IncludeFileLoop
-          arguments.delete_if { |arg| arg.value == f }
+          arguments.delete_if { |arg| arg.value == basename }
         end
+      end
+    end
+
+    def paths
+      if name == 'riml_include'
+        Riml.include_path
+      else
+        Riml.source_path
       end
     end
   end

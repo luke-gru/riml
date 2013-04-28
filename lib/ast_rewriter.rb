@@ -68,7 +68,7 @@ module Riml
       old_ast = ast
       ast.children.each do |node|
         next unless RimlCommandNode === node && node.name == 'riml_include'
-        node.each_existing_file! do |file|
+        node.each_existing_file! do |file, fullpath|
           if from_file && @included_file_refs[file] == from_file
             msg = "#{from_file.inspect} can't include #{file.inspect}, as " \
                   " #{file.inspect} already included #{from_file.inspect}"
@@ -77,8 +77,7 @@ module Riml
             raise UserArgumentError, "#{file.inspect} can't include itself"
           end
           @included_file_refs[from_file] = file
-          full_path = File.join(Riml.source_path, file)
-          riml_src = File.read(full_path)
+          riml_src = File.read(fullpath)
           # recursively parse included files with this ast_rewriter in order
           # to pick up any classes that are defined there
           rewritten_ast = Parser.new.parse(riml_src, self, file)

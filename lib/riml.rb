@@ -1,3 +1,5 @@
+require 'pathname'
+
 require File.expand_path('../environment', __FILE__)
 require 'nodes'
 require 'lexer'
@@ -12,11 +14,11 @@ module Riml
   end
 
   # parse code (or tokens) into nodes
-  def self.parse(input, ast_rewriter = AST_Rewriter.new)
+  def self.parse(input, ast_rewriter = AST_Rewriter.new, filename = nil)
     unless input.is_a?(Array) || input.is_a?(String)
       raise ArgumentError, "input must be tokens or code, is #{input.class}"
     end
-    Parser.new.parse(input, ast_rewriter)
+    Parser.new.parse(input, ast_rewriter, filename)
   end
 
   # compile nodes (or tokens or code or file) into output code
@@ -27,7 +29,7 @@ module Riml
       nodes = parser.parse(input)
     elsif input.is_a?(File)
       source = input.read
-      nodes = parser.parse(source)
+      nodes = parser.parse(source, AST_Rewriter.new, input.path)
     else
       raise ArgumentError, "input must be nodes, tokens, code or file, is #{input.class}"
     end
@@ -74,10 +76,19 @@ module Riml
   end
 
   def self.source_path
-    @source_path ||= Dir.getwd
+    get_path(:source_path)
   end
+
   def self.source_path=(path)
-    @source_path = path
+    set_path(:source_path, path)
+  end
+
+  def self.include_path
+    get_path(:include_path)
+  end
+
+  def self.include_path=(path)
+    set_path(:include_path, path)
   end
 
   def self.warn(warning)
@@ -103,6 +114,32 @@ module Riml
     @warning_buffer ||= WarningBuffer.new
   end
 
+  def self.set_path(name, path)
+    return instance_variable_set("@#{name}", nil) if path.nil?
+    path = path.split(':') if path.is_a?(String)
+    path.each do |dir|
+      unless Dir.exists?(dir)
+        raise UserArgumentError, "Error trying to set #{name.to_s}. " \
+          "Directory #{dir.inspect} doesn't exist"
+      end
+    end
+    instance_variable_set("@#{name}", path)
+  end
+  self.source_path  = nil  # eliminate ivar warnings
+  self.include_path = nil  # eliminate ivar warnings
+
+  def self.get_path(name)
+    ivar = instance_variable_get("@#{name}")
+    return ivar if ivar
+    # RIML_INCLUDE_PATH or RIML_SOURCE_PATH
+    val = if (path = ENV["RIML_#{name.to_s.upcase}"])
+      path
+    else
+      [Dir.getwd]
+    end
+    set_path(name, val)
+  end
+
   def self.threaded_compile_files(*filenames)
     threads = []
     filenames.each do |fname|
@@ -116,10 +153,10 @@ module Riml
 
   # This is for when another file is sourced within a file we're compiling.
   def self.process_compile_queue!(compiler)
-    while filename = compiler.compile_queue.shift
-      unless compiler.sourced_files_compiled.include?(filename)
-        compiler.sourced_files_compiled << filename
-        compile(File.open(File.join(Riml.source_path, filename)), compiler.parser, compiler)
+    while full_path = compiler.compile_queue.shift
+      unless compiler.sourced_files_compiled.include?(full_path)
+        compiler.sourced_files_compiled << full_path
+        compile(File.open(full_path), compiler.parser, compiler)
       end
     end
   end
@@ -128,11 +165,16 @@ module Riml
   INCLUDE_COMMENT_FMT = File.read(File.expand_path("../included.vim", __FILE__))
 
   def self.write_file(output, fname)
-    file_basename = File.basename(fname)
-    unless File.extname(file_basename).empty?
-      file_basename = file_basename.split(".").tap {|parts| parts.pop}.join(".")
+    # absolute path, output into same directory as file
+    dir = if fname[0] == File::SEPARATOR
+      Pathname.new(fname).parent.to_s
+    # relative path, output into current working directory
+    else
+      Dir.getwd
     end
-    File.open("#{file_basename}.vim", 'w') do |f|
+    basename_without_riml_ext = File.basename(fname).sub(/\.riml\Z/i, '')
+    full_path = File.join(dir, "#{basename_without_riml_ext}.vim")
+    File.open(full_path, 'w') do |f|
       f.write FILE_HEADER + output
     end
   end

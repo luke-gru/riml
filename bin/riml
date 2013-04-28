@@ -38,11 +38,19 @@ module Riml
           append_filenames_to_list_if_all_exist(options.check_syntax_files, *filenames)
         end
 
-        opts.on("-t", "--source-path PATH", "Path riml uses for `riml_source` and `riml_include` to find files. Defaults to pwd.") do |path|
-          if Dir.exists?(path)
+        opts.on("-S", "--source-path PATH", "Colon-separated path riml uses to find files for `riml_source`. Defaults to pwd.") do |path|
+          begin
             Riml.source_path = path
-          else
-            abort "Couldn't find directory #{path.inspect}."
+          rescue UserArgumentError => e
+            abort e.message
+          end
+        end
+
+        opts.on("-I", "--include-path PATH", "Colon-separated path riml uses to find files for `riml_include`. Defaults to pwd.") do |path|
+          begin
+            Riml.include_path = path
+          rescue UserArgumentError => e
+            abort e.message
           end
         end
 
@@ -72,10 +80,11 @@ module Riml
 
     def self.append_filenames_to_list_if_all_exist(list, *filenames)
       filenames.each do |fname|
-        if File.exists?(fname)
+        expanded = File.expand_path(fname)
+        if File.exists?(expanded)
           list << fname
         else
-          abort "Couldn't find file #{fname.inspect}."
+          raise UserArgumentError, "Couldn't find file #{fname.inspect}."
         end
       end
     end
