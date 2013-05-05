@@ -78,12 +78,12 @@ rule
   | Dictionary DictGetWithDotLiteral      { result = Riml::DictGetDotNode.new(val[0], val[1]) }
   | BinaryOperator                        { result = val[0] }
   | Ternary                               { result = val[0] }
+  | Assign                                { result = val[0] }
   | '(' ValueExpression ')'               { result = Riml::WrapInParensNode.new(val[1]) }
   ;
 
   ValueExpressionWithoutDictLiteral:
     UnaryOperator                         { result = val[0] }
-  | Assign                                { result = val[0] }
   | DictGet                               { result = val[0] }
   | ListOrDictGet                         { result = val[0] }
   | AllVariableRetrieval                  { result = val[0] }
@@ -224,7 +224,8 @@ rule
     Scope DefCallIdentifier '(' ArgList ')'       { result = Riml::CallNode.new(val[0], val[1], val[3]) }
   | DictGet '(' ArgList ')'                       { result = Riml::CallNode.new(nil, val[0], val[2]) }
   | BUILTIN_COMMAND '(' ArgList ')'               { result = Riml::CallNode.new(nil, val[0], val[2]) }
-  | BUILTIN_COMMAND ArgList                       { result = Riml::CallNode.new(nil, val[0], val[1]) }
+  | BUILTIN_COMMAND ArgListWithoutNothing         { result = Riml::CallNode.new(nil, val[0], val[1]) }
+  | BUILTIN_COMMAND NEWLINE                       { result = Riml::CallNode.new(nil, val[0], []) }
   | CALL '(' ArgList ')'                          { result = Riml::ExplicitCallNode.new(nil, nil, val[2]) }
   ;
 
@@ -243,12 +244,8 @@ rule
   ;
 
   Scope:
-    NonEmptyScope          { result = val[0] }
-  | /* nothing */          { result = nil }
-  ;
-
-  NonEmptyScope:
     SCOPE_MODIFIER         { result = val[0] }
+  | /* nothing */          { result = nil }
   ;
 
   ArgList:
