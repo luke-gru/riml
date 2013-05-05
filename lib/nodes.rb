@@ -366,7 +366,7 @@ module Riml
           files[file] = File.join(base_path, file)
         else
           raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
-            "#{name.upcase}_PATH (#{paths.join(':').inspect})"
+            "Riml.#{name.sub('riml_', '')}_path (#{paths.join(':').inspect})"
         end
       end
       return files.values unless block_given?

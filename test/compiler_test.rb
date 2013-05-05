@@ -304,6 +304,13 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "more than one interpolated expression in double quoted string" do
+    riml = '"I think #{(gender == \'m\' ? \'his\' : \'her\')} name was... #{guess()}"'
+    expected = '"I think " . (s:gender ==# \'m\' ? \'his\' : \'her\') . " name was... " . s:guess()'
+
+    assert_equal expected, compile(riml)
+  end
+
   # :h expr-quote
   test "double-quoted string escape sequences" do
     escape_sequences = [
@@ -1323,6 +1330,33 @@ EOS
     expected = %{let s:quote = "\\"I still watch Duckman!\\"\\n"}
 
     assert_equal expected, compile(riml).chomp
+  end
+
+  test "nested interpolation (1 nesting)" do
+    riml = <<Riml
+host = "Tom Scharpling"
+title = "The Best Show on WFMU with \#{host\#{guests ? ' and guests' : ''}}"
+Riml
+
+    expected = <<Riml
+let s:host = "Tom Scharpling"
+let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '')
+Riml
+    assert_equal expected, compile(riml)
+  end
+
+  test "nested interpolation in heredoc (1 nesting)" do
+    riml = '
+host = "Tom Scharpling"
+title = <<EOS
+The Best Show on WFMU with #{host#{guests ? \' and guests\' : \'\'}}
+EOS
+'.strip
+    expected = <<Riml
+let s:host = "Tom Scharpling"
+let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '')
+Riml
+    assert_equal expected, compile(riml)
   end
 
   test "autoloadable variables" do

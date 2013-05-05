@@ -8,16 +8,15 @@ module Riml
     # Base abstract visitor
     class Visitor
       attr_writer :propagate_up_tree
-      attr_reader :value
 
       def initialize(options={})
         @propagate_up_tree = options[:propagate_up_tree]
       end
 
       def visit(node)
-        @value = compile(node)
-        @value << "\n" if node.force_newline and @value[-1] != "\n"
-        propagate_up_tree(node, @value)
+        output = compile(node)
+        output << "\n" if node.force_newline and output[-1] != "\n"
+        propagate_up_tree(node, output)
       end
 
       def propagate_up_tree(node, output)
@@ -265,22 +264,15 @@ module Riml
 
     class AssignNodeVisitor < ScopedVisitor
       def compile(node)
-        first_shadow = nil
-
+        lhs = visit_lhs(node)
+        rhs = visit_rhs(node)
         if GetVariableNode === node.lhs && node.scope && (func = node.scope.function)
           if func.argument_variable_names.include?(node.lhs.full_name)
             if !func.shadowed_argument_variable_names.include?(node.lhs.full_name)
-              first_shadow = true
+              func.shadowed_argument_variable_names << node.lhs.full_name
             end
           end
         end
-
-        lhs = visit_lhs(node)
-        rhs = visit_rhs(node)
-        if first_shadow
-          func.shadowed_argument_variable_names << node.lhs.full_name
-        end
-
         node.compiled_output = "#{lhs}#{rhs}"
         node.compiled_output = "unlet! #{node.lhs.compiled_output}" if node.rhs.compiled_output == 'nil'
         node.force_newline = true

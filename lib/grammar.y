@@ -192,6 +192,10 @@ rule
   | '(' ValueExpression ')' ListOrDictGetWithBrackets            { result = Riml::ListOrDictGetNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
   ;
 
+  ListOrDictGetAssign:
+    ValueExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = Riml::ListOrDictGetNode.new(val[0], val[1]) }
+  ;
+
   ListOrDictGetWithBrackets:
     '['  ValueExpression ']'                          { result = [val[1]] }
   | '['  SubList    ']'                               { result = [val[1]] }
@@ -224,6 +228,10 @@ rule
   | CALL '(' ArgList ')'                          { result = Riml::ExplicitCallNode.new(nil, nil, val[2]) }
   ;
 
+  ObjectInstantiationCall:
+    Scope DefCallIdentifier '(' ArgList ')'       { result = Riml::CallNode.new(val[0], val[1], val[3]) }
+  ;
+
   RimlCommand:
     RIML_COMMAND '(' ArgList ')'                  { result = Riml::RimlCommandNode.new(nil, val[0], val[2]) }
   | RIML_COMMAND ArgList                          { result = Riml::RimlCommandNode.new(nil, val[0], val[1]) }
@@ -235,14 +243,22 @@ rule
   ;
 
   Scope:
-    SCOPE_MODIFIER         { result = val[0] }
+    NonEmptyScope          { result = val[0] }
   | /* nothing */          { result = nil }
+  ;
+
+  NonEmptyScope:
+    SCOPE_MODIFIER         { result = val[0] }
   ;
 
   ArgList:
     /* nothing */                         { result = [] }
-  | ValueExpression                       { result = val }
-  | ArgList "," ValueExpression           { result = val[0] << val[2] }
+  | ArgListWithoutNothing                 { result = val[0] }
+  ;
+
+  ArgListWithoutNothing:
+    ValueExpression                               { result = val }
+  | ArgListWithoutNothing "," ValueExpression     { result = val[0] << val[2] }
   ;
 
   BinaryOperator:
@@ -320,7 +336,7 @@ rule
   | List                                       { result = val[0] }
   | ListUnpack                                 { result = val[0] }
   | DictGet                                    { result = val[0] }
-  | ListOrDictGet                              { result = val[0] }
+  | ListOrDictGetAssign                        { result = val[0] }
   ;
 
   # retrieving the value of a variable
@@ -483,7 +499,7 @@ rule
   ;
 
   ObjectInstantiation:
-    NEW Call                  { result = Riml::ObjectInstantiationNode.new(val[1]) }
+    NEW ObjectInstantiationCall                  { result = Riml::ObjectInstantiationNode.new(val[1]) }
   ;
 
   Super:
@@ -518,7 +534,7 @@ end
       ast = do_parse
     rescue Racc::ParseError => e
       raise unless @lexer
-      raise Riml::ParseError,  "on line #{@lexer.lineno}: #{e.message}"
+      raise Riml::ParseError, "on line #{@lexer.lineno}: #{e.message}"
     end
 
     @ast_rewriter ||= ast_rewriter

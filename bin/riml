@@ -84,7 +84,7 @@ module Riml
         if File.exists?(expanded)
           list << fname
         else
-          raise UserArgumentError, "Couldn't find file #{fname.inspect}."
+          abort "Couldn't find file #{fname.inspect}."
         end
       end
     end

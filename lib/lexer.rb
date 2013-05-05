@@ -7,8 +7,9 @@ module Riml
 
     SINGLE_LINE_COMMENT_REGEX = /\A\s*"(.*)$/
     OPERATOR_REGEX = /\A#{Regexp.union(['||', '&&', '===', '+=', '-=', '.='] + COMPARISON_OPERATORS)}/
-    INTERPOLATION_REGEX = /\A"(.*?)(\#\{(.*?)\})(.*?)"/m
-    INTERPOLATION_SPLIT_REGEX = /(\#{.*?})/m
+    INTERPOLATION_REGEX = /"([^"]*?)(\#\{([^"]*?)\})([^"]*?)"/m
+    ANCHORED_INTERPOLATION_REGEX = /\A#{INTERPOLATION_REGEX}/m
+    INTERPOLATION_SPLIT_REGEX = /(\#\{.*?\})/m
 
     attr_reader :tokens, :prev_token, :lineno, :chunk, :current_indent
     # for REPL
@@ -162,9 +163,10 @@ module Riml
       elsif decimal = chunk[/\A[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/]
         @token_buf << [:NUMBER, decimal]
         @i += decimal.size
-      elsif interpolation = chunk[INTERPOLATION_REGEX]
+      elsif interpolation = chunk[ANCHORED_INTERPOLATION_REGEX]
         # "hey there, #{name}" = "hey there, " . name
         parts = interpolation[1...-1].split(INTERPOLATION_SPLIT_REGEX)
+        cleanup_interpolation_parts!(parts)
         handle_interpolation(*parts)
         @i += interpolation.size
       elsif (single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX]) && (prev_token.nil? || prev_token[0] == :NEWLINE)
@@ -200,8 +202,9 @@ module Riml
         new_chunk = get_new_chunk
         heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|m, 1]
         @i += heredoc_string.size + pattern.size
-        if ('"' + heredoc_string + '"') =~ INTERPOLATION_REGEX
+        if heredoc_string =~ INTERPOLATION_REGEX || %Q("#{heredoc_string}") =~ INTERPOLATION_REGEX
           parts = heredoc_string.split(INTERPOLATION_SPLIT_REGEX)
+          cleanup_interpolation_parts!(parts)
           handle_interpolation(*parts)
         else
           @token_buf << [:STRING_D, escape_chars!(heredoc_string)]
@@ -278,15 +281,45 @@ module Riml
       chunk[/^(if|unless).+?(else)?.+?end$/]
     end
 
+    # Cleans up interpolation parts from a nested interpolation expression.
+    # This is necessary since the `INTERPOLATION_SPLIT_REGEX` can't handle
+    # nested interpolation splitting properly (notice the non-greediness of its
+    # matching of the '}' char).
+    def cleanup_interpolation_parts!(parts)
+      if idx = parts.index { |part| part[0] == '}'}
+        parts[idx] = parts[idx][1..-1]
+        parts[idx-1] << '}'
+        parts.compact!
+      end
+    end
+
     def handle_interpolation(*parts)
       parts.delete_if {|p| p.empty?}.each_with_index do |part, i|
         if part[0..1] == '#{' && part[-1] == '}'
-          @token_buf.concat tokenize_without_moving_pos(part[2...-1])
+          interpolation_content = part[2...-1]
+          if (nested_parts = interpolation_content.split(INTERPOLATION_SPLIT_REGEX)).size > 1
+            handle_nested_interpolation_parts!(nested_parts)
+            return handle_interpolation(*nested_parts)
+          end
+          @token_buf.concat tokenize_without_moving_pos(interpolation_content)
         else
           @token_buf << [:STRING_D, escape_chars!(part)]
         end
         # string-concatenate all the parts unless this is the last part
         @token_buf << ['.', '.'] unless parts[i + 1].nil?
+      end
+    end
+
+    def handle_nested_interpolation_parts!(nested_parts)
+      nested_parts.map! do |p|
+        if p[0..1] == '#{' && p[-1] == '}'
+          # surround expression nested interpolation expr with parens
+          unless p[2] == '(' && p[-2] == ')'
+            p.insert(2, '(')
+            p.insert(-2, ')')
+          end
+          p
+        else '#{' << p << '}' end
       end
     end
 
