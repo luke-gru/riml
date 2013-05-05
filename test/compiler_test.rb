@@ -1332,10 +1332,10 @@ EOS
     assert_equal expected, compile(riml).chomp
   end
 
-  test "nested interpolation (1 nesting)" do
+  test "back-to-back interpolations" do
     riml = <<Riml
 host = "Tom Scharpling"
-title = "The Best Show on WFMU with \#{host\#{guests ? ' and guests' : ''}}"
+title = "The Best Show on WFMU with \#{host}\#{(guests ? ' and guests' : '')}"
 Riml
 
     expected = <<Riml
@@ -1345,16 +1345,30 @@ Riml
     assert_equal expected, compile(riml)
   end
 
-  test "nested interpolation in heredoc (1 nesting)" do
+  test "back-to-back interpolations in heredoc" do
     riml = '
 host = "Tom Scharpling"
 title = <<EOS
-The Best Show on WFMU with #{host#{guests ? \' and guests\' : \'\'}}
+The Best Show on WFMU with #{host}#{(guests ? \' and guests\' : \'\')}
 EOS
 '.strip
     expected = <<Riml
 let s:host = "Tom Scharpling"
-let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '')
+let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '') . "\\n"
+Riml
+    assert_equal expected, compile(riml)
+  end
+
+  test "back-to-back interpolations in heredoc with more string literal after" do
+    riml = '
+host = "Tom Scharpling"
+title = <<EOS
+The Best Show on WFMU with #{host}#{(guests ? \' and guests\' : \'\')} and others
+EOS
+'.strip
+    expected = <<Riml
+let s:host = "Tom Scharpling"
+let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '') . " and others\\n"
 Riml
     assert_equal expected, compile(riml)
   end
