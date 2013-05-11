@@ -31,7 +31,8 @@ module Riml
         ClassDefinitionToFunctions.new(ast, classes),
         ObjectInstantiationToCall.new(ast, classes),
         CallToExplicitCall.new(ast, classes),
-        DefaultParamToIfNode.new(ast, classes)
+        DefaultParamToIfNode.new(ast, classes),
+        DeserializeVarAssignment.new(ast, classes)
       ]
       rewriters.each do |rewriter|
         rewriter.rewrite_on_match
@@ -51,7 +52,7 @@ module Riml
     end
 
     def rewrite_on_match(node = ast)
-      Walker.walk_node(node, method(:do_rewrite_on_match), lambda {|_| repeatable?})
+      Walker.walk_node(node, method(:do_rewrite_on_match), lambda { |_| recursive? })
     end
 
     def do_rewrite_on_match(node)
@@ -88,7 +89,7 @@ module Riml
       self.ast = old_ast
     end
 
-    def repeatable?
+    def recursive?
       true
     end
 
@@ -236,7 +237,7 @@ module Riml
           classes.superclass(ast.name).constructor.parameters
         end
 
-        def repeatable?
+        def recursive?
           false
         end
       end
@@ -287,7 +288,7 @@ module Riml
           end
         end
 
-        def repeatable?
+        def recursive?
           false
         end
       end
@@ -418,6 +419,31 @@ module Riml
           ]))
           ])
         )
+      end
+    end
+
+    class DeserializeVarAssignment < AST_Rewriter
+      def match?(node)
+        AssignNode === node && AssignNode === node.rhs && node.operator == '='
+      end
+
+      def replace(node)
+        orig_assign = node.dup
+        assigns = []
+        while assign_node = (node.respond_to?(:rhs) && node.rhs)
+          assigns.unshift([node.lhs, node.rhs])
+          node = assign_node
+        end
+        assigns = assigns[0..0].concat(assigns[1..-1].map! { |(lhs, rhs)| [lhs, rhs.lhs] })
+
+        assigns.map! do |(lhs, rhs)|
+          AssignNode.new('=', lhs, rhs)
+        end
+
+        new_assigns = Nodes.new(assigns)
+        new_assigns.parent = orig_assign.parent
+        orig_assign.replace_with(new_assigns)
+        establish_parents(new_assigns)
       end
     end
 

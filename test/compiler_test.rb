@@ -2218,5 +2218,26 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "serialized assignment" do
+    riml = 'a = b = c = 1'
+    expected = <<Viml
+let s:c = 1
+let s:b = s:c
+let s:a = s:b
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "multi-assignment" do
+    riml = 'a = b, b = c'
+    expected = <<Viml
+let s:a = b
+let s:b = c
+Viml
+    skip
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

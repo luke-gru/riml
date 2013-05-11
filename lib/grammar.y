@@ -37,52 +37,51 @@ preclow
 rule
 
   Root:
-    /* nothing */                         { result = Riml::Nodes.new([]) }
-  | Expressions                           { result = val[0] }
+    /* nothing */                        { result = Riml::Nodes.new([]) }
+  | Statements                           { result = val[0] }
   ;
 
   # any list of expressions
-  Expressions:
-    AnyExpression                         { result = Riml::Nodes.new([ val[0] ]) }
-  | Expressions Terminator AnyExpression  { result = val[0] << val[2] }
-  | Expressions Terminator                { result = val[0] }
-  | Terminator                            { result = Riml::Nodes.new([]) }
-  | Terminator Expressions                { result = Riml::Nodes.new(val[1]) }
+  Statements:
+    Statement                            { result = Riml::Nodes.new([ val[0] ]) }
+  | Statements Terminator Statement      { result = val[0] << val[2] }
+  | Statements Terminator                { result = val[0] }
+  | Terminator                           { result = Riml::Nodes.new([]) }
+  | Terminator Statements                { result = Riml::Nodes.new(val[1]) }
   ;
 
   # All types of expressions in Riml
-  AnyExpression:
+  Statement:
     ExplicitCall                          { result = val[0] }
   | Def                                   { result = val[0] }
   | Return                                { result = val[0] }
   | UnletVariable                         { result = val[0] }
   | ExLiteral                             { result = val[0] }
-  | If                                    { result = val[0] }
-  | Unless                                { result = val[0] }
   | For                                   { result = val[0] }
   | While                                 { result = val[0] }
   | Until                                 { result = val[0] }
   | Try                                   { result = val[0] }
   | ClassDefinition                       { result = val[0] }
-  | Super                                 { result = val[0] }
   | LoopKeyword                           { result = val[0] }
   | EndScript                             { result = val[0] }
-  | ValueExpression                       { result = val[0] }
   | RimlCommand                           { result = val[0] }
+  | If                                    { result = val[0] }
+  | Unless                                { result = val[0] }
+  | Expression                            { result = val[0] }
   ;
 
-  # Expressions that evaluate to a value
-  ValueExpression:
-    ValueExpressionWithoutDictLiteral     { result = val[0] }
+  Expression:
+    ExpressionWithoutDictLiteral          { result = val[0] }
   | Dictionary                            { result = val[0] }
   | Dictionary DictGetWithDotLiteral      { result = Riml::DictGetDotNode.new(val[0], val[1]) }
   | BinaryOperator                        { result = val[0] }
   | Ternary                               { result = val[0] }
   | Assign                                { result = val[0] }
-  | '(' ValueExpression ')'               { result = Riml::WrapInParensNode.new(val[1]) }
+  | Super                                 { result = val[0] }
+  | '(' Expression ')'                    { result = Riml::WrapInParensNode.new(val[1]) }
   ;
 
-  ValueExpressionWithoutDictLiteral:
+  ExpressionWithoutDictLiteral:
     UnaryOperator                         { result = val[0] }
   | DictGet                               { result = val[0] }
   | ListOrDictGet                         { result = val[0] }
@@ -90,7 +89,7 @@ rule
   | LiteralWithoutDictLiteral             { result = val[0] }
   | Call                                  { result = val[0] }
   | ObjectInstantiation                   { result = val[0] }
-  | '(' ValueExpressionWithoutDictLiteral ')'               { result = Riml::WrapInParensNode.new(val[1]) }
+  | '(' ExpressionWithoutDictLiteral ')'               { result = Riml::WrapInParensNode.new(val[1]) }
   ;
 
   # for inside curly-brace variable names
@@ -144,7 +143,7 @@ rule
   ;
 
   ListUnpack:
-    '[' ListItems ';' ValueExpression ']' { result = Riml::ListUnpackNode.new(val[1] << val[3]) }
+    '[' ListItems ';' Expression ']' { result = Riml::ListUnpackNode.new(val[1] << val[3]) }
   ;
 
   ListLiteral:
@@ -154,8 +153,8 @@ rule
 
   ListItems:
     /* nothing */                         { result = [] }
-  | ValueExpression                       { result = [val[0]] }
-  | ListItems ',' ValueExpression         { result = val[0] << val[2] }
+  | Expression                       { result = [val[0]] }
+  | ListItems ',' Expression         { result = val[0] << val[2] }
   ;
 
   Dictionary:
@@ -177,41 +176,41 @@ rule
 
   # [key, value]
   DictItem:
-    ValueExpression ':' ValueExpression                   { result = [val[0], val[2]] }
+    Expression ':' Expression                   { result = [val[0], val[2]] }
   ;
 
   DictGet:
     AllVariableRetrieval DictGetWithDot          { result = Riml::DictGetDotNode.new(val[0], val[1]) }
   | ListOrDictGet DictGetWithDot                 { result = Riml::DictGetDotNode.new(val[0], val[1]) }
   | Call DictGetWithDot                          { result = Riml::DictGetDotNode.new(val[0], val[1]) }
-  | '(' ValueExpression ')' DictGetWithDot       { result = Riml::DictGetDotNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
+  | '(' Expression ')' DictGetWithDot       { result = Riml::DictGetDotNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
   ;
 
   ListOrDictGet:
-    ValueExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = Riml::ListOrDictGetNode.new(val[0], val[1]) }
-  | '(' ValueExpression ')' ListOrDictGetWithBrackets            { result = Riml::ListOrDictGetNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
+    ExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = Riml::ListOrDictGetNode.new(val[0], val[1]) }
+  | '(' Expression ')' ListOrDictGetWithBrackets            { result = Riml::ListOrDictGetNode.new(Riml::WrapInParensNode.new(val[1]), val[3]) }
   ;
 
   ListOrDictGetAssign:
-    ValueExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = Riml::ListOrDictGetNode.new(val[0], val[1]) }
+    ExpressionWithoutDictLiteral ListOrDictGetWithBrackets  { result = Riml::ListOrDictGetNode.new(val[0], val[1]) }
   ;
 
   ListOrDictGetWithBrackets:
-    '['  ValueExpression ']'                          { result = [val[1]] }
-  | '['  SubList    ']'                               { result = [val[1]] }
-  | ListOrDictGetWithBrackets '[' ValueExpression ']' { result = val[0] << val[2] }
-  | ListOrDictGetWithBrackets '[' SubList    ']'      { result = val[0] << val[2] }
+    '['  Expression ']'                           { result = [val[1]] }
+  | '['  SubList    ']'                           { result = [val[1]] }
+  | ListOrDictGetWithBrackets '[' Expression ']'  { result = val[0] << val[2] }
+  | ListOrDictGetWithBrackets '[' SubList    ']'  { result = val[0] << val[2] }
   ;
 
   SubList:
-    ValueExpression ':' ValueExpression          { result = Riml::SublistNode.new([val[0], Riml::LiteralNode.new(' : '), val[2]]) }
-  | ValueExpression ':'                          { result = Riml::SublistNode.new([val[0], Riml::LiteralNode.new(' :')]) }
-  | ':' ValueExpression                          { result = Riml::SublistNode.new([Riml::LiteralNode.new(': '), val[1]]) }
-  | ':'                                          { result = Riml::SublistNode.new([Riml::LiteralNode.new(':')]) }
+    Expression ':' Expression          { result = Riml::SublistNode.new([val[0], Riml::LiteralNode.new(' : '), val[2]]) }
+  | Expression ':'                     { result = Riml::SublistNode.new([val[0], Riml::LiteralNode.new(' :')]) }
+  | ':' Expression                     { result = Riml::SublistNode.new([Riml::LiteralNode.new(': '), val[1]]) }
+  | ':'                                { result = Riml::SublistNode.new([Riml::LiteralNode.new(':')]) }
   ;
 
   DictGetWithDot:
-    DICT_VAL                        { result = [val[0]]}
+    DICT_VAL                        { result = [val[0]] }
   | DictGetWithDot DICT_VAL         { result = val[0] << val[1] }
   ;
 
@@ -254,64 +253,64 @@ rule
   ;
 
   ArgListWithoutNothing:
-    ValueExpression                               { result = val }
-  | ArgListWithoutNothing "," ValueExpression     { result = val[0] << val[2] }
+    Expression                               { result = val }
+  | ArgListWithoutNothing "," Expression     { result = val[0] << val[2] }
   ;
 
   BinaryOperator:
-    ValueExpression '||' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '&&' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+    Expression '||' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '&&' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '==' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '==#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '==?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '==' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '==#' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '==?' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
   # added by riml
-  | ValueExpression '===' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '===' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '!=' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!=#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!=?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!=' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!=#' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!=?' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '=~' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '=~#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '=~?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '=~' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '=~#' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '=~?' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '!~' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!~#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '!~?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!~' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!~#' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '!~?' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '>' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>#' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>?' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>#' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>?' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '>=' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>=#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '>=?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>=' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>=#' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '>=?' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '<' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<#' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<?' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<#' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<?' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '<=' ValueExpression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<=#' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '<=?' ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<=' Expression            { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<=#' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '<=?' Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression '+' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '-' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '*' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '/' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '.' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression '%' ValueExpression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '+' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '-' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '*' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '/' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '.' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression '%' Expression             { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
 
-  | ValueExpression IS    ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
-  | ValueExpression ISNOT ValueExpression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression IS    Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
+  | Expression ISNOT Expression           { result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) }
   ;
 
   UnaryOperator:
-    '!' ValueExpression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
-  | '+' ValueExpression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
-  | '-' ValueExpression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
+    '!' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
+  | '+' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
+  | '-' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
   ;
 
   # ['=', LHS, RHS]
@@ -322,10 +321,10 @@ rule
 
   # ['=', AssignLHS, Expression]
   AssignExpression:
-    AssignLHS '='  ValueExpression             { result = [val[1], val[0], val[2]] }
-  | AssignLHS '+=' ValueExpression             { result = [val[1], val[0], val[2]] }
-  | AssignLHS '-=' ValueExpression             { result = [val[1], val[0], val[2]] }
-  | AssignLHS '.=' ValueExpression             { result = [val[1], val[0], val[2]] }
+    AssignLHS '='  Expression             { result = [val[1], val[0], val[2]] }
+  | AssignLHS '+=' Expression             { result = [val[1], val[0], val[2]] }
+  | AssignLHS '-=' Expression             { result = [val[1], val[0], val[2]] }
+  | AssignLHS '.=' Expression             { result = [val[1], val[0], val[2]] }
   ;
 
   AssignLHS:
@@ -338,8 +337,8 @@ rule
 
   # retrieving the value of a variable
   VariableRetrieval:
-    Scope IDENTIFIER                           { result = Riml::GetVariableNode.new(val[0], val[1]) }
-  | SPECIAL_VAR_PREFIX IDENTIFIER              { result = Riml::GetSpecialVariableNode.new(val[0], val[1]) }
+    Scope IDENTIFIER                               { result = Riml::GetVariableNode.new(val[0], val[1]) }
+  | SPECIAL_VAR_PREFIX IDENTIFIER                  { result = Riml::GetSpecialVariableNode.new(val[0], val[1]) }
   | ScopeModifierLiteral ListOrDictGetWithBrackets { result = Riml::GetVariableByScopeAndDictNameNode.new(val[0], val[1]) }
   ;
 
@@ -404,12 +403,18 @@ rule
   ;
 
   DefaultParam:
-    IDENTIFIER '=' ValueExpression        { result = Riml::DefaultParamNode.new(val[0], val[2]) }
+    IDENTIFIER '=' Expression        { result = Riml::DefaultParamNode.new(val[0], val[2]) }
   ;
 
   Return:
-    RETURN ValueExpression                { result = Riml::ReturnNode.new(val[1]) }
-  | RETURN                                { result = Riml::ReturnNode.new(nil) }
+    RETURN Returnable                        { result = Riml::ReturnNode.new(val[1]) }
+  | RETURN Returnable IF Expression          { result = Riml::IfNode.new(val[3], Nodes.new([ReturnNode.new(val[1])])) }
+  | RETURN Returnable UNLESS Expression      { result = Riml::UnlessNode.new(val[3], Nodes.new([ReturnNode.new(val[1])])) }
+  ;
+
+  Returnable:
+    /* nothing */     { result = nil }
+  | Expression        { result = val[0] }
   ;
 
   EndScript:
@@ -418,23 +423,23 @@ rule
 
   # [expression, expressions]
   If:
-    IF ValueExpression IfBlock END                    { result = Riml::IfNode.new(val[1], val[2]) }
-  | IF ValueExpression THEN ValueExpression END       { result = Riml::IfNode.new(val[1], Riml::Nodes.new([val[3]])) }
-  | AnyExpression IF ValueExpression                  { result = Riml::IfNode.new(val[2], Riml::Nodes.new([val[0]])) }
+    IF Expression IfBlock END               { result = Riml::IfNode.new(val[1], val[2]) }
+  | IF Expression THEN Expression END       { result = Riml::IfNode.new(val[1], Riml::Nodes.new([val[3]])) }
+  | Expression IF Expression                { result = Riml::IfNode.new(val[2], Riml::Nodes.new([val[0]])) }
   ;
 
   Unless:
-    UNLESS ValueExpression IfBlock END                { result = Riml::UnlessNode.new(val[1], val[2]) }
-  | UNLESS ValueExpression THEN ValueExpression END   { result = Riml::UnlessNode.new(val[1], Riml::Nodes.new([val[3]])) }
-  | ValueExpression UNLESS ValueExpression            { result = Riml::UnlessNode.new(val[2], Riml::Nodes.new([val[0]])) }
+    UNLESS Expression IfBlock END           { result = Riml::UnlessNode.new(val[1], val[2]) }
+  | UNLESS Expression THEN Expression END   { result = Riml::UnlessNode.new(val[1], Riml::Nodes.new([val[3]])) }
+  | Expression UNLESS Expression            { result = Riml::UnlessNode.new(val[2], Riml::Nodes.new([val[0]])) }
   ;
 
   Ternary:
-    ValueExpression '?' ValueExpression ':' ValueExpression   { result = Riml::TernaryOperatorNode.new([val[0], val[2], val[4]]) }
+    Expression '?' Expression ':' Expression   { result = Riml::TernaryOperatorNode.new([val[0], val[2], val[4]]) }
   ;
 
   While:
-    WHILE ValueExpression Block END                 { result = Riml::WhileNode.new(val[1], val[2]) }
+    WHILE Expression Block END                 { result = Riml::WhileNode.new(val[1], val[2]) }
   ;
 
   LoopKeyword:
@@ -443,13 +448,13 @@ rule
   ;
 
   Until:
-    UNTIL ValueExpression Block END                 { result = Riml::UntilNode.new(val[1], val[2]) }
+    UNTIL Expression Block END                 { result = Riml::UntilNode.new(val[1], val[2]) }
   ;
 
   For:
-    FOR IDENTIFIER IN ValueExpression Block END     { result = Riml::ForNode.new(val[1], val[3], val[4]) }
-  | FOR List IN ValueExpression Block END           { result = Riml::ForNode.new(val[1], val[3], val[4]) }
-  | FOR ListUnpack IN ValueExpression Block END     { result = Riml::ForNode.new(val[1], val[3], val[4]) }
+    FOR IDENTIFIER IN Expression Block END     { result = Riml::ForNode.new(val[1], val[3], val[4]) }
+  | FOR List IN Expression Block END           { result = Riml::ForNode.new(val[1], val[3], val[4]) }
+  | FOR ListUnpack IN Expression Block END     { result = Riml::ForNode.new(val[1], val[3], val[4]) }
   ;
 
   Try:
@@ -470,24 +475,24 @@ rule
   # expressions list could contain an ElseNode, which contains expressions
   # itself
   Block:
-    NEWLINE Expressions                        { result = val[1] }
-  | NEWLINE                                    { result = Riml::Nodes.new([]) }
+    NEWLINE Statements                        { result = val[1] }
+  | NEWLINE                                   { result = Riml::Nodes.new([]) }
   ;
 
   IfBlock:
-    Block                                      { result = val[0] }
-  | NEWLINE Expressions ElseBlock              { result = val[1] << val[2] }
-  | NEWLINE Expressions ElseifBlock            { result = val[1] << val[2] }
-  | NEWLINE Expressions ElseifBlock ElseBlock  { result = val[1] << val[2] << val[3] }
+    Block                                     { result = val[0] }
+  | NEWLINE Statements ElseBlock              { result = val[1] << val[2] }
+  | NEWLINE Statements ElseifBlock            { result = val[1] << val[2] }
+  | NEWLINE Statements ElseifBlock ElseBlock  { result = val[1] << val[2] << val[3] }
   ;
 
   ElseBlock:
-    ELSE NEWLINE Expressions                   { result = Riml::ElseNode.new(val[2]) }
+    ELSE NEWLINE Statements                   { result = Riml::ElseNode.new(val[2]) }
   ;
 
   ElseifBlock:
-    ELSEIF ValueExpression NEWLINE Expressions                   { result = Riml::Nodes.new([Riml::ElseifNode.new(val[1], val[3])]) }
-  | ElseifBlock ELSEIF ValueExpression NEWLINE Expressions       { result = val[0] << Riml::ElseifNode.new(val[2], val[4]) }
+    ELSEIF Expression NEWLINE Statements                   { result = Riml::Nodes.new([Riml::ElseifNode.new(val[1], val[3])]) }
+  | ElseifBlock ELSEIF Expression NEWLINE Statements       { result = val[0] << Riml::ElseifNode.new(val[2], val[4]) }
   ;
 
   ClassDefinition:
