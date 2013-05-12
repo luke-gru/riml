@@ -1,15 +1,14 @@
 [![Build Status](https://secure.travis-ci.org/luke-gru/riml.png?branch=master)](https://travis-ci.org/luke-gru/riml)
 
-Riml, a relaxed version of Vimscript
+Riml, a relaxed Vimscript
 ====================================
 
-Riml aims to be a superset of VimL that includes some nice features that I
-enjoy in other scripting languages: classes, string interpolation,
+Riml is a subset of Vimscript with some added features, and it compiles to
+plain Vimscript. Some of the added features include classes, string interpolation,
 heredocs, default case-sensitive string comparison, default parameters
-in functions, and other things programmers tend to take for granted. Also, Riml takes
-some liberties and provides some syntactic sugar for lots of VimL constructs.
-To see how Riml constructs are compiled to VimL, just take a look at this README.
-The left side is Riml, and the right side is the VimL after compilation.
+in functions, and other things programmers tend to take for granted.
+To see how Riml is compiled to VimL, just take a look at this README. The left
+side is Riml, and the right side is the VimL after compilation.
 
 Variables
 ---------
@@ -51,7 +50,7 @@ much easier to just come up with unique variable names across a scope.
 
 ###Checking for existence
 
-    unless s:callcount?                   if !exists("s:callcount")
+    unless callcount?                     if !exists("s:callcount")
       callcount = 0                        let s:callcount = 0
     end                                   endif
     callcount += 1                        let s:callcount += 1
@@ -64,7 +63,7 @@ In Riml, you can choose to end any block with 'end', or with whatever you used
 to do in Vimscript ('endif', 'endfunction', etc...). Also, 'if' and 'unless' can
 now be used as statement modifiers:
 
-    callcount = 0 unless s:callcount?
+    callcount = 0 unless callcount?
     callcount += 1
     echo "called #{callcount} times"
 
@@ -92,9 +91,9 @@ Heredocs
     Hooray!
     EOS
 
-Riml heredocs must have the ending pattern start at the beginning
-of the line. Interpolating expressions is allowed in heredocs. Compiled
-heredocs always end with a newline.
+Riml heredocs must have the ending pattern ('EOS' in this case) start at the
+beginning of the line. Interpolating expressions is allowed in heredocs.
+Compiled heredocs always end with a newline.
 
 Functions
 ---------
@@ -107,10 +106,10 @@ Functions
 When defining a function with no parameters, the parens after the function name are optional.
 
 Functions are by default prepended by 's:' unless explicitly prepended with a
-different scope modifier. Of course, you can use the old form ('function! Name()') for defining
-functions if you want, as Riml aims to be a superset of VimL. There are a few exceptions
-where Riml and VimL aren't compatible, and these differences are explained in
-the section 'Incompatibilities with VimL'.
+different scope modifier. Of course, you can use the old form ('function! Name()')
+for defining functions if you want, as Riml aims to be as compatible as possible
+with VimL. There are a few exceptions where Riml and VimL aren't compatible, and
+these differences are explained in the section 'Incompatibilities with VimL'.
 
 ###Default Arguments
 
@@ -163,8 +162,8 @@ inside a class, use 'def'. To create an instance of this class, simply:
     obj = new MyClass('someData', 'someOtherData')
 
 In this basic example of a class, we see a \*splat variable. This is just a
-convenient way to refer to 'a:000' in a function. Splat variables are optional
-parameters and get compiled to '...'.
+convenient way to refer to 'a:000' in the body of a function. Splat variables
+are optional parameters and get compiled to '...'.
 
 ###Class Inheritance
 
@@ -196,10 +195,10 @@ parameters and get compiled to '...'.
 
 Classes that inherit must have their superclass defined before inheritance takes place. In
 this example, 'Translation' is defined first, which is legal. Since 'Translation'
-has an initialize function and 'FrenchToEnglishTranslation' (referred to now as FET)
-doesn't, FET instances use the initialize function from 'Translation', and new
-instances must be provided with an 'input' argument on creation. Basically, if
-a class doesn't provide an initialize function, it uses its superclass's.
+has an initialize function and 'FrenchToEnglishTranslation' doesn't, 'FrenchToEnglishTranslation'
+instances use the initialize function from 'Translation', and new instances must
+be provided with an 'input' argument on creation. Basically, if a class doesn't
+provide an initialize function, it uses its superclass's.
 
 If you look at the last line of Riml in the previous example, you'll see that
 it doesn't use Vimscript's builtin 'call' function for calling the 'translate'
@@ -253,7 +252,7 @@ directory:
 
     $ riml -c example.riml
 
-This will create a new VimL file named 'example.vim'.
+This will create a new VimL file named 'example.vim' in the current directory.
 
 ###riml\_source
 
@@ -275,11 +274,22 @@ In 'awesome.riml', that line will be compiled to:
 This process is recursive, meaning that if 'my\_framework.riml' riml\_source's other
 files, then those files will be compiled as well.
 
-In 'awesome.riml', all the classes that were available by compiling 'my\_framework.riml'
-are now available to it, so we can now subclass classes that were defined either
-in 'my\_framework.riml' itself, or any files that it riml\_source'd either directly
-or indirecty.
+The previous example would only work if 'my\_framework.riml' were in the
+current working directory where the compilation command 'riml -c' was issued.
+In order to tell the compiler where to look for files that are being
+riml\_source'd, you can provide an environment variable or a command-line
+option of colon-separated paths. For example:
 
+    riml -c awesome.riml -S 'first_dir:second_dir'
+
+With this command, the compiler will look for files that are riml\_source'd
+first in ./first\_dir, then in ./second\_dir if not found in first\_dir.
+The same can be achieved by:
+
+    riml -c awesome.riml RIML_SOURCE_PATH='first_dir:second_dir'
+
+Paths can either be relative or absolute. The sourced files that are compiled
+will end up in the same directory in which they were found.
 
 ###riml\_include
 
@@ -296,15 +306,28 @@ Much like riml\_sourcing, the process is recursive. If 'my\_lib.riml' includes f
 are also compiled and will be part of the inclusion. Note that riml\_include does not create a
 new file like riml\_source does.
 
+Like riml\_source, riml\_include looks in a set of ordered paths to find the
+files to include, with the default being the working directory in which the
+compilation command was issued. Here are some examples of commands that set
+the include path:
+
+    riml -c 'main.riml' -I 'lib:helpers:debug'
+
+    riml -c 'plugin_name.riml' RIML_INCLUDE_PATH='lib:modules'
+
+Since riml\_include acts as a sort of preprocessor, it *cannot* be issued
+inside of a conditional, function, or anything dynamic. It must be at the
+top-level (non-nested).
+
 Incompatibilities with VimL
 ---------------------------
 
-Riml aims to be a superset of VimL, therefore any legal VimL should be legal
-Riml as well. Unfortunately, this is not 100% possible as Vim is an old and
-cryptic beast, and trying to create grammar for every possible Vim construct
-would be a nightmare. In practice, however, when I've transformed plain old vim plugins
-to be Riml-compatible, only a couple of ':' needed to be placed in strategic locations
-for it to be valid Riml. This is explained below.
+Riml aims to be as compatible with VimL as possible, therefore any legal VimL
+should be legal Riml as well. Unfortunately, this is not 100% possible as Vim
+is an old and cryptic beast, and trying to create grammar for every possible VimL
+construct would be a nightmare. In practice, however, when I've transformed plain
+old VimL plugins to be Riml-compatible, only a couple of ':' needed to be placed
+in strategic locations for it to be valid Riml. This is explained below.
 
 ###Ex-literals
 
@@ -336,7 +359,7 @@ needs to be an ex-literal in Riml.
 
 Note that, like 'echo' which isn't a builtin function (:h functions) but is still legal
 Riml, 'execute' is also allowed as it takes a string. This is extremely useful, as we can
-now use execute with a string that allows interpolation.
+now use execute with a string that allows interpolation!
 
 Imagine having to write a grammar rule for the following:
 
