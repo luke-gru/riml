@@ -4,11 +4,12 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.name        = 'riml'
   s.version     = Riml::VERSION.join('.')
-  s.summary     = 'Relaxed VimL (Vimscript)'
+  s.summary     = 'Riml is a language that compiles into Vimscript'
   s.description = <<-desc
-  Riml is a superset of VimL that includes some nice features:
-  classes, string interpolation, heredocs, default case-sensitive string
-  comparison and other things most programmers take for granted.
+  Riml is a subset of VimL with some added features, and it compiles to plain
+  Vimscript. Some of the added features include classes, string interpolation,
+  heredocs, default case-sensitive string comparison and default arguments in
+  functions. Give it a try!
   desc
 
   s.required_ruby_version  = '>= 1.9.2'
