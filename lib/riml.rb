@@ -33,10 +33,18 @@ module Riml
     else
       raise ArgumentError, "input must be nodes, tokens, code or file, is #{input.class}"
     end
-    compiler.parser = parser
+
+    if compiler.parser == parser
+      compiling_cmdline_file = false
+    else
+      compiler.parser = parser
+      compiling_cmdline_file = true
+    end
+
     output = compiler.compile(nodes)
+
     if input.is_a?(File)
-      write_file(output, input.path)
+      write_file(output, input.path, compiling_cmdline_file)
     else
       output
     end
@@ -164,16 +172,22 @@ module Riml
   FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')
   INCLUDE_COMMENT_FMT = File.read(File.expand_path("../included.vim", __FILE__))
 
-  def self.write_file(output, fname)
-    # absolute path, output into same directory as file
-    dir = if fname[0] == File::SEPARATOR
-      Pathname.new(fname).parent.to_s
-    # relative path, output into current working directory
-    else
+  def self.write_file(output, fname, cmdline_file = true)
+    # writing out a file that's compiled from cmdline, output into CWD
+    output_dir = if cmdline_file
       Dir.getwd
+    # writing out a riml_source'd file
+    else
+      # absolute path
+      if fname[0] == File::SEPARATOR
+        Pathname.new(fname).parent.to_s
+      # relative path
+      else
+        File.join(Dir.getwd, Pathname.new(fname).parent.to_s)
+      end
     end
     basename_without_riml_ext = File.basename(fname).sub(/\.riml\Z/i, '')
-    full_path = File.join(dir, "#{basename_without_riml_ext}.vim")
+    full_path = File.join(output_dir, "#{basename_without_riml_ext}.vim")
     File.open(full_path, 'w') do |f|
       f.write FILE_HEADER + output
     end

@@ -218,7 +218,7 @@ RIML
     end
   end
 
-  test "Riml.source_path looks up files in source_path order" do
+  test "Riml.source_path looks up files in source_path order and riml_source outputs them in proper directory" do
     riml = <<RIML
 riml_source 'sourced1.riml'
 RIML
