@@ -65,6 +65,7 @@ rule
   | LoopKeyword                           { result = val[0] }
   | EndScript                             { result = val[0] }
   | RimlCommand                           { result = val[0] }
+  | MultiAssign                           { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
   | Expression                            { result = val[0] }
@@ -317,6 +318,11 @@ rule
   Assign:
     LET AssignExpression                       { result = Riml::AssignNode.new(val[1][0], val[1][1], val[1][2]) }
   | AssignExpression                           { result = Riml::AssignNode.new(val[0][0], val[0][1], val[0][2]) }
+  ;
+
+  MultiAssign:
+    Assign ',' Assign                          { result = Riml::MultiAssignNode.new([val[0], val[2]]) }
+  | MultiAssign ',' Assign                     { val[0].assigns << val[2]; result = val[0] }
   ;
 
   # ['=', AssignLHS, Expression]

@@ -441,6 +441,15 @@ module Riml
     end
   end
 
+  class MultiAssignNode < Struct.new(:assigns)
+    include Visitable
+    include Walkable
+
+    def children
+      assigns
+    end
+  end
+
   module QuestionVariableExistence
     def self.included(base)
       base.class_eval do

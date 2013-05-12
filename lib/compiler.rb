@@ -290,6 +290,16 @@ module Riml
       end
     end
 
+    class MultiAssignNodeVisitor < Visitor
+      def compile(node)
+        node.assigns.each do |assign|
+          assign.force_newline = true
+          assign.accept(visitor_for_node(assign))
+        end
+        node.compiled_output
+      end
+    end
+
     # scope_modifier, name
     class GetVariableNodeVisitor < ScopedVisitor
       def compile(node)

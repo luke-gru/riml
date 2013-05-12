@@ -2232,10 +2232,9 @@ Viml
   test "multi-assignment" do
     riml = 'a = b, b = c'
     expected = <<Viml
-let s:a = b
-let s:b = c
+let s:a = s:b
+let s:b = s:c
 Viml
-    skip
     assert_equal expected, compile(riml)
   end
 
