@@ -309,9 +309,9 @@ rule
   ;
 
   UnaryOperator:
-    '!' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
-  | '+' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
-  | '-' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], val[1]) }
+    '!' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) }
+  | '+' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) }
+  | '-' Expression                        { result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) }
   ;
 
   # ['=', LHS, RHS]

@@ -40,7 +40,7 @@ module Riml
         node.body.accept(NodesVisitor.new(:propagate_up_tree => false))
 
         node.body.compiled_output.each_line do |line|
-          outdent = line =~ /\A(\s*)(else\s*|elseif .*)$/
+          outdent = line =~ /\A(\s*)(else\s*|elseif .+)$/
           if outdent && node.non_nested?
             node.compiled_output << node.outdent + line
           else
@@ -532,7 +532,8 @@ module Riml
                node.descendant_of_operator_node? ||
                node.descendant_of_wrap_in_parens_node? ||
                node.descendant_of_sublist_node? ||
-               node.descendant_of_dict_get_dot_node?
+               node.descendant_of_dict_get_dot_node? ||
+               node.descendant_of_dictionary_node?
           node.force_newline = true
         end
       end

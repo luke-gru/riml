@@ -301,7 +301,7 @@ function! s:repo_superglob(base) dict abort
       call filter(heads, 'v:val[ 0 : strlen(a:base)-1 ] ==# a:base')
       let results += heads
     endif
-    if !self.bareself.bare()
+    if !self.bare()
       let base = s:sub(a:base, '^/', '')
       let matches = split(glob(self.tree(s:gsub(base, '/', '*&') . '*')), "\n")
       call map(matches, 's:shellslash(v:val)')
@@ -357,8 +357,7 @@ endfunction
 call s:add_methods('repo', ['keywordprg'])
 let s:buffer_prototype = {}
 function! s:buffer(...) abort
-  let buffer = {'#': bufnr(a:0 ? a:1 : '%')
-  }
+  let buffer = {'#': bufnr(a:0 ? a:1 : '%')}
   call extend(extend(buffer, s:buffer_prototype, 'keep'), s:abstract_prototype, 'keep')
   if buffer.getvar('git_dir') !=# ''
     return buffer
@@ -610,7 +609,7 @@ function! s:stage_info(lnum) abort
   while lnum && getline(lnum) !~# colon . '$'
     let lnum -= 1
   endwhile
-  if !s:lnum
+  if !lnum
     return ['', '']
   elseif getline(s:lnum + 1) =~# '^# .*"git \%(reset\|rm --cached\) ' || getline(s:lnum) ==# '# Changes to be committed:'
     return [matchstr(filename, colon . ' *\zs.*'), 'staged']
@@ -1134,7 +1133,7 @@ function! s:Write(force, ...) abort
     return 'write' . (a:force ? '! ' : ' ') . s:fnameescape(s:repo() . s:translate(s:buffer() . expand(path)))
   endif
   let always_permitted = (s:buffer() . s:path() ==# path && s:buffer() . s:commit() =~# '^0\=$')
-  if !s:always_permitted && !a:force && s:repo() . s:git_chomp_in_tree('diff', '--name-status', 'HEAD', '--', path) . s:repo() . s:git_chomp_in_tree('ls-files', '--others', '--', path) !=# ''
+  if !always_permitted && !a:force && s:repo() . s:git_chomp_in_tree('diff', '--name-status', 'HEAD', '--', path) . s:repo() . s:git_chomp_in_tree('ls-files', '--others', '--', path) !=# ''
     let v:errmsg = 'fugitive: file has uncommitted changes (use ! to override)'
     return 'echoerr v:errmsg'
   endif
@@ -1309,8 +1308,8 @@ function! s:buffer_compare_age(commit) dict abort
   elseif s:base ==# a:commit
     return 1
   endif
-  let my_time = +self.repoself.repo() . s:git_chomp('log', '--max-count=1', '--pretty=format:%at', self.commit())
-  let their_time = +self.repoself.repo() . s:git_chomp('log', '--max-count=1', '--pretty=format:%at', a:commit)
+  let my_time = +self.repo() . s:git_chomp('log', '--max-count=1', '--pretty=format:%at', self.commit())
+  let their_time = +self.repo() . s:git_chomp('log', '--max-count=1', '--pretty=format:%at', a:commit)
   return my_time <# their_time ? -1 : my_time !=# their_time
 endfunction
 call s:add_methods('buffer', ['compare_age'])
@@ -1619,7 +1618,7 @@ function! s:BlameJump(suffix) abort
   if delta ># 0
     execute 'normal! ' . delta . "\<C-E>"
   elseif s:delta <# 0
-    execute 'normal! ' . (-s:delta) . "\<C-Y>"
+    execute 'normal! ' . (-delta) . "\<C-Y>"
   endif
   syncbindreturn ''
 endfunction

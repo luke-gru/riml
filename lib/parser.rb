@@ -2403,21 +2403,21 @@ module_eval(<<'.,.,', 'grammar.y', 307)
 
 module_eval(<<'.,.,', 'grammar.y', 311)
   def _reduce_150(val, _values, result)
-     result = Riml::UnaryOperatorNode.new(val[0], val[1]) 
+     result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 312)
   def _reduce_151(val, _values, result)
-     result = Riml::UnaryOperatorNode.new(val[0], val[1]) 
+     result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 313)
   def _reduce_152(val, _values, result)
-     result = Riml::UnaryOperatorNode.new(val[0], val[1]) 
+     result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) 
     result
   end
 .,.,

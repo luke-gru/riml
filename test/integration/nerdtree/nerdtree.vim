@@ -133,7 +133,7 @@ function! nerdtree#findAndRevealPath()
       call g:NERDTreeCreator.CreatePrimary(p.getParent().str())
     endif
   else
-    if !p.isUnderp.isUnder(g:NERDTreeFileNode.GetRootForTab().path)
+    if !p.isUnder(g:NERDTreeFileNode.GetRootForTab().path)
       if !nerdtree#isTreeOpen()
         call g:NERDTreeCreator.TogglePrimary('')
       else
@@ -487,7 +487,7 @@ function! nerdtree#isWindowUsable(winnumber)
   if &hidden
     return 1
   endif
-  return !s:modified || nerdtree#bufInWindows(winbufnr(a:winnumber)) >=# 2
+  return !modified || nerdtree#bufInWindows(winbufnr(a:winnumber)) >=# 2
 endfunction
 function! nerdtree#jumpToChild(currentNode, direction)
   if a:currentNode.isRoot()
@@ -575,8 +575,7 @@ function! nerdtree#renderView()
     call setline(line(".") + 1, nerdtree#treeUpDirLine())
     call cursor(line(".") + 1, col("."))
   endif
-  let header = b:NERDTreeRoot.path.str({'format': 'UI', 'truncateTo': winwidth(0)
-  })
+  let header = b:NERDTreeRoot.path.str({'format': 'UI', 'truncateTo': winwidth(0)})
   call setline(line(".") + 1, header)
   call cursor(line(".") + 1, col("."))
   let old_o = @o
@@ -594,7 +593,7 @@ function! nerdtree#renderView()
 endfunction
 function! nerdtree#renderViewSavingPosition()
   let currentNode = g:NERDTreeFileNode.GetSelected()
-  while currentNode !=# {} && !currentNode.isVisiblecurrentNode.isVisible() && !currentNode.isRootcurrentNode.isRoot()
+  while currentNode !=# {} && !currentNode.isVisible() && !currentNode.isRoot()
     let currentNode = currentNode.parent
   endwhile
   call nerdtree#renderView()

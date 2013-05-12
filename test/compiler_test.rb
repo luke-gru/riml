@@ -2238,5 +2238,19 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  # Regression test: there was a bug where the compiler was putting the last
+  # two chars on the next line in this situation.
+  test "call inside dictionary inside call compiles well" do
+    riml = <<Riml
+let header = b:NERDTreeRoot.path.str({'format': 'UI', 'truncateTo': winwidth(0)})
+Riml
+
+    expected = <<Viml
+let s:header = b:NERDTreeRoot.path.str({'format': 'UI', 'truncateTo': winwidth(0)})
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

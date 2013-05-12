@@ -413,7 +413,16 @@ module Riml
   end
 
   class UnaryOperatorNode < OperatorNode
-    alias operand operands
+    def initialize(operator, operands)
+      len = operands.length
+      unless len == 1
+        raise ArgumentError, "unary operator must have 1 operand, has #{len}"
+      end
+      super
+    end
+    def operand
+      operands.first
+    end
   end
 
   # operator = :ternary
