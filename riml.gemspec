@@ -25,4 +25,5 @@ Gem::Specification.new do |s|
                 'CONTRIBUTING', 'Gemfile', 'Gemfile.lock']
 
   s.add_development_dependency('racc')
+  s.add_development_dependency('minitest', '~> 2.5.1')
 end

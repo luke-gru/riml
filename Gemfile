@@ -10,4 +10,5 @@ end
 
 group :test do
   gem 'rake' # for travis-ci
+  gem 'minitest', '~> 2.5.1'
 end

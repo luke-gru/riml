@@ -1,3 +1,4 @@
+gem 'minitest'
 require 'minitest/unit'
 
 $VERBOSE = 1
