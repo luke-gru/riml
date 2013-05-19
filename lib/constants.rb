@@ -11,7 +11,7 @@ module Riml
     END_KEYWORDS = VIML_END_KEYWORDS + RIML_END_KEYWORDS
 
     RIML_KEYWORDS =
-      %w(def defm super end then unless until true false nil class new)
+      %w(def defm super end then unless until true false class new)
     DEFINE_KEYWORDS = %w(def def! defm defm! function function!)
 
     KEYWORDS = VIML_KEYWORDS + VIML_END_KEYWORDS + RIML_KEYWORDS

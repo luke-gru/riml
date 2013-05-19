@@ -190,13 +190,6 @@ Viml
     assert_equal expected2, compile(riml2)
   end
 
-  test "setting variable to nil frees its memory" do
-    riml = "b:a = nil"
-    expected = "unlet! b:a"
-
-    assert_equal expected, compile(riml).chomp
-  end
-
   test "unless expression always wraps the condition in parens to avoid ! operator ambiguity" do
     riml = <<Riml
 unless shy()

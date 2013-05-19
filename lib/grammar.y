@@ -12,7 +12,7 @@ token NUMBER
 token STRING_D STRING_S # single- and double-quoted
 token EX_LITERAL
 token REGEXP
-token TRUE FALSE NIL
+token TRUE FALSE
 token LET UNLET UNLET_BANG IDENTIFIER
 token DICT_VAL # like dict.key, 'key' is a DICT_VAL
 token SCOPE_MODIFIER SCOPE_MODIFIER_LITERAL SPECIAL_VAR_PREFIX
@@ -117,7 +117,6 @@ rule
   | ScopeModifierLiteral                  { result = val[0] }
   | TRUE                                  { result = Riml::TrueNode.new }
   | FALSE                                 { result = Riml::FalseNode.new }
-  | NIL                                   { result = Riml::NilNode.new }
   ;
 
   Number:

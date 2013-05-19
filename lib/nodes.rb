@@ -227,14 +227,6 @@ module Riml
     def initialize() super(false) end
   end
 
-  class NilNode < LiteralNode
-    def initialize() super(nil) end
-  end
-
-  class NewlineNode < LiteralNode
-    def initialize() super("\n") end
-  end
-
   class ExLiteralNode < LiteralNode
     def initialize(*)
       super

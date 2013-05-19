@@ -188,8 +188,8 @@ Riml
       rescue Riml::ParseError => e
         error = e
       end
-      # FIXME: super and nil should not be in this list of acceptable keywords
-      allowed_keywords = %w(true false super nil)
+      # FIXME: super should not be in this list of acceptable keywords
+      allowed_keywords = %w(true false super)
       unless allowed_keywords.include?(keyword)
         assert error, "error was not raised for keyword: #{keyword}"
       end

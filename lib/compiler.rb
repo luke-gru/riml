@@ -135,8 +135,6 @@ module Riml
           1
         when FalseClass
           0
-        when NilClass
-          'nil'
         when Numeric
           node.value
         when String
@@ -174,7 +172,6 @@ module Riml
 
     TrueNodeVisitor  = LiteralNodeVisitor
     FalseNodeVisitor = LiteralNodeVisitor
-    NilNodeVisitor   = LiteralNodeVisitor
 
     NumberNodeVisitor = LiteralNodeVisitor
     StringNodeVisitor = LiteralNodeVisitor
@@ -274,7 +271,6 @@ module Riml
           end
         end
         node.compiled_output = "#{lhs}#{rhs}"
-        node.compiled_output = "unlet! #{node.lhs.compiled_output}" if node.rhs.compiled_output == 'nil'
         node.force_newline = true
         node.compiled_output
       end
