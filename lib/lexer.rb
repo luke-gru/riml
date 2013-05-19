@@ -11,7 +11,7 @@ module Riml
     ANCHORED_INTERPOLATION_REGEX = /\A#{INTERPOLATION_REGEX}/m
     INTERPOLATION_SPLIT_REGEX = /(\#\{.*?\})/m
 
-    attr_reader :tokens, :prev_token, :lineno, :chunk, :current_indent
+    attr_reader :tokens, :prev_token, :lineno, :chunk, :current_indent, :invalid_keyword
     # for REPL
     attr_accessor :ignore_indentation_check
 
@@ -35,13 +35,12 @@ module Riml
       @dedent_pending = false
       @one_line_conditional_end_pending = false
       @in_function_declaration = false
+      @invalid_keyword = nil
     end
 
     def tokenize
       set_start_state!
-      while (token = next_token) != nil
-        @tokens << token
-      end
+      while next_token != nil; end
       @tokens
     end
 
@@ -54,6 +53,7 @@ module Riml
         if token.size == 3
           @lineno += token.pop
         end
+        tokens << token
         return @prev_token = token
       end
       check_indentation unless ignore_indentation_check
@@ -109,10 +109,6 @@ module Riml
             old_identifier = identifier.dup
             identifier.sub!(/function/, "def")
             @i += (old_identifier.size - identifier.size)
-          elsif VIML_END_KEYWORDS.include? identifier
-            old_identifier = identifier.dup
-            identifier = 'end'
-            @i += old_identifier.size - identifier.size
           end
 
           if DEFINE_KEYWORDS.include?(identifier)
@@ -121,8 +117,12 @@ module Riml
 
           # strip '?' out of token names and replace '!' with '_bang'
           token_name = identifier.sub(/\?\Z/, "").sub(/!\Z/, "_bang").upcase
-
           track_indent_level(chunk, identifier)
+
+          if VIML_END_KEYWORDS.include?(identifier)
+            token_name = :END
+          end
+
           @token_buf << [token_name.intern, identifier]
 
         elsif BUILTIN_COMMANDS.include?(identifier) && !chunk[/\A#{Regexp.escape(identifier)}\(/]
@@ -232,6 +232,18 @@ module Riml
       end
     end
 
+    def prev_token_is_keyword?
+      if prev_token && prev_token[1]
+        if KEYWORDS.include?(prev_token[1])
+          return @invalid_keyword = prev_token[1]
+        end
+        prev_prev_token = tokens[-2]
+        if prev_prev_token && KEYWORDS.include?(prev_prev_token[1])
+          return @invalid_keyword = prev_prev_token[1]
+        end
+      end
+    end
+
     private
 
     def track_indent_level(chunk, identifier)
@@ -246,7 +258,7 @@ module Riml
           @current_indent += 2
           @indent_pending = true
         end
-      when :end
+      when *END_KEYWORDS.map(&:to_sym)
         unless @one_line_conditional_end_pending
           @current_indent -= 2
           @dedent_pending = true

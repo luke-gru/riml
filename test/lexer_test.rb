@@ -120,7 +120,7 @@ Riml
     expected = [
       [:DEF_BANG, "def!"], [:IDENTIFIER, "smartinput#clear_rules"], ["(", "("], [")", ")"], [:NEWLINE, "\n"],
         [:LET, "let"], [:SCOPE_MODIFIER, "s:"], [:IDENTIFIER, "available_nrules"], ["=", "="], ["[", "["], ["]", "]"], [:NEWLINE, "\n"],
-      [:END, "end"]
+      [:END, "endfunction"]
     ]
     assert_equal expected, lex(riml)
   end

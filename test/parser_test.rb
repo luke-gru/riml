@@ -146,13 +146,52 @@ Riml
     assert parse(riml)
   end
 
-  test "use of keywords as variables raises parse error" do
+  test "use of keyword as variable on LHS raises parse error" do
     Riml::Constants::KEYWORDS.each do |keyword|
       riml = <<Riml
 let #{keyword} = s:wrap(orig,a:char,type,special)
 Riml
-      assert_raises(Riml::ParseError) do
+      begin
+        error = nil
         parse(riml)
+      rescue Riml::ParseError => e
+        error = e
+      end
+      assert error, "#{keyword} didn't raise error on use as LHS of assignment"
+      assert error.message =~ /cannot be used as a variable name/, "#{keyword} didn't give proper error message"
+    end
+  end
+
+  test "use of keyword as variable on LHS still raises parse error even when scope modified" do
+    Riml::Constants::KEYWORDS.each do |keyword|
+      riml = <<Riml
+let n:#{keyword} = s:wrap(orig,a:char,type,special)
+Riml
+      begin
+        error = nil
+        parse(riml)
+      rescue Riml::ParseError => e
+        error = e
+      end
+      assert error, "error was not raised for keyword: #{keyword}"
+    end
+  end
+
+  test "use of keyword as variable in dict get with brackets raises parse error" do
+    Riml::Constants::KEYWORDS.each do |keyword|
+      riml = <<Riml
+dict[#{keyword}] = true
+Riml
+      begin
+        error = nil
+        parse(riml)
+      rescue Riml::ParseError => e
+        error = e
+      end
+      # FIXME: super and nil should not be in this list of acceptable keywords
+      allowed_keywords = %w(true false super nil)
+      unless allowed_keywords.include?(keyword)
+        assert error, "error was not raised for keyword: #{keyword}"
       end
     end
   end

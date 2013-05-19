@@ -542,7 +542,13 @@ end
       ast = do_parse
     rescue Racc::ParseError => e
       raise unless @lexer
-      raise Riml::ParseError, "on line #{@lexer.lineno}: #{e.message}"
+      if @lexer.prev_token_is_keyword?
+        warning = "#{@lexer.invalid_keyword.inspect} is a keyword, and cannot " \
+          "be used as a variable name"
+      end
+      error_msg = "on line #{@lexer.lineno}: #{e.message}"
+      error_msg << "\n\n#{warning}" if warning
+      raise Riml::ParseError, error_msg
     end
 
     @ast_rewriter ||= ast_rewriter

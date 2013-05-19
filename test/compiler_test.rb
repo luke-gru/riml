@@ -1558,6 +1558,16 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "ClassNotFound raised when instantiating class that doesn't exist" do
+    riml = <<Riml
+pup = new Puppy()
+Riml
+
+    assert_raises(ClassNotFound) do
+      compile(riml)
+    end
+  end
+
   test "super with parens in initialize function" do
     riml = <<Riml
 class Car

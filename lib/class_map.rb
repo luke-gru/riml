@@ -12,7 +12,7 @@ module Riml
 
     def [](key)
       ensure_key_is_string!(key)
-      @map[key]
+      @map[key] or raise ClassNotFound, "class #{key.inspect} not found."
     end
 
     def []=(key, val)

@@ -12,9 +12,15 @@ module Riml
     attr_reader :parser, :compiler
     private :parser, :compiler
 
-    EXIT_ON = %w(quit exit q e)
     COMPILE_ON = %w(compile c)
-    RELOAD_ON = %w(reload reload!)
+    RELOAD_ON = %w(reload r)
+    EXIT_ON = %w(quit q)
+
+    HELP_MSG = <<msg
+compile riml line(s):             #{COMPILE_ON.join(', ')}
+clear previous class definitions: #{RELOAD_ON.join(', ')}
+exit repl:                        #{EXIT_ON.join(', ')}
+msg
 
     def initialize(vi_readline = false)
       @indent_amount = 0
@@ -25,17 +31,19 @@ module Riml
     end
 
     def run
+      puts HELP_MSG, "\n"
       while @line = Readline.readline(current_indent, true)
         line.strip!
         next if line.empty?
         line_dc = line.downcase
-        exit_repl if EXIT_ON.include?(line_dc)
         if COMPILE_ON.include?(line_dc)
           next if current_compilation_unit.empty?
           compile_unit!
         elsif RELOAD_ON.include?(line_dc)
           reload!
           puts "reloaded"
+        elsif EXIT_ON.include?(line_dc)
+          exit_repl
         else
           current_compilation_unit << line
           check_indents
@@ -71,7 +79,6 @@ module Riml
       viml = Riml.compile(current_compilation_unit.join("\n"), parser, compiler).chomp
       puts viml, "\n"
     rescue => e
-      raise unless e.kind_of?(RimlError)
       print_error(e)
       reload!
     ensure
