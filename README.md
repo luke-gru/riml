@@ -44,9 +44,19 @@ our own local variable called 'msg'. In that case, we'd have to refer to the arg
 as 'a:msg' explicitly. Shadowing variables in Riml is considered bad practice, as it's
 much easier to just come up with unique variable names across a scope.
 
-###Freeing memory
+###Assignment as Expression
 
-    a = nil                       unlet! a
+    let a = b = c = 0                   let s:c = 0
+                                        let s:b = s:c
+                                        let s:a = s:b
+
+The 'let' is optional in Riml for all assignments. Without it, the results are
+the same.
+
+###Multiple Assignment Statement
+
+    a = 0, b = 1                        let s:a = 0
+                                        let s:b = 1
 
 ###Checking for existence
 
@@ -70,6 +80,11 @@ now be used as statement modifiers:
 Here, the compiled output is the same as the previous example's. Both 'if' and
 'unless' can be used this way.
 
+###True and False
+
+    a = true                                      let a = 1
+    b = false                                     let b = 0
+
 Operators And Case Sensitivity
 ------------------------------
 
@@ -82,6 +97,26 @@ comparisons, you have to explicitly use the form ending in '?' (ex: '==?').
 The only operators that don't add a '#' even though the forms exist are the
 'is' and 'isnot' operators. This is because 'is' is much different from its
 cousin 'is#', and the same is true of 'isnot'.
+
+
+###=== Operator
+
+Oh no, not another of THOSE operators! Well, this one is pretty sweet
+actually. In VimL, automatic type conversion can be a pain. For example:
+
+    echo 4 ==# "4"
+    => 1
+
+To mitigate this, we can wrap each side in a list, since lists are more strict
+regarding equality:
+
+    echo [4] ==# ["4"]
+    => 0
+
+The '===' operator wraps both operands in lists:
+
+    echo 4 === "4"                        echo [4] ==# ["4"]
+
 
 Heredocs
 --------
