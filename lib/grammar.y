@@ -247,6 +247,11 @@ rule
   | /* nothing */          { result = nil }
   ;
 
+  ScopeOrSID:
+    Scope                  { val[0] }
+  | '<' IDENTIFIER '>'          { result = Riml::SIDNode.new(val[1]) }
+  ;
+
   ArgList:
     /* nothing */                         { result = [] }
   | ArgListWithoutNothing                 { result = val[0] }
@@ -374,10 +379,10 @@ rule
   # Method definition
   # [scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType Scope DefCallIdentifier DefKeywords Block END                               { result = Riml.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
-  | FunctionType Scope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType ScopeOrSID DefCallIdentifier DefKeywords Block END                               { result = Riml.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
+  | FunctionType ScopeOrSID DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
+  | FunctionType ScopeOrSID DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
+  | FunctionType ScopeOrSID DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   FunctionType:

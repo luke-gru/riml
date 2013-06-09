@@ -72,7 +72,7 @@ EOS
     end
 
     def assert_riml_warning(expected_warning = /Warning:/i)
-      out, err = capture_subprocess_io do
+      _, err = capture_subprocess_io do
         yield
         Riml.send(:flush_warnings)
       end

@@ -32,7 +32,8 @@ module Riml
         ObjectInstantiationToCall.new(ast, classes),
         CallToExplicitCall.new(ast, classes),
         DefaultParamToIfNode.new(ast, classes),
-        DeserializeVarAssignment.new(ast, classes)
+        DeserializeVarAssignment.new(ast, classes),
+        TopLevelDefMethodToDef.new(ast, classes)
       ]
       rewriters.each do |rewriter|
         rewriter.rewrite_on_match
@@ -444,6 +445,23 @@ module Riml
         new_assigns.parent = orig_assign.parent
         orig_assign.replace_with(new_assigns)
         establish_parents(new_assigns)
+      end
+    end
+
+    class TopLevelDefMethodToDef < AST_Rewriter
+      def match?(node)
+        DefMethodNode === node
+      end
+
+      def replace(node)
+        Riml.warn "top-level function #{node.full_name} is defined with 'defm', which " \
+          "should only be used inside classes. Please use 'def'"
+        scope_modifier = node.scope_modifier
+        keywords = node.keywords
+        new_node = node.to_def_node
+        new_node.scope_modifier = scope_modifier
+        new_node.keywords = keywords
+        node.replace_with(new_node)
       end
     end
 

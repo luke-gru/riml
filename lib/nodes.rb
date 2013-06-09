@@ -234,6 +234,14 @@ module Riml
     end
   end
 
+  class SIDNode < LiteralNode
+    def initialize(ident)
+      Riml.warn("expected #{ident} to be SID") unless ident == 'SID'
+      super('<SID>')
+    end
+    alias to_s value
+  end
+
   class FinishNode < KeywordNode
     def initialize() super("finish\n") end
   end

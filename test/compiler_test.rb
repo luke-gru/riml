@@ -2255,5 +2255,51 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "using 'defm' outside of class gives warning during compilation" do
+    riml = <<Riml
+defm Mistake()
+end
+Riml
+
+    expected = <<Viml
+function! s:Mistake()
+endfunction
+Viml
+
+    assert_riml_warning(/should only be used inside classes/) do
+      assert_equal expected, compile(riml)
+    end
+  end
+
+  test "<SID> as scope modifier of function" do
+    riml = <<Riml
+def <SID>Func()
+end
+Riml
+
+    expected = <<Viml
+function! <SID>Func()
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "warn if <SID> is misspelled or different case" do
+    riml = <<Riml
+def <sid>Func()
+end
+Riml
+
+    expected = <<Viml
+function! <SID>Func()
+endfunction
+Viml
+
+    assert_riml_warning do
+      assert_equal expected, compile(riml)
+    end
+  end
+
 end
 end
