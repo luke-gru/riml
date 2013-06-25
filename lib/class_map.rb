@@ -26,10 +26,7 @@ module Riml
     def superclass(key)
       ensure_key_is_string!(key)
       super_key = @map[key].superclass_name
-      unless @map[super_key]
-        raise ClassNotFound, "class #{super_key.inspect} not found."
-      end
-      @map[super_key]
+      self[super_key]
     end
 
     def classes
