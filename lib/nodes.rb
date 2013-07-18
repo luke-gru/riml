@@ -59,7 +59,7 @@ module Riml
     def insert_before(node, new_node)
       idx = children.find_index(node)
       return unless idx
-      children.insert(idx-1, new_node)
+      children.insert(idx - 1, new_node)
     end
 
     def next
@@ -77,7 +77,7 @@ module Riml
     def insert_after(node, new_node)
       idx = children.find_index(node)
       return unless idx
-      children.insert(idx+1, new_node)
+      children.insert(idx + 1, new_node)
     end
 
     def index
@@ -93,7 +93,7 @@ module Riml
       idx = index
       return unless idx
       parent.children.insert(idx, new_node)
-      parent.children.slice!(idx+1)
+      parent.children.slice!(idx + 1)
       new_node
     end
   end
@@ -831,11 +831,13 @@ module Riml
 
   # dict['key']
   # dict['key1']['key2']
-  class DictGetBracketNode < DictGetNode; end
+  class DictGetBracketNode < DictGetNode
+  end
 
   # dict.key
   # dict.key.key2
-  class DictGetDotNode < DictGetNode; end
+  class DictGetDotNode < DictGetNode
+  end
 
 
   # list_or_dict[0]

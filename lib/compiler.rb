@@ -241,6 +241,9 @@ module Riml
       end
 
       def scope_modifier_for_node(node)
+        if node.respond_to?(:name) && node.name == 'self'
+          return node.scope_modifier = ''
+        end
         if node.scope
           if node.scope.function && DefNode === node && !node.defined_on_dictionary?
             return "s:"
@@ -512,7 +515,11 @@ module Riml
       end
 
       def compile_arguments(node)
-        node.compiled_output << (node.builtin_command? ? " " : "(")
+        node.compiled_output << if node.builtin_command?
+          if node.arguments.any? then ' ' else '' end
+        else
+          '('
+        end
         node.arguments.each_with_index do |arg, i|
           arg.parent_node = node
           arg_visitor = visitor_for_node(arg)

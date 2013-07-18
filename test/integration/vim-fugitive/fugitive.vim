@@ -209,7 +209,7 @@ endfunction
 function! s:repo_translate(spec) dict abort
   if a:spec ==# '.' || a:spec ==# '/.'
     return self.bare() ? self.dir() : self.tree()
-  elseif a:spec =~# '^/\=\.git$' && s:self.bare()
+  elseif a:spec =~# '^/\=\.git$' && self.bare()
     return self.dir()
   elseif a:spec =~# '^/\=\.git/'
     return self.dir(s:sub(a:spec, '^/=\.git/', ''))
@@ -228,17 +228,17 @@ function! s:repo_translate(spec) dict abort
     return 'fugitive://' . self.dir() . '//' . ref
   elseif a:spec =~# '^:'
     return 'fugitive://' . self.dir() . '//0/' . a:spec[1 : -1]
-  elseif a:spec =~# 'HEAD\|^refs/' && a:spec !~# ':' && filereadable(s:self.dir(a:spec))
+  elseif a:spec =~# 'HEAD\|^refs/' && a:spec !~# ':' && filereadable(self.dir(a:spec))
     return self.dir(a:spec)
-  elseif filereadable(s:self.dir('refs/' . a:spec))
+  elseif filereadable(self.dir('refs/' . a:spec))
     return self.dir('refs/' . a:spec)
-  elseif filereadable(s:self.dir('refs/tags/' . a:spec))
+  elseif filereadable(self.dir('refs/tags/' . a:spec))
     return self.dir('refs/tags/' . a:spec)
-  elseif filereadable(s:self.dir('refs/heads/' . a:spec))
+  elseif filereadable(self.dir('refs/heads/' . a:spec))
     return self.dir('refs/heads/' . a:spec)
-  elseif filereadable(s:self.dir('refs/remotes/' . a:spec))
+  elseif filereadable(self.dir('refs/remotes/' . a:spec))
     return self.dir('refs/remotes/' . a:spec)
-  elseif filereadable(s:self.dir('refs/remotes/' . a:spec . '/HEAD'))
+  elseif filereadable(self.dir('refs/remotes/' . a:spec . '/HEAD'))
     return self.dir('refs/remotes/' . a:spec, '/HEAD')
   else
     try
@@ -382,17 +382,17 @@ endfunction
 function! s:buffer_type(...) dict abort
   if self.getvar('fugitive_type') !=# ''
     let type = self.getvar('fugitive_type')
-  elseif fnamemodify(s:self.spec(), ':p') =~# '.\git/refs/\|\.git/\w*HEAD$'
+  elseif fnamemodify(self.spec(), ':p') =~# '.\git/refs/\|\.git/\w*HEAD$'
     let type = 'head'
-  elseif s:self.getline(1) =~# '^tree \x\{40\}$' && s:self.getline(2) ==# ''
+  elseif self.getline(1) =~# '^tree \x\{40\}$' && self.getline(2) ==# ''
     let type = 'tree'
-  elseif s:self.getline(1) =~# '^\d\{6\} \w\{4\} \x\{40\}\>\t'
+  elseif self.getline(1) =~# '^\d\{6\} \w\{4\} \x\{40\}\>\t'
     let type = 'tree'
-  elseif s:self.getline(1) =~# '^\d\{6\} \x\{40\}\> \d\t'
+  elseif self.getline(1) =~# '^\d\{6\} \x\{40\}\> \d\t'
     let type = 'index'
-  elseif isdirectory(s:self.spec())
+  elseif isdirectory(self.spec())
     let type = 'directory'
-  elseif s:self.spec() ==# ''
+  elseif self.spec() ==# ''
     let type = 'null'
   else
     let type = 'file'
@@ -428,9 +428,9 @@ function! s:buffer_path(...) dict abort
   let rev = matchstr(self.spec(), '^fugitive://.\{-\}//\zs.*')
   if rev !=# ''
     let rev = s:sub(rev, '\w*', '')
-  elseif s:self.spec()[0 : len(s:self.repo() . s:dir())] ==# s:self.repo() . s:dir() . '/'
+  elseif self.spec()[0 : len(self.repo() . s:dir())] ==# self.repo() . s:dir() . '/'
     let rev = '/.git' . self.spec()[strlen(self.repo() . s:dir()) : -1]
-  elseif !s:self.repo() . s:bare() && s:self.spec()[0 : len(s:self.repo() . s:tree())] ==# s:self.repo() . s:tree() . '/'
+  elseif !self.repo() . s:bare() && self.spec()[0 : len(self.repo() . s:tree())] ==# self.repo() . s:tree() . '/'
     let rev = self.spec()[strlen(self.repo() . s:tree()) : -1]
   endif
   return s:sub(s:sub(rev, '.\zs/$', ''), '^/', a:0 ? a:1 : '')
@@ -441,9 +441,9 @@ function! s:buffer_rev() dict abort
     return ':' . rev[0] . ':' . rev[2 : -1]
   elseif s:rev =~# '.'
     return s:sub(rev, '/', ':')
-  elseif s:self.spec() =~# '\.git/index$'
+  elseif self.spec() =~# '\.git/index$'
     return ':'
-  elseif s:self.spec() =~# '\.git/refs/\|\.git/.*HEAD$'
+  elseif self.spec() =~# '\.git/refs/\|\.git/.*HEAD$'
     return self.spec()[strlen(self.repo() . s:dir()) + 1 : -1]
   else
     return self.path('/')
@@ -476,7 +476,7 @@ endfunction
 function! s:buffer_containing_commit() dict abort
   if self.commit() =~# '^\d$'
     return ':'
-  elseif s:self.commit() =~# '.'
+  elseif self.commit() =~# '.'
     return self.commit()
   else
     return 'HEAD'
@@ -1009,7 +1009,7 @@ function! s:Edit(cmd, bang, ...) abort
       if a:cmd =~# 'pedit'
         wincmd p
       endif
-      return echo 
+      return echo
     endif
     return ''
   endif
@@ -1299,7 +1299,7 @@ function! s:buffer_compare_age(commit) dict abort
   let their_score = get(scores, ':' . a:commit, 0)
   if my_score || their_score
     return my_score <# their_score ? -1 : my_score !=# their_score
-  elseif s:self.commit() ==# a:commit
+  elseif self.commit() ==# a:commit
     return 0
   endif
   let base = self.repo() . s:git_chomp('merge-base', self.commit(), a:commit)
