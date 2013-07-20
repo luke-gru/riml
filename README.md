@@ -121,14 +121,13 @@ The '===' operator wraps both operands in lists:
 Heredocs
 --------
 
-    msg = <<EOS                           let s:msg = "a vim heredoc! " . s:cryForJoy() . "!\nHooray!\n"
+    msg = <<EOS                           let s:msg = "a vim heredoc! " . s:cryForJoy() . "!\nHooray!"
     A vim heredoc! #{cryForJoy()}!
     Hooray!
     EOS
 
 Riml heredocs must have the ending pattern ('EOS' in this case) start at the
-beginning of the line. Interpolating expressions is allowed in heredocs.
-Compiled heredocs always end with a newline.
+beginning of the line. Interpolated expressions are allowed in heredocs.
 
 Functions
 ---------

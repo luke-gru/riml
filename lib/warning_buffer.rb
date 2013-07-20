@@ -16,8 +16,7 @@ module Riml
     attr_reader :buffer
 
     def initialize(*warnings)
-      @buffer = []
-      buffer.concat warnings
+      @buffer = warnings
     end
 
     def <<(warning)

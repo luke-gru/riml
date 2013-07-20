@@ -201,6 +201,7 @@ module Riml
         new_chunk = get_new_chunk
         heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|m, 1]
         @i += heredoc_string.size + pattern.size
+        heredoc_string.chomp!
         if heredoc_string =~ INTERPOLATION_REGEX || %Q("#{heredoc_string}") =~ INTERPOLATION_REGEX
           parts = heredoc_string.split(INTERPOLATION_SPLIT_REGEX)
           handle_interpolation(*parts)

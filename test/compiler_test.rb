@@ -1244,7 +1244,7 @@ omg this is a heredoc
 EOS
 '.strip
 
-    expected = %{let s:heredoc = "omg this is a heredoc\\n"}
+    expected = %{let s:heredoc = "omg this is a heredoc"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1256,7 +1256,7 @@ Hello there, #{name}, how are you?
 EOS
 '.strip
 
-    expected = %{let s:heredoc = "Hello there, " . s:name . ", how are you?\\n"}
+    expected = %{let s:heredoc = "Hello there, " . s:name . ", how are you?"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1268,7 +1268,7 @@ Holy #{loudExpletive()} it\'s freaking #{superhero}!
 EOS
 '.strip
 
-    expected = %{let s:lineFromMovie = "Holy " . s:loudExpletive() . " it's freaking " . s:superhero . "!\\n"}
+    expected = %{let s:lineFromMovie = "Holy " . s:loudExpletive() . " it's freaking " . s:superhero . "!"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1283,7 +1283,7 @@ tiline\\n
 endpoem
 Riml
     expected = <<Viml
-let s:poem = "M\\nu\\nl\\ntiline\\n\\n"
+let s:poem = "M\\nu\\nl\\ntiline\\n"
 Viml
     assert_equal expected, compile(riml)
   end
@@ -1296,7 +1296,7 @@ hey there cute
 EOS
 Riml
     expected = <<Viml
-let s:dogTalk = "hey there cute\\n" . s:dog.breed . "\\n"
+let s:dogTalk = "hey there cute\\n" . s:dog.breed
 Viml
     assert_equal expected, compile(riml)
   end
@@ -1308,7 +1308,7 @@ Holy "#{loudExpletive()}" it\'s freaking #{superhero}!
 EOS
 '.strip
 
-    expected = %{let s:lineFromMovie = "Holy \\"" . s:loudExpletive() . "\\" it's freaking " . s:superhero . "!\\n"}
+    expected = %{let s:lineFromMovie = "Holy \\"" . s:loudExpletive() . "\\" it's freaking " . s:superhero . "!"}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1320,7 +1320,7 @@ quote = <<EOS
 EOS
 '.strip
 
-    expected = %{let s:quote = "\\"I still watch Duckman!\\"\\n"}
+    expected = %{let s:quote = "\\"I still watch Duckman!\\""}
 
     assert_equal expected, compile(riml).chomp
   end
@@ -1347,7 +1347,7 @@ EOS
 '.strip
     expected = <<Riml
 let s:host = "Tom Scharpling"
-let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '') . "\\n"
+let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '')
 Riml
     assert_equal expected, compile(riml)
   end
@@ -1361,7 +1361,7 @@ EOS
 '.strip
     expected = <<Riml
 let s:host = "Tom Scharpling"
-let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '') . " and others\\n"
+let s:title = "The Best Show on WFMU with " . s:host . (s:guests ? ' and guests' : '') . " and others"
 Riml
     assert_equal expected, compile(riml)
   end
