@@ -13,7 +13,7 @@ require 'racc/parser.rb'
 module Riml
   class Parser < Racc::Parser
 
-module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 533)
+module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 534)
   # This code will be put as-is in the parser class
 
   attr_accessor :ast_rewriter
@@ -70,27 +70,27 @@ clist = [
 '119,114,115,116,120,121,122,98,100,99,105,107,106,108,110,109,102,104',
 '103,129,130,97,96,133,167,77,37,169,36,78,37,79,82,80,81,84,37,101,83',
 '36,72,73,37,56,55,85,86,74,36,87,57,75,36,45,47,46,88,48,43,44,62,69',
-'70,-109,269,58,49,67,76,59,352,201,201,60,61,314,267,358,255,298,135',
-'316,385,385,262,298,301,185,37,261,302,149,148,-165,-165,-165,-165,201',
+'70,-110,269,58,49,67,76,59,352,201,201,60,61,314,267,358,255,298,135',
+'316,385,385,262,298,301,185,37,261,302,149,148,-166,-166,-166,-166,201',
 '143,37,201,355,48,-42,-42,48,370,269,37,145,28,371,37,51,77,53,160,351',
 '78,145,79,82,80,81,84,145,267,83,160,72,73,160,56,55,85,86,74,160,87',
 '57,75,36,45,47,46,88,48,43,44,62,69,70,-41,-41,58,49,67,76,59,160,-43',
-'-43,60,61,197,157,-162,-162,-162,-162,-47,-47,372,-190,267,373,-44,-44',
-'160,-84,-84,-84,-84,-165,-165,-165,-165,248,143,262,157,349,260,-109',
+'-43,60,61,197,157,-163,-163,-163,-163,-47,-47,372,-191,267,373,-44,-44',
+'160,-84,-84,-84,-84,-166,-166,-166,-166,248,143,262,157,349,260,-110',
 '261,58,49,67,348,28,-98,37,51,77,53,145,269,78,-97,79,82,80,81,84,51',
 '145,83,160,72,73,376,56,55,85,86,74,160,87,57,75,36,45,47,46,88,48,43',
-'44,62,69,70,-109,160,58,49,67,76,59,347,-98,248,60,61,-189,135,-46,-46',
-'-97,160,-45,-45,125,126,128,135,393,412,125,126,128,123,124,127,-163',
-'-163,-163,-163,181,182,183,184,259,125,126,128,123,124,127,28,248,37',
+'44,62,69,70,-110,160,58,49,67,76,59,347,-98,248,60,61,-190,135,-46,-46',
+'-97,160,-45,-45,125,126,128,135,393,412,125,126,128,123,124,127,-164',
+'-164,-164,-164,181,182,183,184,259,125,126,128,123,124,127,28,248,37',
 '51,77,53,149,148,78,346,79,82,80,81,84,145,342,83,201,72,73,101,56,55',
 '85,86,74,101,87,57,75,36,45,47,46,88,48,43,44,62,69,70,101,379,58,49',
-'67,76,59,58,49,67,60,61,304,380,-162,-162,-162,-162,58,49,67,160,339',
+'67,76,59,58,49,67,60,61,304,380,-163,-163,-163,-163,58,49,67,160,339',
 '381,202,382,58,145,205,206,208,331,135,145,327,101,305,101,101,201,252',
 '125,126,128,123,124,127,28,201,37,51,201,53,138,125,126,128,123,124',
 '127,111,112,113,117,118,119,114,115,116,120,121,122,98,100,99,105,107',
 '106,108,110,109,102,104,103,129,130,97,96,133,101,77,253,313,312,78',
 '405,79,82,80,81,84,406,101,83,311,72,73,409,56,55,85,86,74,410,87,57',
-'75,36,45,47,46,88,48,43,44,62,69,70,-109,361,58,49,67,76,59,413,137',
+'75,36,45,47,46,88,48,43,44,62,69,70,-110,361,58,49,67,76,59,413,137',
 '415,60,61,308,416,417,418,201,420,421,297,352,257,352,135,95,259,259',
 '135,432,410,259,101,284,248,135,436,305,352,438,89,145,125,126,128,123',
 '124,127,28,285,37,51,284,53,441,125,126,128,123,124,127,111,112,113',
@@ -100,10 +100,10 @@ clist = [
 '49,67,76,59,,,,60,61,,,125,126,128,123,124,127,111,112,113,117,118,119',
 '114,115,116,120,121,122,98,100,99,105,107,106,108,110,109,102,104,103',
 '129,130,97,28,,37,51,77,53,,,78,,79,82,80,81,84,101,,83,,72,73,,56,55',
-'85,86,74,,87,57,75,,45,47,46,88,48,43,44,62,69,70,-109,,58,49,67,76',
+'85,86,74,,87,57,75,,45,47,46,88,48,43,44,62,69,70,-110,,58,49,67,76',
 '59,,,,60,61,125,126,128,123,124,127,111,112,113,117,118,119,114,115',
 '116,120,121,122,98,100,99,105,107,106,108,110,109,102,104,103,129,130',
-'97,96,133,28,,77,51,,53,78,-229,79,82,80,81,84,101,,83,,72,73,,56,55',
+'97,96,133,28,,77,51,,53,78,-230,79,82,80,81,84,101,,83,,72,73,,56,55',
 '85,86,74,,87,57,75,36,45,47,46,88,48,43,44,62,69,70,,,58,49,67,76,59',
 ',,,60,61,,395,,,,,,,,,,,,,,,,,,,,,,,,,,,,125,126,128,123,124,127,28',
 ',37,51,,53,125,126,128,123,124,127,111,112,113,117,118,119,114,115,116',
@@ -115,12 +115,12 @@ clist = [
 '43,44,62,,,,,58,49,67,,59,,,,60,61,142,55,,86,,,87,,,,45,47,46,,48,43',
 '44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,251,45,47,46',
 ',48,43,44,62,,,,,58,49,67,,59,,,,60,61,142,55,28,86,,51,87,53,335,,45',
-'47,46,,48,43,44,62,,,-109,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87',
-'53,,,45,47,46,,48,43,44,62,,,-109,,58,49,67,,59,,,,60,61,142,55,28,86',
+'47,46,,48,43,44,62,,,-110,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87',
+'53,,,45,47,46,,48,43,44,62,,,-110,,58,49,67,,59,,,,60,61,142,55,28,86',
 ',51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55',
 '28,86,,51,87,53,,163,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61',
 '142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60',
-'61,,142,55,161,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-109,,58,49,67',
+'61,,142,55,161,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-110,,58,49,67',
 ',59,,,,60,61,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49',
 '67,,59,,,,60,61,,142,55,172,86,,51,87,53,,,45,47,46,,48,43,44,62,,,',
 ',58,49,67,,59,,,,60,61,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62',
@@ -131,8 +131,8 @@ clist = [
 '46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,',
 '45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,142,55,28,86,,51,87',
 '53,,,45,47,46,,48,43,44,62,125,126,128,,58,49,67,,59,,,,60,61,,142,55',
-'28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-109,,58,49,67,,59,,,,60,61',
-',101,28,-112,,51,,53,125,126,128,123,124,127,111,112,113,117,118,119',
+'28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-110,,58,49,67,,59,,,,60,61',
+',101,28,-113,,51,,53,125,126,128,123,124,127,111,112,113,117,118,119',
 '114,115,116,120,121,122,,,125,126,128,142,55,,86,28,,87,51,,53,45,47',
 '46,,48,43,44,62,,,,,58,49,67,101,59,,,,60,61,142,55,,86,,,87,,,,45,47',
 '46,101,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53',
@@ -140,19 +140,19 @@ clist = [
 '53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,',
 '51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,142,55,28',
 '86,,51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142',
-'55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-109,,58,49,67,,59,,,,60',
+'55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-110,,58,49,67,,59,,,,60',
 '61,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,125,126,128,,58,49',
 '67,,59,,,,60,61,,142,55,28,86,,51,87,278,,,45,47,46,,48,43,44,62,,,',
-',58,49,67,,59,,,,60,61,,101,28,-112,,51,,53,125,126,128,123,124,127',
+',58,49,67,,59,,,,60,61,,101,28,-113,,51,,53,125,126,128,123,124,127',
 '111,112,113,117,118,119,114,115,116,120,121,122,,,125,126,128,142,55',
-',86,28,,87,51,,53,45,47,46,,48,43,44,62,,,-109,,58,49,67,101,59,,,,60',
+',86,28,,87,51,,53,45,47,46,,48,43,44,62,,,-110,,58,49,67,101,59,,,,60',
 '61,142,55,,86,,,87,,,,45,47,46,101,48,43,44,62,,,,,58,49,67,,59,,,,60',
 '61,,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59',
-',,,60,61,,,28,-112,,51,,53,125,126,128,123,124,127,111,112,113,117,118',
+',,,60,61,,,28,-113,,51,,53,125,126,128,123,124,127,111,112,113,117,118',
 '119,114,115,116,120,121,122,,,,,,142,55,,86,28,,87,51,333,53,45,47,46',
 ',48,43,44,62,,,,,58,49,67,101,59,,,,60,61,142,55,,86,,,87,,,,45,47,46',
 ',48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,,45',
-'47,46,,48,43,44,62,,,-109,,58,49,67,,59,,,,60,61,,,28,-112,,51,,53,125',
+'47,46,,48,43,44,62,,,-110,,58,49,67,,59,,,,60,61,,,28,-113,,51,,53,125',
 '126,128,123,124,127,111,112,113,117,118,119,114,115,116,120,121,122',
 ',,,,,142,55,,86,28,,87,51,,53,45,47,46,,48,43,44,62,,,,,58,49,67,101',
 '59,,,,60,61,142,55,,86,,,87,,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59',
@@ -197,28 +197,28 @@ clist = [
 '46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,',
 '45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,142,55,28,86,,51,87',
 '53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,',
-'51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,,28,-112',
+'51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,,28,-113',
 ',51,,53,125,126,128,123,124,127,111,112,113,117,118,119,114,115,116',
-'120,121,122,,,,,,142,55,,86,28,-112,87,51,,53,45,47,46,,48,43,44,62',
+'120,121,122,,,,,,142,55,,86,28,-113,87,51,,53,45,47,46,,48,43,44,62',
 ',,,,58,49,67,101,59,,,,60,61,142,55,,86,,,87,,,,45,47,46,,48,43,44,62',
 ',,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,,45,47,46,,48,43',
 '44,62,,,,,58,49,67,,59,,,,60,61,142,55,28,86,,51,87,53,,,45,47,46,,48',
 '43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,,45,47,46',
 ',48,43,44,62,,,,,58,49,67,,59,,,,60,61,142,55,28,86,,51,87,53,,,45,47',
 '46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,53,,',
-'45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,,28,-112,,51,,53,125',
+'45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,,28,-113,,51,,53,125',
 '126,128,123,124,127,111,112,113,117,118,119,114,115,116,120,121,122',
 ',,,,,142,55,,86,28,,87,51,,53,45,47,46,,48,43,44,62,,,,,58,49,67,101',
 '59,,,,60,61,142,55,,86,,,87,,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59',
 ',,,60,61,,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,,,58,49,67',
-',59,,,,60,61,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-109,',
+',59,,,,60,61,142,55,28,86,,51,87,53,,,45,47,46,,48,43,44,62,,,-110,',
 '58,49,67,,59,,,,60,61,,142,55,28,86,,51,87,278,,,45,47,46,,48,43,44',
 '62,,,,,58,49,67,,59,,,,60,61,142,55,28,86,,51,87,53,,,45,47,46,,48,43',
-'44,62,,,,,58,49,67,,59,,,,60,61,,,,28,-112,,51,,53,,125,126,128,123',
+'44,62,,,,,58,49,67,,59,,,,60,61,,,,28,-113,,51,,53,,125,126,128,123',
 '124,127,111,112,113,117,118,119,114,115,116,120,121,122,,,,142,55,,86',
-'28,-112,87,51,,53,45,47,46,,48,43,44,62,,,,,58,49,67,,59,101,,,60,61',
+'28,-113,87,51,,53,45,47,46,,48,43,44,62,,,,,58,49,67,,59,101,,,60,61',
 '142,55,,86,,,,,,,45,47,46,,48,43,44,62,,,,,58,49,67,,59,,,,60,61,,,',
-'28,-112,,51,,53,,142,55,,86,125,126,128,123,124,127,45,47,46,,48,43',
+'28,-113,,51,,53,,142,55,,86,125,126,128,123,124,127,45,47,46,,48,43',
 '44,,,,,,58,49,67,178,59,,51,,60,61,142,55,,86,125,126,128,123,124,127',
 '45,47,46,,48,43,44,62,,,101,,58,49,67,,59,,,,60,61,,,,178,,,51,,,,,',
 ',,,,,,,,101,201,,,,,,125,126,128,123,124,127,,,178,,,51,125,126,128',
@@ -655,51 +655,51 @@ racc_action_pointer = [
    560,   nil ]
 
 racc_action_default = [
-    -1,  -243,    -2,    -3,    -6,    -8,    -9,   -10,   -11,   -12,
+    -1,  -244,    -2,    -3,    -6,    -8,    -9,   -10,   -11,   -12,
    -13,   -14,   -15,   -16,   -17,   -18,   -19,   -20,   -21,   -22,
-   -23,   -24,   -25,   -26,   -28,   -29,   -30,   -31,  -109,   -33,
+   -23,   -24,   -25,   -26,   -28,   -29,   -30,   -31,  -110,   -33,
    -34,   -35,   -36,   -37,   -38,   -39,   -48,   -49,   -50,   -51,
    -52,   -53,   -54,   -55,   -56,   -57,   -58,   -59,   -62,   -63,
-   -64,   -68,   -71,   -74,  -243,  -109,  -109,  -112,  -108,  -109,
-  -109,  -109,  -109,  -155,  -243,  -164,  -166,  -243,  -170,  -109,
-  -109,  -109,  -186,  -187,  -188,  -203,  -205,  -109,  -109,  -109,
-  -214,  -215,  -109,  -243,  -243,  -243,  -109,  -241,  -242,  -243,
-    -5,    -7,  -243,  -243,  -174,  -109,  -109,  -109,  -109,  -109,
-  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,
-  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,
-  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,  -109,
-  -109,  -109,  -109,  -109,   -82,  -109,   -27,  -243,  -109,   -25,
-   -30,  -243,  -243,  -109,   -79,   -93,   -78,   -80,   -60,   -61,
-  -169,  -243,   -69,  -243,   -75,  -243,  -243,  -167,  -171,  -175,
-  -109,  -109,  -100,  -101,  -114,   -34,   -36,  -109,   -53,   -68,
-  -243,  -243,  -109,  -105,  -113,  -151,  -152,  -153,  -109,  -243,
-  -154,  -109,  -109,  -109,  -109,  -168,  -172,  -173,  -110,  -243,
-  -243,  -204,  -200,  -243,  -243,  -243,  -243,  -243,  -243,  -243,
-  -223,  -229,  -243,  -243,  -239,  -109,   442,    -4,  -167,  -157,
-  -116,  -117,  -118,  -119,  -120,  -121,  -122,  -123,  -124,  -125,
-  -126,  -127,  -128,  -129,  -130,  -131,  -132,  -133,  -134,  -135,
-  -136,  -137,  -138,  -139,  -140,  -141,  -142,  -143,  -144,  -145,
-  -146,  -147,  -148,  -149,  -150,  -208,  -211,  -243,  -109,  -243,
-  -243,   -92,   -96,   -95,  -156,   -40,   -32,  -109,  -243,   -94,
-  -109,   -66,  -109,   -72,  -109,  -109,  -109,  -243,  -176,  -177,
-  -178,   -28,   -29,   -34,   -35,   -36,   -38,   -51,   -74,  -243,
-  -243,  -109,  -114,  -243,  -109,  -109,  -114,  -243,  -243,   -82,
-  -243,  -243,  -243,  -158,  -159,  -160,  -161,  -243,  -190,  -189,
-  -193,  -109,  -109,  -243,  -109,  -109,  -230,  -243,  -109,  -243,
-  -243,  -109,  -109,  -109,  -220,  -243,  -243,  -228,  -243,  -243,
-  -243,  -243,  -109,  -243,  -243,   -85,   -90,   -86,   -91,   -81,
-   -83,   -98,  -243,   -67,   -70,   -73,   -76,   -77,  -243,  -179,
-  -243,  -243,   -99,  -115,  -243,  -243,  -102,  -109,  -104,  -111,
-  -243,  -194,  -191,  -201,  -202,  -206,  -243,  -228,  -209,  -243,
-  -213,  -216,  -243,  -243,  -243,  -221,  -243,  -243,  -224,  -243,
-  -237,  -243,  -109,  -240,  -212,   -87,   -88,   -89,   -65,   -97,
-  -180,  -181,  -107,  -243,  -243,  -192,  -243,  -243,  -195,  -196,
-  -207,  -231,  -232,  -243,  -109,  -210,  -243,  -243,  -243,  -243,
-  -226,  -243,  -225,  -243,  -243,  -106,  -182,  -193,  -243,  -193,
-  -109,  -233,  -109,  -109,  -243,  -217,  -218,  -219,  -222,  -227,
-  -238,  -103,  -243,  -243,  -197,  -198,  -243,  -199,  -243,  -234,
-  -109,  -243,  -193,  -243,  -109,  -235,  -183,  -243,  -184,  -236,
-  -243,  -185 ]
+   -64,   -68,   -71,   -74,  -244,  -110,  -110,  -113,  -109,  -110,
+  -110,  -110,  -110,  -156,  -244,  -165,  -167,  -244,  -171,  -110,
+  -110,  -110,  -187,  -188,  -189,  -204,  -206,  -110,  -110,  -110,
+  -215,  -216,  -110,  -244,  -244,  -244,  -110,  -242,  -243,  -244,
+    -5,    -7,  -244,  -244,  -175,  -110,  -110,  -110,  -110,  -110,
+  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,
+  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,
+  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,  -110,
+  -110,  -110,  -110,  -110,   -82,  -110,   -27,  -244,  -110,   -25,
+   -30,  -244,  -244,  -110,   -79,   -93,   -78,   -80,   -60,   -61,
+  -170,  -244,   -69,  -244,   -75,  -244,  -244,  -168,  -172,  -176,
+  -110,  -110,  -100,  -101,  -115,   -34,   -36,  -110,   -53,   -68,
+  -244,  -244,  -110,  -106,  -114,  -152,  -153,  -154,  -110,  -244,
+  -155,  -110,  -110,  -110,  -110,  -169,  -173,  -174,  -111,  -244,
+  -244,  -205,  -201,  -244,  -244,  -244,  -244,  -244,  -244,  -244,
+  -224,  -230,  -244,  -244,  -240,  -110,   442,    -4,  -168,  -158,
+  -117,  -118,  -119,  -120,  -121,  -122,  -123,  -124,  -125,  -126,
+  -127,  -128,  -129,  -130,  -131,  -132,  -133,  -134,  -135,  -136,
+  -137,  -138,  -139,  -140,  -141,  -142,  -143,  -144,  -145,  -146,
+  -147,  -148,  -149,  -150,  -151,  -209,  -212,  -244,  -110,  -244,
+  -244,   -92,   -96,   -95,  -157,   -40,   -32,  -110,  -244,   -94,
+  -110,   -66,  -110,   -72,  -110,  -110,  -110,  -244,  -177,  -178,
+  -179,   -28,   -29,   -34,   -35,   -36,   -38,   -51,   -74,  -244,
+  -244,  -110,  -115,  -244,  -110,  -110,  -115,  -244,  -244,   -82,
+  -244,  -244,  -244,  -159,  -160,  -161,  -162,  -244,  -191,  -190,
+  -194,  -110,  -110,  -244,  -110,  -110,  -231,  -244,  -110,  -244,
+  -244,  -110,  -110,  -110,  -221,  -244,  -244,  -229,  -244,  -244,
+  -104,  -244,  -110,  -244,  -244,   -85,   -90,   -86,   -91,   -81,
+   -83,   -98,  -244,   -67,   -70,   -73,   -76,   -77,  -244,  -180,
+  -244,  -244,   -99,  -116,  -244,  -244,  -102,  -110,  -105,  -112,
+  -244,  -195,  -192,  -202,  -203,  -207,  -244,  -229,  -210,  -244,
+  -214,  -217,  -244,  -244,  -244,  -222,  -244,  -244,  -225,  -244,
+  -238,  -244,  -110,  -241,  -213,   -87,   -88,   -89,   -65,   -97,
+  -181,  -182,  -108,  -244,  -244,  -193,  -244,  -244,  -196,  -197,
+  -208,  -232,  -233,  -244,  -110,  -211,  -244,  -244,  -244,  -244,
+  -227,  -244,  -226,  -244,  -244,  -107,  -183,  -194,  -244,  -194,
+  -110,  -234,  -110,  -110,  -244,  -218,  -219,  -220,  -223,  -228,
+  -239,  -103,  -244,  -244,  -198,  -199,  -244,  -200,  -244,  -235,
+  -110,  -244,  -194,  -244,  -110,  -236,  -184,  -244,  -185,  -237,
+  -244,  -186 ]
 
 racc_goto_table = [
     90,    26,     2,   276,   200,    26,    91,   369,   144,   389,
@@ -928,19 +928,19 @@ racc_reduce_table = [
   2, 130, :_reduce_101,
   4, 130, :_reduce_102,
   5, 152, :_reduce_103,
-  4, 113, :_reduce_104,
-  2, 113, :_reduce_105,
-  6, 101, :_reduce_106,
-  5, 101, :_reduce_107,
-  1, 148, :_reduce_108,
-  0, 148, :_reduce_109,
-  1, 153, :_reduce_110,
-  3, 153, :_reduce_111,
-  0, 150, :_reduce_112,
-  1, 150, :_reduce_113,
-  1, 151, :_reduce_114,
-  3, 151, :_reduce_115,
-  3, 121, :_reduce_116,
+  2, 152, :_reduce_104,
+  4, 113, :_reduce_105,
+  2, 113, :_reduce_106,
+  6, 101, :_reduce_107,
+  5, 101, :_reduce_108,
+  1, 148, :_reduce_109,
+  0, 148, :_reduce_110,
+  1, 153, :_reduce_111,
+  3, 153, :_reduce_112,
+  0, 150, :_reduce_113,
+  1, 150, :_reduce_114,
+  1, 151, :_reduce_115,
+  3, 151, :_reduce_116,
   3, 121, :_reduce_117,
   3, 121, :_reduce_118,
   3, 121, :_reduce_119,
@@ -975,100 +975,101 @@ racc_reduce_table = [
   3, 121, :_reduce_148,
   3, 121, :_reduce_149,
   3, 121, :_reduce_150,
-  2, 125, :_reduce_151,
+  3, 121, :_reduce_151,
   2, 125, :_reduce_152,
   2, 125, :_reduce_153,
-  2, 123, :_reduce_154,
-  1, 123, :_reduce_155,
-  3, 114, :_reduce_156,
+  2, 125, :_reduce_154,
+  2, 123, :_reduce_155,
+  1, 123, :_reduce_156,
   3, 114, :_reduce_157,
-  3, 154, :_reduce_158,
+  3, 114, :_reduce_158,
   3, 154, :_reduce_159,
   3, 154, :_reduce_160,
   3, 154, :_reduce_161,
-  1, 155, :_reduce_162,
+  3, 154, :_reduce_162,
   1, 155, :_reduce_163,
   1, 155, :_reduce_164,
   1, 155, :_reduce_165,
   1, 155, :_reduce_166,
-  2, 156, :_reduce_167,
+  1, 155, :_reduce_167,
   2, 156, :_reduce_168,
   2, 156, :_reduce_169,
-  1, 128, :_reduce_170,
-  2, 128, :_reduce_171,
-  2, 104, :_reduce_172,
+  2, 156, :_reduce_170,
+  1, 128, :_reduce_171,
+  2, 128, :_reduce_172,
   2, 104, :_reduce_173,
   2, 104, :_reduce_174,
-  1, 157, :_reduce_175,
-  2, 157, :_reduce_176,
+  2, 104, :_reduce_175,
+  1, 157, :_reduce_176,
   2, 157, :_reduce_177,
   2, 157, :_reduce_178,
-  3, 158, :_reduce_179,
-  4, 158, :_reduce_180,
+  2, 157, :_reduce_179,
+  3, 158, :_reduce_180,
   4, 158, :_reduce_181,
-  6, 102, :_reduce_182,
-  9, 102, :_reduce_183,
+  4, 158, :_reduce_182,
+  6, 102, :_reduce_183,
   9, 102, :_reduce_184,
-  11, 102, :_reduce_185,
-  1, 159, :_reduce_186,
+  9, 102, :_reduce_185,
+  11, 102, :_reduce_186,
   1, 159, :_reduce_187,
   1, 159, :_reduce_188,
-  1, 149, :_reduce_189,
+  1, 159, :_reduce_189,
   1, 149, :_reduce_190,
-  1, 160, :_reduce_191,
-  2, 160, :_reduce_192,
-  0, 160, :_reduce_193,
-  0, 162, :_reduce_194,
-  1, 162, :_reduce_195,
+  1, 149, :_reduce_191,
+  1, 160, :_reduce_192,
+  2, 160, :_reduce_193,
+  0, 160, :_reduce_194,
+  0, 162, :_reduce_195,
   1, 162, :_reduce_196,
-  3, 162, :_reduce_197,
+  1, 162, :_reduce_197,
   3, 162, :_reduce_198,
-  3, 163, :_reduce_199,
-  2, 103, :_reduce_200,
-  4, 103, :_reduce_201,
+  3, 162, :_reduce_199,
+  3, 163, :_reduce_200,
+  2, 103, :_reduce_201,
   4, 103, :_reduce_202,
-  0, 164, :_reduce_203,
-  1, 164, :_reduce_204,
-  1, 112, :_reduce_205,
-  4, 115, :_reduce_206,
-  5, 115, :_reduce_207,
-  3, 115, :_reduce_208,
-  4, 116, :_reduce_209,
-  5, 116, :_reduce_210,
-  3, 116, :_reduce_211,
-  5, 122, :_reduce_212,
-  4, 107, :_reduce_213,
-  1, 111, :_reduce_214,
+  4, 103, :_reduce_203,
+  0, 164, :_reduce_204,
+  1, 164, :_reduce_205,
+  1, 112, :_reduce_206,
+  4, 115, :_reduce_207,
+  5, 115, :_reduce_208,
+  3, 115, :_reduce_209,
+  4, 116, :_reduce_210,
+  5, 116, :_reduce_211,
+  3, 116, :_reduce_212,
+  5, 122, :_reduce_213,
+  4, 107, :_reduce_214,
   1, 111, :_reduce_215,
-  4, 108, :_reduce_216,
-  6, 106, :_reduce_217,
+  1, 111, :_reduce_216,
+  4, 108, :_reduce_217,
   6, 106, :_reduce_218,
   6, 106, :_reduce_219,
-  3, 109, :_reduce_220,
-  4, 109, :_reduce_221,
-  6, 109, :_reduce_222,
-  0, 166, :_reduce_223,
-  2, 166, :_reduce_224,
-  3, 166, :_reduce_225,
+  6, 106, :_reduce_220,
+  3, 109, :_reduce_221,
+  4, 109, :_reduce_222,
+  6, 109, :_reduce_223,
+  0, 166, :_reduce_224,
+  2, 166, :_reduce_225,
   3, 166, :_reduce_226,
-  4, 166, :_reduce_227,
-  2, 161, :_reduce_228,
-  1, 161, :_reduce_229,
-  1, 165, :_reduce_230,
-  3, 165, :_reduce_231,
+  3, 166, :_reduce_227,
+  4, 166, :_reduce_228,
+  2, 161, :_reduce_229,
+  1, 161, :_reduce_230,
+  1, 165, :_reduce_231,
   3, 165, :_reduce_232,
-  4, 165, :_reduce_233,
-  3, 167, :_reduce_234,
-  4, 168, :_reduce_235,
-  5, 168, :_reduce_236,
-  4, 110, :_reduce_237,
-  6, 110, :_reduce_238,
-  2, 131, :_reduce_239,
-  4, 124, :_reduce_240,
-  1, 124, :_reduce_241,
-  1, 105, :_reduce_242 ]
+  3, 165, :_reduce_233,
+  4, 165, :_reduce_234,
+  3, 167, :_reduce_235,
+  4, 168, :_reduce_236,
+  5, 168, :_reduce_237,
+  4, 110, :_reduce_238,
+  6, 110, :_reduce_239,
+  2, 131, :_reduce_240,
+  4, 124, :_reduce_241,
+  1, 124, :_reduce_242,
+  1, 105, :_reduce_243 ]
 
-racc_reduce_n = 243
+racc_reduce_n = 244
 
 racc_shift_n = 442
 
@@ -2088,93 +2089,93 @@ module_eval(<<'.,.,', 'grammar.y', 231)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 235)
+module_eval(<<'.,.,', 'grammar.y', 232)
   def _reduce_104(val, _values, result)
-     result = Riml::RimlCommandNode.new(nil, val[0], val[2]) 
+     result = Riml::CallNode.new(val[0], val[1], []) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 236)
   def _reduce_105(val, _values, result)
-     result = Riml::RimlCommandNode.new(nil, val[0], val[1]) 
+     result = Riml::RimlCommandNode.new(nil, val[0], val[2]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 240)
+module_eval(<<'.,.,', 'grammar.y', 237)
   def _reduce_106(val, _values, result)
-     result = Riml::ExplicitCallNode.new(val[1], val[2], val[4]) 
+     result = Riml::RimlCommandNode.new(nil, val[0], val[1]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 241)
   def _reduce_107(val, _values, result)
-     result = Riml::ExplicitCallNode.new(nil, val[1], val[3]) 
+     result = Riml::ExplicitCallNode.new(val[1], val[2], val[4]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 245)
+module_eval(<<'.,.,', 'grammar.y', 242)
   def _reduce_108(val, _values, result)
-     result = val[0] 
+     result = Riml::ExplicitCallNode.new(nil, val[1], val[3]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 246)
   def _reduce_109(val, _values, result)
-     result = nil 
+     result = val[0] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 250)
+module_eval(<<'.,.,', 'grammar.y', 247)
   def _reduce_110(val, _values, result)
-     val[0] 
+     result = nil 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 251)
   def _reduce_111(val, _values, result)
-     result = Riml::SIDNode.new(val[1]) 
+     val[0] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 255)
+module_eval(<<'.,.,', 'grammar.y', 252)
   def _reduce_112(val, _values, result)
-     result = [] 
+     result = Riml::SIDNode.new(val[1]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 256)
   def _reduce_113(val, _values, result)
-     result = val[0] 
+     result = [] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 260)
+module_eval(<<'.,.,', 'grammar.y', 257)
   def _reduce_114(val, _values, result)
-     result = val 
+     result = val[0] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 261)
   def _reduce_115(val, _values, result)
-     result = val[0] << val[2] 
+     result = val 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 265)
+module_eval(<<'.,.,', 'grammar.y', 262)
   def _reduce_116(val, _values, result)
-     result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
+     result = val[0] << val[2] 
     result
   end
 .,.,
@@ -2186,7 +2187,7 @@ module_eval(<<'.,.,', 'grammar.y', 266)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 268)
+module_eval(<<'.,.,', 'grammar.y', 267)
   def _reduce_118(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2207,14 +2208,14 @@ module_eval(<<'.,.,', 'grammar.y', 270)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 273)
+module_eval(<<'.,.,', 'grammar.y', 271)
   def _reduce_121(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 275)
+module_eval(<<'.,.,', 'grammar.y', 274)
   def _reduce_122(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2235,7 +2236,7 @@ module_eval(<<'.,.,', 'grammar.y', 277)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 279)
+module_eval(<<'.,.,', 'grammar.y', 278)
   def _reduce_125(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2256,7 +2257,7 @@ module_eval(<<'.,.,', 'grammar.y', 281)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 283)
+module_eval(<<'.,.,', 'grammar.y', 282)
   def _reduce_128(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2277,7 +2278,7 @@ module_eval(<<'.,.,', 'grammar.y', 285)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 287)
+module_eval(<<'.,.,', 'grammar.y', 286)
   def _reduce_131(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2298,7 +2299,7 @@ module_eval(<<'.,.,', 'grammar.y', 289)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 291)
+module_eval(<<'.,.,', 'grammar.y', 290)
   def _reduce_134(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2319,7 +2320,7 @@ module_eval(<<'.,.,', 'grammar.y', 293)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 295)
+module_eval(<<'.,.,', 'grammar.y', 294)
   def _reduce_137(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2340,7 +2341,7 @@ module_eval(<<'.,.,', 'grammar.y', 297)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 299)
+module_eval(<<'.,.,', 'grammar.y', 298)
   def _reduce_140(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2361,7 +2362,7 @@ module_eval(<<'.,.,', 'grammar.y', 301)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 303)
+module_eval(<<'.,.,', 'grammar.y', 302)
   def _reduce_143(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2403,7 +2404,7 @@ module_eval(<<'.,.,', 'grammar.y', 308)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 310)
+module_eval(<<'.,.,', 'grammar.y', 309)
   def _reduce_149(val, _values, result)
      result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
@@ -2417,9 +2418,9 @@ module_eval(<<'.,.,', 'grammar.y', 311)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 315)
+module_eval(<<'.,.,', 'grammar.y', 312)
   def _reduce_151(val, _values, result)
-     result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) 
+     result = Riml::BinaryOperatorNode.new(val[1], [val[0], val[2]]) 
     result
   end
 .,.,
@@ -2438,37 +2439,37 @@ module_eval(<<'.,.,', 'grammar.y', 317)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 322)
+module_eval(<<'.,.,', 'grammar.y', 318)
   def _reduce_154(val, _values, result)
-     result = Riml::AssignNode.new(val[1][0], val[1][1], val[1][2]) 
+     result = Riml::UnaryOperatorNode.new(val[0], [val[1]]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 323)
   def _reduce_155(val, _values, result)
-     result = Riml::AssignNode.new(val[0][0], val[0][1], val[0][2]) 
+     result = Riml::AssignNode.new(val[1][0], val[1][1], val[1][2]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 327)
+module_eval(<<'.,.,', 'grammar.y', 324)
   def _reduce_156(val, _values, result)
-     result = Riml::MultiAssignNode.new([val[0], val[2]]) 
+     result = Riml::AssignNode.new(val[0][0], val[0][1], val[0][2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 328)
   def _reduce_157(val, _values, result)
-     val[0].assigns << val[2]; result = val[0] 
+     result = Riml::MultiAssignNode.new([val[0], val[2]]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 333)
+module_eval(<<'.,.,', 'grammar.y', 329)
   def _reduce_158(val, _values, result)
-     result = [val[1], val[0], val[2]] 
+     val[0].assigns << val[2]; result = val[0] 
     result
   end
 .,.,
@@ -2494,9 +2495,9 @@ module_eval(<<'.,.,', 'grammar.y', 336)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 340)
+module_eval(<<'.,.,', 'grammar.y', 337)
   def _reduce_162(val, _values, result)
-     result = val[0] 
+     result = [val[1], val[0], val[2]] 
     result
   end
 .,.,
@@ -2529,44 +2530,44 @@ module_eval(<<'.,.,', 'grammar.y', 344)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 349)
+module_eval(<<'.,.,', 'grammar.y', 345)
   def _reduce_167(val, _values, result)
-     result = Riml::GetVariableNode.new(val[0], val[1]) 
+     result = val[0] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 350)
   def _reduce_168(val, _values, result)
-     result = Riml::GetSpecialVariableNode.new(val[0], val[1]) 
+     result = Riml::GetVariableNode.new(val[0], val[1]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 351)
   def _reduce_169(val, _values, result)
-     result = Riml::GetVariableByScopeAndDictNameNode.new(val[0], val[1]) 
+     result = Riml::GetSpecialVariableNode.new(val[0], val[1]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 355)
+module_eval(<<'.,.,', 'grammar.y', 352)
   def _reduce_170(val, _values, result)
-     result = val[0] 
+     result = Riml::GetVariableByScopeAndDictNameNode.new(val[0], val[1]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 356)
   def _reduce_171(val, _values, result)
-     result = Riml::GetCurlyBraceNameNode.new(val[0], val[1]) 
+     result = val[0] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 360)
+module_eval(<<'.,.,', 'grammar.y', 357)
   def _reduce_172(val, _values, result)
-     result = Riml::UnletVariableNode.new('!', [ val[1] ]) 
+     result = Riml::GetCurlyBraceNameNode.new(val[0], val[1]) 
     result
   end
 .,.,
@@ -2580,49 +2581,49 @@ module_eval(<<'.,.,', 'grammar.y', 361)
 
 module_eval(<<'.,.,', 'grammar.y', 362)
   def _reduce_174(val, _values, result)
-     result = val[0] << val[1] 
+     result = Riml::UnletVariableNode.new('!', [ val[1] ]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 366)
+module_eval(<<'.,.,', 'grammar.y', 363)
   def _reduce_175(val, _values, result)
-     result = Riml::CurlyBraceVariable.new([ val[0] ]) 
+     result = val[0] << val[1] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 367)
   def _reduce_176(val, _values, result)
-     result = Riml::CurlyBraceVariable.new([ Riml::CurlyBracePart.new(val[0]), val[1] ]) 
+     result = Riml::CurlyBraceVariable.new([ val[0] ]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 368)
   def _reduce_177(val, _values, result)
-     result = val[0] << Riml::CurlyBracePart.new(val[1]) 
+     result = Riml::CurlyBraceVariable.new([ Riml::CurlyBracePart.new(val[0]), val[1] ]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 369)
   def _reduce_178(val, _values, result)
-     result = val[0] << val[1] 
+     result = val[0] << Riml::CurlyBracePart.new(val[1]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 373)
+module_eval(<<'.,.,', 'grammar.y', 370)
   def _reduce_179(val, _values, result)
-     result = Riml::CurlyBracePart.new(val[1]) 
+     result = val[0] << val[1] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 374)
   def _reduce_180(val, _values, result)
-     result = Riml::CurlyBracePart.new([val[1], val[2]]) 
+     result = Riml::CurlyBracePart.new(val[1]) 
     result
   end
 .,.,
@@ -2634,37 +2635,37 @@ module_eval(<<'.,.,', 'grammar.y', 375)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 381)
+module_eval(<<'.,.,', 'grammar.y', 376)
   def _reduce_182(val, _values, result)
-     result = Riml.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) 
+     result = Riml::CurlyBracePart.new([val[1], val[2]]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 382)
   def _reduce_183(val, _values, result)
-     result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) 
+     result = Riml.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 383)
   def _reduce_184(val, _values, result)
-     result = Riml.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) 
+     result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 384)
   def _reduce_185(val, _values, result)
-     result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) 
+     result = Riml.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 388)
+module_eval(<<'.,.,', 'grammar.y', 385)
   def _reduce_186(val, _values, result)
-     result = "DefNode" 
+     result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) 
     result
   end
 .,.,
@@ -2678,56 +2679,56 @@ module_eval(<<'.,.,', 'grammar.y', 389)
 
 module_eval(<<'.,.,', 'grammar.y', 390)
   def _reduce_188(val, _values, result)
-     result = "DefMethodNode" 
+     result = "DefNode" 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 395)
+module_eval(<<'.,.,', 'grammar.y', 391)
   def _reduce_189(val, _values, result)
-     result = Riml::GetCurlyBraceNameNode.new('', val[0]) 
+     result = "DefMethodNode" 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 396)
   def _reduce_190(val, _values, result)
-     result = val[0] 
+     result = Riml::GetCurlyBraceNameNode.new('', val[0]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 401)
+module_eval(<<'.,.,', 'grammar.y', 397)
   def _reduce_191(val, _values, result)
-     result = [val[0]] 
+     result = val[0] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 402)
   def _reduce_192(val, _values, result)
-     result = val[0] << val[1] 
+     result = [val[0]] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 403)
   def _reduce_193(val, _values, result)
-     result = nil 
+     result = val[0] << val[1] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 407)
+module_eval(<<'.,.,', 'grammar.y', 404)
   def _reduce_194(val, _values, result)
-     result = [] 
+     result = nil 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 408)
   def _reduce_195(val, _values, result)
-     result = val 
+     result = [] 
     result
   end
 .,.,
@@ -2741,7 +2742,7 @@ module_eval(<<'.,.,', 'grammar.y', 409)
 
 module_eval(<<'.,.,', 'grammar.y', 410)
   def _reduce_197(val, _values, result)
-     result = val[0] << val[2] 
+     result = val 
     result
   end
 .,.,
@@ -2753,135 +2754,135 @@ module_eval(<<'.,.,', 'grammar.y', 411)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 415)
+module_eval(<<'.,.,', 'grammar.y', 412)
   def _reduce_199(val, _values, result)
-     result = Riml::DefaultParamNode.new(val[0], val[2]) 
+     result = val[0] << val[2] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 419)
+module_eval(<<'.,.,', 'grammar.y', 416)
   def _reduce_200(val, _values, result)
-     result = Riml::ReturnNode.new(val[1]) 
+     result = Riml::DefaultParamNode.new(val[0], val[2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 420)
   def _reduce_201(val, _values, result)
-     result = Riml::IfNode.new(val[3], Nodes.new([ReturnNode.new(val[1])])) 
+     result = Riml::ReturnNode.new(val[1]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 421)
   def _reduce_202(val, _values, result)
-     result = Riml::UnlessNode.new(val[3], Nodes.new([ReturnNode.new(val[1])])) 
+     result = Riml::IfNode.new(val[3], Nodes.new([ReturnNode.new(val[1])])) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 425)
+module_eval(<<'.,.,', 'grammar.y', 422)
   def _reduce_203(val, _values, result)
-     result = nil 
+     result = Riml::UnlessNode.new(val[3], Nodes.new([ReturnNode.new(val[1])])) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 426)
   def _reduce_204(val, _values, result)
+     result = nil 
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'grammar.y', 427)
+  def _reduce_205(val, _values, result)
      result = val[0] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 430)
-  def _reduce_205(val, _values, result)
-     result = Riml::FinishNode.new 
-    result
-  end
-.,.,
-
-module_eval(<<'.,.,', 'grammar.y', 435)
+module_eval(<<'.,.,', 'grammar.y', 431)
   def _reduce_206(val, _values, result)
-     result = Riml::IfNode.new(val[1], val[2]) 
+     result = Riml::FinishNode.new 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 436)
   def _reduce_207(val, _values, result)
-     result = Riml::IfNode.new(val[1], Riml::Nodes.new([val[3]])) 
+     result = Riml::IfNode.new(val[1], val[2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 437)
   def _reduce_208(val, _values, result)
-     result = Riml::IfNode.new(val[2], Riml::Nodes.new([val[0]])) 
+     result = Riml::IfNode.new(val[1], Riml::Nodes.new([val[3]])) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 441)
+module_eval(<<'.,.,', 'grammar.y', 438)
   def _reduce_209(val, _values, result)
-     result = Riml::UnlessNode.new(val[1], val[2]) 
+     result = Riml::IfNode.new(val[2], Riml::Nodes.new([val[0]])) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 442)
   def _reduce_210(val, _values, result)
-     result = Riml::UnlessNode.new(val[1], Riml::Nodes.new([val[3]])) 
+     result = Riml::UnlessNode.new(val[1], val[2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 443)
   def _reduce_211(val, _values, result)
+     result = Riml::UnlessNode.new(val[1], Riml::Nodes.new([val[3]])) 
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'grammar.y', 444)
+  def _reduce_212(val, _values, result)
      result = Riml::UnlessNode.new(val[2], Riml::Nodes.new([val[0]])) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 447)
-  def _reduce_212(val, _values, result)
+module_eval(<<'.,.,', 'grammar.y', 448)
+  def _reduce_213(val, _values, result)
      result = Riml::TernaryOperatorNode.new([val[0], val[2], val[4]]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 451)
-  def _reduce_213(val, _values, result)
-     result = Riml::WhileNode.new(val[1], val[2]) 
-    result
-  end
-.,.,
-
-module_eval(<<'.,.,', 'grammar.y', 455)
+module_eval(<<'.,.,', 'grammar.y', 452)
   def _reduce_214(val, _values, result)
-     result = Riml::BreakNode.new 
+     result = Riml::WhileNode.new(val[1], val[2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 456)
   def _reduce_215(val, _values, result)
+     result = Riml::BreakNode.new 
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'grammar.y', 457)
+  def _reduce_216(val, _values, result)
      result = Riml::ContinueNode.new 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 460)
-  def _reduce_216(val, _values, result)
-     result = Riml::UntilNode.new(val[1], val[2]) 
-    result
-  end
-.,.,
-
-module_eval(<<'.,.,', 'grammar.y', 464)
+module_eval(<<'.,.,', 'grammar.y', 461)
   def _reduce_217(val, _values, result)
-     result = Riml::ForNode.new(val[1], val[3], val[4]) 
+     result = Riml::UntilNode.new(val[1], val[2]) 
     result
   end
 .,.,
@@ -2900,86 +2901,86 @@ module_eval(<<'.,.,', 'grammar.y', 466)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 470)
+module_eval(<<'.,.,', 'grammar.y', 467)
   def _reduce_220(val, _values, result)
-     result = Riml::TryNode.new(val[1], nil, nil) 
+     result = Riml::ForNode.new(val[1], val[3], val[4]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 471)
   def _reduce_221(val, _values, result)
-     result = Riml::TryNode.new(val[1], val[2], nil) 
+     result = Riml::TryNode.new(val[1], nil, nil) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 472)
   def _reduce_222(val, _values, result)
-     result = Riml::TryNode.new(val[1], val[2], val[4]) 
+     result = Riml::TryNode.new(val[1], val[2], nil) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 476)
+module_eval(<<'.,.,', 'grammar.y', 473)
   def _reduce_223(val, _values, result)
-     result = nil 
+     result = Riml::TryNode.new(val[1], val[2], val[4]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 477)
   def _reduce_224(val, _values, result)
-     result = [ Riml::CatchNode.new(nil, val[1]) ] 
+     result = nil 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 478)
   def _reduce_225(val, _values, result)
-     result = [ Riml::CatchNode.new(val[1], val[2]) ] 
+     result = [ Riml::CatchNode.new(nil, val[1]) ] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 479)
   def _reduce_226(val, _values, result)
-     result = val[0] << Riml::CatchNode.new(nil, val[2]) 
+     result = [ Riml::CatchNode.new(val[1], val[2]) ] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 480)
   def _reduce_227(val, _values, result)
-     result = val[0] << Riml::CatchNode.new(val[2], val[3]) 
+     result = val[0] << Riml::CatchNode.new(nil, val[2]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 487)
+module_eval(<<'.,.,', 'grammar.y', 481)
   def _reduce_228(val, _values, result)
-     result = val[1] 
+     result = val[0] << Riml::CatchNode.new(val[2], val[3]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 488)
   def _reduce_229(val, _values, result)
-     result = Riml::Nodes.new([]) 
+     result = val[1] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 492)
+module_eval(<<'.,.,', 'grammar.y', 489)
   def _reduce_230(val, _values, result)
-     result = val[0] 
+     result = Riml::Nodes.new([]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 493)
   def _reduce_231(val, _values, result)
-     result = val[1] << val[2] 
+     result = val[0] 
     result
   end
 .,.,
@@ -2993,69 +2994,76 @@ module_eval(<<'.,.,', 'grammar.y', 494)
 
 module_eval(<<'.,.,', 'grammar.y', 495)
   def _reduce_233(val, _values, result)
+     result = val[1] << val[2] 
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'grammar.y', 496)
+  def _reduce_234(val, _values, result)
      result = val[1] << val[2] << val[3] 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 499)
-  def _reduce_234(val, _values, result)
-     result = Riml::ElseNode.new(val[2]) 
-    result
-  end
-.,.,
-
-module_eval(<<'.,.,', 'grammar.y', 503)
+module_eval(<<'.,.,', 'grammar.y', 500)
   def _reduce_235(val, _values, result)
-     result = Riml::Nodes.new([Riml::ElseifNode.new(val[1], val[3])]) 
+     result = Riml::ElseNode.new(val[2]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 504)
   def _reduce_236(val, _values, result)
-     result = val[0] << Riml::ElseifNode.new(val[2], val[4]) 
+     result = Riml::Nodes.new([Riml::ElseifNode.new(val[1], val[3])]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 508)
+module_eval(<<'.,.,', 'grammar.y', 505)
   def _reduce_237(val, _values, result)
-     result = Riml::ClassDefinitionNode.new(val[1], nil, val[2]) 
+     result = val[0] << Riml::ElseifNode.new(val[2], val[4]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 509)
   def _reduce_238(val, _values, result)
+     result = Riml::ClassDefinitionNode.new(val[1], nil, val[2]) 
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'grammar.y', 510)
+  def _reduce_239(val, _values, result)
      result = Riml::ClassDefinitionNode.new(val[1], val[3], val[4]) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 513)
-  def _reduce_239(val, _values, result)
-     result = Riml::ObjectInstantiationNode.new(val[1]) 
-    result
-  end
-.,.,
-
-module_eval(<<'.,.,', 'grammar.y', 517)
+module_eval(<<'.,.,', 'grammar.y', 514)
   def _reduce_240(val, _values, result)
-     result = Riml::SuperNode.new(val[2], true) 
+     result = Riml::ObjectInstantiationNode.new(val[1]) 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 518)
   def _reduce_241(val, _values, result)
+     result = Riml::SuperNode.new(val[2], true) 
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'grammar.y', 519)
+  def _reduce_242(val, _values, result)
      result = Riml::SuperNode.new([], false) 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 522)
-  def _reduce_242(val, _values, result)
+module_eval(<<'.,.,', 'grammar.y', 523)
+  def _reduce_243(val, _values, result)
      result = Riml::ExLiteralNode.new(val[0])
     result
   end

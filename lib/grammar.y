@@ -230,6 +230,7 @@ rule
 
   ObjectInstantiationCall:
     Scope DefCallIdentifier '(' ArgList ')'       { result = Riml::CallNode.new(val[0], val[1], val[3]) }
+  | Scope DefCallIdentifier                       { result = Riml::CallNode.new(val[0], val[1], []) }
   ;
 
   RimlCommand:

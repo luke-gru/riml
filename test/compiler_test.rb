@@ -1561,6 +1561,24 @@ Riml
     end
   end
 
+  test "allow instantiating class without parens after constructor function" do
+    riml = <<Riml
+class Dog
+end
+d = new Dog
+Riml
+
+    expected = <<Viml
+function! g:DogConstructor()
+  let dogObj = {}
+  return dogObj
+endfunction
+let s:d = g:DogConstructor()
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
   test "super with parens in initialize function" do
     riml = <<Riml
 class Car
