@@ -216,7 +216,14 @@ module Riml
     end
   end
 
-  class DictionaryNode < LiteralNode; end
+  class DictionaryNode < LiteralNode
+    include Walkable
+
+    def children
+      value.to_a.compact.inject([], :concat)
+    end
+  end
+
   class ScopeModifierLiteralNode < LiteralNode; end
 
   class TrueNode < LiteralNode

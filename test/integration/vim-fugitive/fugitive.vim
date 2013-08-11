@@ -157,7 +157,7 @@ function! s:repo(...) abort
     if has_key(s:repos, dir)
       let repo = get(s:repos, dir)
     else
-      let repo = {'git_dir': s:dir}
+      let repo = {'git_dir': dir}
       let s:repos[dir] = repo
     endif
     return extend(extend(repo, s:repo_prototype, 'keep'), s:abstract_prototype, 'keep')
