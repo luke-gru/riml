@@ -2319,5 +2319,16 @@ Viml
     end
   end
 
+  test "Riml.compile can take any object that responds to :read and returns String" do
+    obj = Object.new
+    def obj.read
+      <<Riml
+let i = 0
+Riml
+    end
+    expected = "let s:i = 0\n"
+    assert_equal expected, Riml.compile(obj)
+  end
+
 end
 end

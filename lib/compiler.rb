@@ -752,6 +752,8 @@ module Riml
       (Riml::INCLUDE_COMMENT_FMT % from_file) + output
     end
 
+    attr_accessor :output_dir
+
     # compiles nodes into output code
     def compile(root_node)
       root_node.extend CompilerAccessible

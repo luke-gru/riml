@@ -1,4 +1,5 @@
 require 'pathname'
+require 'fileutils'
 
 require File.expand_path('../environment', __FILE__)
 require 'nodes'
@@ -8,30 +9,35 @@ require 'compiler'
 require 'warning_buffer'
 
 module Riml
-  # lex code into tokens
+  # lex code (String) into tokens (Array)
   def self.lex(code)
     Lexer.new(code).tokenize
   end
 
-  # parse code (or tokens) into nodes
+  # parse tokens (Array) or code (String) into AST (Nodes)
   def self.parse(input, ast_rewriter = AST_Rewriter.new, filename = nil)
     unless input.is_a?(Array) || input.is_a?(String)
-      raise ArgumentError, "input must be tokens or code, is #{input.class}"
+      raise ArgumentError, "input must be tokens (Array) or code (String), " \
+        "is #{input.inspect}"
     end
     Parser.new.parse(input, ast_rewriter, filename)
   end
 
-  # compile nodes (or tokens or code or file) into output code
+  # compile AST (Nodes), tokens (Array), code (String) or object that returns
+  # String from :read to output code (String). Writes file(s) if `input` is a
+  # File.
   def self.compile(input, parser = Parser.new, compiler = Compiler.new)
     if input.is_a?(Nodes)
       nodes = input
     elsif input.is_a?(String) || input.is_a?(Array)
       nodes = parser.parse(input)
-    elsif input.is_a?(File)
+    elsif input.respond_to?(:read)
       source = input.read
-      nodes = parser.parse(source, AST_Rewriter.new, input.path)
+      path = input.respond_to?(:path) ? input.path : nil
+      nodes = parser.parse(source, AST_Rewriter.new, path)
     else
-      raise ArgumentError, "input must be nodes, tokens, code or file, is #{input.class}"
+      raise ArgumentError, "input must be one of AST (Nodes), tokens (Array), " \
+        "code (String) or respond_to?(:read), is #{input.inspect}"
     end
 
     if compiler.parser == parser
@@ -44,7 +50,7 @@ module Riml
     output = compiler.compile(nodes)
 
     if input.is_a?(File)
-      write_file(output, input.path, compiling_cmdline_file)
+      write_file(compiler, output, input.path, compiling_cmdline_file)
     else
       output
     end
@@ -53,15 +59,38 @@ module Riml
     process_compile_queue!(compiler)
   end
 
-  # expects `file_names` to be readable files
+  # expects `filenames` (String) arguments, to be readable files. Optional options (Hash) as
+  # last argument.
   def self.compile_files(*filenames)
+    parser, compiler = Parser.new, Compiler.new
+
+    if filenames.last.is_a?(Hash)
+      opts = filenames.pop
+      if dir = opts[:output_dir]
+        compiler.output_dir = dir
+      end
+    end
+
     if filenames.size > 1
-      threaded_compile_files(*filenames)
+      threads = []
+      filenames.each_with_index do |fname, i|
+        if i.zero?
+          _parser, _compiler = parser, compiler
+        else
+          _parser, _compiler = Parser.new, Compiler.new
+          _compiler.output_dir = compiler.output_dir
+        end
+        threads << Thread.new do
+          f = File.open(fname)
+          compile(f, _parser, _compiler)
+        end
+      end
+      threads.each {|t| t.join}
     elsif filenames.size == 1
       fname = filenames.first
       f = File.open(fname)
       # `compile` will close file handle
-      compile(f)
+      compile(f, parser, compiler)
     else
       raise ArgumentError, "need filenames to compile"
     end
@@ -69,10 +98,11 @@ module Riml
     flush_warnings
   end
 
-  # checks syntax of `input` (lexes + parses) without going through ast rewriting or compilation
+  # checks syntax of `input` (String).
+  # lexes + parses without going through AST rewriting or compilation
   def self.check_syntax(input)
     raise ArgumentError.new(input) unless input.is_a?(String)
-    parse(input, false)
+    parse(input, nil)
     true
   end
 
@@ -148,17 +178,6 @@ module Riml
     set_path(name, val)
   end
 
-  def self.threaded_compile_files(*filenames)
-    threads = []
-    filenames.each do |fname|
-      threads << Thread.new do
-        f = File.open(fname)
-        compile(f)
-      end
-    end
-    threads.each {|t| t.join}
-  end
-
   # This is for when another file is sourced within a file we're compiling.
   def self.process_compile_queue!(compiler)
     while full_path = compiler.compile_queue.shift
@@ -172,21 +191,23 @@ module Riml
   FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')
   INCLUDE_COMMENT_FMT = File.read(File.expand_path("../included.vim", __FILE__))
 
-  def self.write_file(output, fname, cmdline_file = true)
-    # writing out a file that's compiled from cmdline, output into CWD
+  def self.write_file(compiler, output, fname, cmdline_file = true)
+    # writing out a file that's compiled from cmdline, output into output_dir
     output_dir = if cmdline_file
-      Dir.getwd
+      compiler.output_dir || Dir.getwd
     # writing out a riml_source'd file
     else
-      # absolute path
-      if fname[0] == File::SEPARATOR
+      # absolute path for filename sent from cmdline or from riml_sourced files,
+      # output to that same directory if no --output-dir option is set
+      if fname[0] == File::SEPARATOR && !compiler.output_dir
         Pathname.new(fname).parent.to_s
       # relative path
       else
-        File.join(Dir.getwd, Pathname.new(fname).parent.to_s)
+        File.join(compiler.output_dir || Dir.getwd, Pathname.new(fname).parent.to_s)
       end
     end
     basename_without_riml_ext = File.basename(fname).sub(/\.riml\Z/i, '')
+    FileUtils.mkdir_p(output_dir) unless File.directory?(output_dir)
     full_path = File.join(output_dir, "#{basename_without_riml_ext}.vim")
     File.open(full_path, 'w') do |f|
       f.write FILE_HEADER + output

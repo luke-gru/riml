@@ -20,6 +20,7 @@ module Riml
       options.check_syntax_files = []
       options.repl = false
       options.vi_readline = false
+      options.output_dir = nil
 
       OptionParser.new do |opts|
         opts.banner = "Usage: riml [options] [file1][,file2]..."
@@ -27,15 +28,15 @@ module Riml
         opts.separator "Specific options:"
 
         opts.on("-c", "--compile FILES", Array, "Compiles riml file(s) to VimL.") do |filenames|
-          append_filenames_to_list_if_all_exist(options.compile_files, *filenames)
+          append_filenames_to_list_if_valid(options.compile_files, *filenames)
         end
 
         opts.on("-s", "--stdio", "Takes riml from stdin and outputs VimL to stdout.") do
           options.stdio = true
         end
 
-        opts.on("-k", "--check FILES", Array, "Checks syntax of file(s). Because Riml is (almost) a superset of VimL, this can be used to check VimL's syntax as well.") do |filenames|
-          append_filenames_to_list_if_all_exist(options.check_syntax_files, *filenames)
+        opts.on("-k", "--check FILES", Array, "Checks syntax of file(s). Because Riml is (mostly) compatible with VimL, this can be used to check VimL's syntax as well.") do |filenames|
+          append_filenames_to_list_if_valid(options.check_syntax_files, *filenames)
         end
 
         opts.on("-S", "--source-path PATH", "Colon-separated path riml uses to find files for `riml_source`. Defaults to pwd.") do |path|
@@ -52,6 +53,10 @@ module Riml
           rescue UserArgumentError => e
             abort e.message
           end
+        end
+
+        opts.on("-o", "--output-dir DIR", "Output all .vim files in specified directory.") do |dir|
+          options.output_dir = dir
         end
 
         opts.on("-i", "--interactive", "Start an interactive riml session (REPL).") do
@@ -78,13 +83,15 @@ module Riml
 
     private
 
-    def self.append_filenames_to_list_if_all_exist(list, *filenames)
+    def self.append_filenames_to_list_if_valid(list, *filenames)
       filenames.each do |fname|
         expanded = File.expand_path(fname)
-        if File.exists?(expanded)
+        if File.exists?(expanded) && (readable = File.readable?(expanded))
           list << fname
+        elsif not readable
+          abort "File #{expanded.inspect} is not readable."
         else
-          abort "Couldn't find file #{fname.inspect}."
+          abort "Couldn't find file #{expanded.inspect}."
         end
       end
     end
@@ -98,7 +105,7 @@ module Riml
         if options.stdio
           puts Riml.compile($stdin.read)
         elsif options.compile_files.any?
-          Riml.compile_files(*options.compile_files)
+          Riml.compile_files(*options.compile_files, :output_dir => options.output_dir)
         elsif options.check_syntax_files.any?
           files = options.check_syntax_files
           Riml.check_syntax_files(*files)

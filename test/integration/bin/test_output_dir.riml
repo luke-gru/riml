@@ -1,0 +1,2 @@
+riml_source 'sourced.riml'
+echo "Woo! New directory here I come!"

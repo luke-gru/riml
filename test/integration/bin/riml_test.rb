@@ -1,5 +1,6 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require 'shellwords'
+require 'fileutils'
 
 class BinRimlTest < Riml::TestCase
   EXEC = Shellwords.escape(File.join(Riml::Environment::BINDIR, 'riml'))
@@ -162,6 +163,21 @@ class BinRimlTest < Riml::TestCase
       ensure
         File.delete(include1_vim_path) if File.exists?(include1_vim_path)
         File.delete(include2_vim_path) if File.exists?(include2_vim_path)
+      end
+    end
+  end
+
+  test "--output-dir option outputs all .vim files into specified dir and mirrors the input file structure" do
+    Dir.chdir(File.expand_path("../", __FILE__)) do
+      begin
+        system "#{EXEC} -c test_output_dir.riml -o newdir -S test_output_dir"
+        assert_equal 0, $?.exitstatus
+        assert File.exists?('./newdir/test_output_dir.vim')
+        assert File.exists?('./newdir/test_output_dir/sourced.vim')
+        refute File.exists?('./test_output_dir.vim')
+        refute File.exists?('./test_output_dir/sourced.vim')
+      ensure
+        FileUtils.rm_r 'newdir' if File.directory?('newdir')
       end
     end
   end
