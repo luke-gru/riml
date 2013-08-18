@@ -1,0 +1,8 @@
+0.2.9
+=====
+
+* Add --output-dir (-o) commandline flag for specifying the output directory
+for compiled .vim files
+
+* Fix bug where variables in dictionaries sometimes did not have the right scope
+modifier
