@@ -53,7 +53,7 @@ riml_source 'faster_car.riml'
 Riml
 
     expected = <<Viml
-function! g:CarConstructor(...)
+function! s:CarConstructor(...)
   let carObj = {}
   let carObj.maxSpeed = 100
   let carObj.options = a:000
@@ -104,7 +104,7 @@ Riml
     expected = <<Viml
 " included: 'file1.riml'
 echo "hi"
-function! g:CarConstructor(...)
+function! s:CarConstructor(...)
   let carObj = {}
   let carObj.maxSpeed = 100
   let carObj.options = a:000
@@ -133,13 +133,13 @@ Viml
     expected = <<Riml
 " included: 'riml_include_lib.riml'
 " included: 'riml_include_lib2.riml'
-function! g:Lib2Constructor()
+function! s:Lib2Constructor()
   let lib2Obj = {}
   return lib2Obj
 endfunction
-function! g:Lib1Constructor()
+function! s:Lib1Constructor()
   let lib1Obj = {}
-  let lib2Obj = g:Lib2Constructor()
+  let lib2Obj = s:Lib2Constructor()
   call extend(lib1Obj, lib2Obj)
   return lib1Obj
 endfunction

@@ -3,7 +3,7 @@ require File.expand_path('../nodes', __FILE__)
 # visits AST nodes and translates them into VimL
 module Riml
   class Compiler
-    attr_accessor :parser
+    attr_accessor :parser, :output_dir
 
     # Base abstract visitor
     class Visitor
@@ -751,8 +751,6 @@ module Riml
       output = compile(root_node)
       (Riml::INCLUDE_COMMENT_FMT % from_file) + output
     end
-
-    attr_accessor :output_dir
 
     # compiles nodes into output code
     def compile(root_node)

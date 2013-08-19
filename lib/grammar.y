@@ -507,8 +507,8 @@ rule
   ;
 
   ClassDefinition:
-    CLASS IDENTIFIER Block END                   { result = Riml::ClassDefinitionNode.new(val[1], nil, val[2]) }
-  | CLASS IDENTIFIER '<' IDENTIFIER Block END    { result = Riml::ClassDefinitionNode.new(val[1], val[3], val[4]) }
+    CLASS Scope IDENTIFIER Block END                         { result = Riml::ClassDefinitionNode.new(val[1], val[2], nil, val[3]) }
+  | CLASS Scope IDENTIFIER '<' Scope IDENTIFIER Block END    { result = Riml::ClassDefinitionNode.new(val[1], val[2], (val[4] || ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER) + val[5], val[6]) }
   ;
 
   ObjectInstantiation:

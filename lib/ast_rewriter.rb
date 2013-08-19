@@ -139,12 +139,12 @@ module Riml
       end
 
       def replace(node)
-        classes[node.name] = node
+        classes[node.full_name] = node
 
         InsertInitializeMethod.new(node, classes).rewrite_on_match
         constructor = node.constructor
-        constructor.scope_modifier = 'g:' unless constructor.scope_modifier
         constructor.name = node.constructor_name
+        constructor.scope_modifier = node.scope_modifier
         # set up dictionary variable at top of function
         dict_name = node.constructor_obj_name
         constructor.expressions.unshift(
@@ -190,7 +190,7 @@ module Riml
                 [def_node.original_name]
               ),
               CallNode.new(
-                nil, 'function', [StringNode.new("#{def_node.scope_modifier}#{def_node.name}", :s)]
+                nil, 'function', [StringNode.new("#{ast.scope_modifier}#{def_node.name}", :s)]
               )
           )
           constructor.expressions << extension
@@ -235,7 +235,7 @@ module Riml
         end
 
         def superclass_params
-          classes.superclass(ast.name).constructor.parameters
+          classes.superclass(ast.full_name).constructor.parameters
         end
 
         def recursive?
@@ -255,7 +255,7 @@ module Riml
         end
 
         def replace(constructor)
-          superclass = classes.superclass(class_node.name)
+          superclass = classes.superclass(class_node.full_name)
           super_constructor = superclass.constructor
 
           set_var_node = AssignNode.new('=', GetVariableNode.new(nil, superclass.constructor_obj_name),
@@ -306,13 +306,13 @@ module Riml
 
         def replace(node)
           func_scope = @function_node.scope_modifier
-          superclass = classes[ast.superclass_name]
+          superclass = classes[ast.superclass_full_name]
           while superclass && !superclass.has_function?(func_scope, superclass_func_name(superclass)) && superclass.superclass?
-            superclass = classes[superclass.superclass_name]
+            superclass = classes[superclass.superclass_full_name]
           end
           if superclass.nil? || !superclass.has_function?(func_scope, superclass_func_name(superclass))
             raise Riml::UserFunctionNotFoundError,
-              "super was called in class #{ast.name} in " \
+              "super was called in class #{ast.full_name} in " \
               "function #{@function_node.original_name}, but there are no " \
               "functions with this name in that class's superclass hierarchy."
           end
@@ -344,7 +344,7 @@ module Riml
             CallNode.new(
               nil,
               'function',
-              [StringNode.new("g:#{super_func_name}", :s)]
+              [StringNode.new("#{superclass.scope_modifier}#{super_func_name}", :s)]
             )
           )
           ast.constructor.expressions << assign_node
@@ -359,7 +359,9 @@ module Riml
       end
 
       def replace(node)
-        constructor_name = node.call_node.name
+        constructor_name = (node.call_node.scope_modifier ||
+                            ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER) +
+                            node.call_node.name
         class_node = classes[constructor_name]
         call_node = node.call_node
         call_node.name = class_node.constructor_name

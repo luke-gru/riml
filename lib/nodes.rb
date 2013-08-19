@@ -702,7 +702,7 @@ module Riml
 
   class DefMethodNode < DefNode
     def to_def_node
-      def_node = DefNode.new(bang, 'g:', name, parameters, ['dict'], expressions)
+      def_node = DefNode.new(bang, scope_modifier, name, parameters, ['dict'], expressions)
       def_node.parent = parent
       def_node
     end
@@ -890,21 +890,35 @@ module Riml
 
   end
 
-  class ClassDefinitionNode < Struct.new(:name, :superclass_name, :expressions)
+  class ClassDefinitionNode < Struct.new(:scope_modifier, :name, :superclass_name, :expressions)
     include Visitable
     include Walkable
 
     FUNCTIONS = lambda {|expr| DefNode === expr}
+    DEFAULT_SCOPE_MODIFIER = 's:'
+
+    def initialize(*)
+      super
+      unless scope_modifier
+        self.scope_modifier = DEFAULT_SCOPE_MODIFIER
+      end
+    end
 
     def superclass?
       not superclass_name.nil?
     end
 
+    def full_name
+      scope_modifier + name
+    end
+
+    alias superclass_full_name superclass_name
+
     def constructor
       expressions.nodes.detect do |n|
         next(false) unless DefNode === n && (n.name == 'initialize' || n.name == constructor_name)
         if n.instance_of?(DefMethodNode)
-          Riml.warn("class #{name.inspect} has an initialize function declared with 'defm'. Please use 'def'.")
+          Riml.warn("class #{full_name.inspect} has an initialize function declared with 'defm'. Please use 'def'.")
           new_node = n.to_def_node
           new_node.keywords = nil
           n.replace_with(new_node)
@@ -923,6 +937,10 @@ module Riml
 
     def constructor_name
       "#{name}Constructor"
+    end
+
+    def constructor_full_name
+      "#{scope_modifier}#{name}Constructor"
     end
 
     def constructor_obj_name
