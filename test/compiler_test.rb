@@ -2345,5 +2345,98 @@ Riml
     assert_equal expected, Riml.compile(obj)
   end
 
+  test "private methods are transformed to methods that take the obj as a parameter explicitly" do
+    riml = <<Riml
+class g:Global
+  def initialize
+    self.priv_data = 'data'
+  end
+
+  defm greet
+    echo "hi"
+    self.priv()
+  end
+
+  def priv
+    echo self.priv_data
+  end
+end
+Riml
+
+  expected = <<Viml
+function! g:GlobalConstructor()
+  let globalObj = {}
+  let globalObj.priv_data = 'data'
+  let globalObj.greet = function('<SNR>' . s:SID() . '_s:Global_greet')
+  return globalObj
+endfunction
+function! s:Global_priv(globalObj)
+  echo a:globalObj.priv_data
+endfunction
+function! <SID>s:Global_greet() dict
+  echo "hi"
+  call s:Global_priv(self)
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "calling private methods from member functions and the initialize method works fine" do
+    riml = <<Riml
+class ScriptLocal
+end
+
+class g:Global < ScriptLocal
+
+  def initialize
+    super
+    self.priv_data = 'data'
+    self.priv()
+  end
+
+  defm greet
+    echo "hi"
+    self.priv()
+  end
+
+  def priv
+    echo self.priv_data
+  end
+
+  def other_priv
+    self.priv()
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:ScriptLocalConstructor()
+  let scriptLocalObj = {}
+  return scriptLocalObj
+endfunction
+function! g:GlobalConstructor()
+  let globalObj = {}
+  let scriptLocalObj = s:ScriptLocalConstructor()
+  call extend(globalObj, scriptLocalObj)
+  let globalObj.priv_data = 'data'
+  call s:Global_priv(globalObj)
+  let globalObj.greet = function('<SNR>' . s:SID() . '_s:Global_greet')
+  return globalObj
+endfunction
+function! s:Global_priv(globalObj)
+  echo a:globalObj.priv_data
+endfunction
+function! s:Global_other_priv(globalObj)
+  call s:Global_priv(a:globalObj)
+endfunction
+function! <SID>s:Global_greet() dict
+  echo "hi"
+  call s:Global_priv(self)
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
 end
 end
