@@ -171,21 +171,25 @@ Classes
 
 ###Basic Class
 
-    class MyClass                                      function! g:MyClassConstructor(data, otherData, ...)
+                                                       function! s:SID()
+                                                         return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
+                                                       endfunction
+
+    class MyClass                                      function! s:MyClassConstructor(data, otherData, ...)
       def initialize(data, otherData, *options)          let myClassObj = {}
         self.data = data                                 let myClassObj.data = a:data
         self.otherData = otherData                       let myClassObj.otherData = a:otherData
         self.options = options                           let myClassObj.options = a:000
-      end                                                let myClassObj.getData = function('g:MyClass_getData')
-                                                         let myClassObj.getOtherData = function('g:MyClass_getOtherData')
+      end                                                let myClassObj.getData = function('<SNR>' . s:SID() . '_s:MyClass_getData')
+                                                         let myClassObj.getOtherData = function('<SNR>' . s:SID() . '_s:MyClass_getOtherData')
       defm getData                                       return myClassObj
         return self.data                               endfunction
       end
-                                                       function! g:MyClass_getdata() dict
+                                                       function! <SID>s:MyClass_getdata() dict
       defm getOtherData                                  return self.data
         return self.otherData                          endfunction
       end
-    end                                                function! g:MyClass_getOtherData() dict
+    end                                                function! <SID>s:MyClass_getOtherData() dict
                                                          return self.otherData
                                                        endfunction
 
@@ -195,27 +199,40 @@ inside a class, use 'def'. To create an instance of this class, simply:
 
     obj = new MyClass('someData', 'someOtherData')
 
+Classes have a default scope modifier of 's:'. That is, they cannot be instantiated
+outside the script in which they are defined. In order to allow them to be instantiated
+in any script file, you must declare the class with the explicit scope modifier of 'g:'.
+For example:
+
+    class g:MyClass
+      ...
+    end
+
 In this basic example of a class, we see a \*splat variable. This is just a
 convenient way to refer to 'a:000' in the body of a function. Splat variables
 are optional parameters and get compiled to '...'.
 
 ###Class Inheritance
 
-    class Translation                                  function! g:TranslationConstructor(input)
+                                                       function! s:SID()
+                                                         return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
+                                                       endfunction
+
+    class Translation                                  function! s:TranslationConstructor(input)
       def initialize(input)                              let translationObj = {}
         self.input = input                               let translationObj.input = a:input
       end                                                return translationObj
     end                                                endfunction
 
-    class FrenchToEnglishTranslation < Translation     function! g:FrenchToEnglishTranslationConstructor(input)
+    class FrenchToEnglishTranslation < Translation     function! s:FrenchToEnglishTranslationConstructor(input)
       defm translate                                     let frenchToEnglishTranslationObj = {}
-        if (self.input == "Bonjour!")                    let translationObj = g:TranslationConstructor(a:input)
+        if (self.input == "Bonjour!")                    let translationObj = s:TranslationConstructor(a:input)
           echo "Hello!"                                  call extend(frenchToEnglishTranslationObj, translationObj)
-        else                                             let frenchToEnglishTranslationObj.translate = function('g:FrenchToEnglishTranslation_translate')
+        else                                             let frenchToEnglishTranslationObj.translate = function('<SNR>' . s:SID() . '_s:FrenchToEnglishTranslation_translate')
           echo "Sorry, I don't know that word."          return frenchToEnglishTranslationObj
         end                                            endfunction
       end
-    end                                                function! g:FrenchToEnglishTranslation_translate() dict
+    end                                                function! <SID>s:FrenchToEnglishTranslation_translate() dict
                                                          if (self.input ==# "Bonjour!")
     translation = new                                      echo "Hello!"
     \ FrenchToEnglishTranslation("Bonjour!")             else
@@ -223,7 +240,7 @@ are optional parameters and get compiled to '...'.
                                                          endif
                                                        endfunction
 
-                                                       let s:translation = g:TranslationConstructor("Bonjour!")
+                                                       let s:translation = s:TranslationConstructor("Bonjour!")
                                                        call s:translation.translate()
     => "Hello!"
 
@@ -234,6 +251,14 @@ instances use the initialize function from 'Translation', and new instances must
 be provided with an 'input' argument on creation. Basically, if a class doesn't
 provide an initialize function, it uses its superclass's.
 
+A base class and inheriting class can have different scope modifiers. For example, if you
+had a script-local base class and wanted to extend it but have the extending class be
+global, this is not a problem. Simply:
+
+    class g:GlobalClass < ScriptLocalClass
+      ...
+    end
+
 If you look at the last line of Riml in the previous example, you'll see that
 it doesn't use Vimscript's builtin 'call' function for calling the 'translate'
 method on the translation object. Riml can figure out when 'call' is necessary,
@@ -241,7 +266,11 @@ and will add it to the compiled Vimscript.
 
 ###Using 'super'
 
-    class Car                                             function! g:CarConstructor(make, model, color)
+                                                          function! s:SID()
+                                                            return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
+                                                          endfunction
+
+    class Car                                             function! s:CarConstructor(make, model, color)
       def initialize(make, model, color)                    let carObj = {}
         self.make = make                                    let carObj.make = a:make
         self.model = model                                  let carObj.model = a:model
@@ -249,16 +278,16 @@ and will add it to the compiled Vimscript.
       end                                                 endfunction
     end
 
-    class HotRod < Car                                    function! g:HotRodConstructor(make, model, color, topSpeed)
+    class HotRod < Car                                    function! s:HotRodConstructor(make, model, color, topSpeed)
       def initialize(make, model, color, topSpeed)          let hotRodObj = {}
         self.topSpeed = topSpeed                            let hotRodObj.topSpeed = a:topSpeed
-        super(make, model, color)                           let carObj = g:CarConstructor(a:make, a:model, a:color)
+        super(make, model, color)                           let carObj = s:CarConstructor(a:make, a:model, a:color)
       end                                                   call extend(hotRodObj, carObj)
-                                                            let hotRodObj.drive = function('g:HotRod_drive')
+                                                            let hotRodObj.drive = function('<SNR>' . s:SID() . '_s:HotRod_drive')
       defm drive                                            return hotRodObj
         if self.topSpeed > 140                            endfunction
           echo "Ahhhhhhh!"
-        else                                              function! g:HotRod_drive() dict
+        else                                              function! <SID>s:HotRod_drive() dict
           echo "Nice"                                       if self.topSpeed ># 140
         end                                                   echo "Ahhhhhhh!"
       end                                                   else
@@ -266,8 +295,9 @@ and will add it to the compiled Vimscript.
                                                             endif
     newCar = new HotRod("chevy", "mustang", "red", 160)   endfunction
     newCar.drive()
-                                                          let s:newCar = g:HotRodConstructor("chevy", "mustang", "red", 160)
+                                                          let s:newCar = s:HotRodConstructor("chevy", "mustang", "red", 160)
                                                           call s:newCar.drive()
+    => "Ahhhhhhh!"
 
 Use of 'super' is legal only within subclasses. If arguments are given, these arguments are sent
 to the superclass's function of the same name. If no arguments are given and parentheses are omitted,
