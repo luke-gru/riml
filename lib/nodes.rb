@@ -242,7 +242,7 @@ module Riml
   end
 
   class SIDNode < LiteralNode
-    def initialize(ident)
+    def initialize(ident = 'SID')
       Riml.warn("expected #{ident} to be SID") unless ident == 'SID'
       super('<SID>')
     end
@@ -381,7 +381,7 @@ module Riml
       files.each do |basename, full_path|
         begin
           yield basename, full_path
-        rescue Riml::IncludeFileLoop
+        rescue Riml::IncludeFileLoop, Riml::SourceFileLoop
           arguments.delete_if { |arg| arg.value == basename }
         end
       end
@@ -559,7 +559,7 @@ module Riml
   end
 
   # Method definition.
-  class DefNode < Struct.new(:bang, :scope_modifier, :name, :parameters, :keywords, :expressions)
+  class DefNode < Struct.new(:bang, :sid, :scope_modifier, :name, :parameters, :keywords, :expressions)
     include Visitable
     include Indentable
     include FullyNameable
@@ -612,10 +612,10 @@ module Riml
 
     def keywords
       if name.include?('.')
-        (super.to_a + ['dict']).uniq
+        (super.to_a + ['dict'])
       else
         super.to_a
-      end
+      end.uniq
     end
 
     def defined_on_dictionary?
@@ -625,6 +625,8 @@ module Riml
     def autoload?
       name.include?('#')
     end
+
+    alias sid? sid
 
     def super_node
       expressions.nodes.detect {|n| SuperNode === n}
@@ -642,7 +644,11 @@ module Riml
     end
 
     def children
-      children = [expressions]
+      children = if sid?
+        [sid, expressions]
+      else
+        [expressions]
+      end
       children.concat(default_param_nodes)
     end
 
@@ -702,7 +708,7 @@ module Riml
 
   class DefMethodNode < DefNode
     def to_def_node
-      def_node = DefNode.new(bang, scope_modifier, name, parameters, ['dict'], expressions)
+      def_node = DefNode.new(bang, sid, 's:', name, parameters, ['dict'], expressions)
       def_node.parent = parent
       def_node
     end
@@ -902,6 +908,8 @@ module Riml
       unless scope_modifier
         self.scope_modifier = DEFAULT_SCOPE_MODIFIER
       end
+      # registered with ClassMap
+      @registered_state = false
     end
 
     def superclass?

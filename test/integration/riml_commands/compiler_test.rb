@@ -68,7 +68,10 @@ Viml
         with_file_cleanup("faster_car.vim") do
           assert_equal expected, compile(riml)
           assert File.exists?("faster_car.vim")
-          assert_equal Riml::FILE_HEADER + File.read("faster_car_expected.vim"), File.read("faster_car.vim")
+          assert_equal(
+            Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read("faster_car_expected.vim"),
+            File.read("faster_car.vim")
+          )
         end
       end
     end
@@ -228,6 +231,24 @@ RIML
         assert_equal expected, compile(riml)
         assert File.exists?(File.join(Riml.source_path.first, 'sourced2.vim')) # in test_source_path dir
         assert File.exists?(File.join(Riml.source_path[1], 'sourced1.vim'))
+      end
+    end
+  end
+
+  test "riml_source grabs all classes defined in the files it sources before any compilation takes place" do
+    riml = <<RIML
+riml_source 'class_test_main.riml'
+RIML
+    expected = "source class_test_main.vim\n"
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      with_file_cleanup('class_test_main.vim', 'class_test.vim') do
+        assert_equal expected, compile(riml)
+        assert File.exists?(File.join(Riml.source_path.first, 'class_test_main.vim'))
+        assert File.exists?(File.join(Riml.source_path.first, 'class_test.vim'))
+        assert_equal Riml::FILE_HEADER + File.read(File.join(Riml.source_path.first, 'class_test_main_expected.vim')),
+                     File.read(File.join(Riml.source_path.first, 'class_test_main.vim'))
+        assert_equal Riml::FILE_HEADER + File.read(File.join(Riml.source_path.first, 'class_test_expected.vim')),
+                     File.read(File.join(Riml.source_path.first, 'class_test.vim'))
       end
     end
   end

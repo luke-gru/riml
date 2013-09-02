@@ -17,8 +17,11 @@ module Riml
 
     def []=(key, val)
       ensure_key_is_string!(key)
-      if @map[key]
-        raise ClassRedefinitionError, "can't redefine class #{key.inspect}."
+      if class_node = @map[key]
+        if !class_node.instance_variable_get("@registered_state") &&
+           !val.instance_variable_get("@registered_state")
+          raise ClassRedefinitionError, "can't redefine class #{key.inspect}."
+        end
       end
       @map[key] = val
     end

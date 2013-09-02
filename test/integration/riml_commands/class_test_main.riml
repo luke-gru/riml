@@ -1,0 +1,3 @@
+riml_source 'class_test.riml'
+dog = new g:DogGlobal('otis')
+dog.bark()

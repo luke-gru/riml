@@ -11,7 +11,7 @@ end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new('!', nil, "a_method", ['a', 'b'], nil,
+      DefNode.new('!', nil, nil, "a_method", ['a', 'b'], nil,
         Nodes.new([ ReturnNode.new(TrueNode.new) ])
       )
     ])
@@ -39,7 +39,7 @@ end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new('!', 'b:', "another_method", ['a', 'b'], nil, Nodes.new([
+      DefNode.new('!', nil, 'b:', "another_method", ['a', 'b'], nil, Nodes.new([
         IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([
           FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))])),
         ExplicitCallNode.new(nil, "SomeFunction", [])
@@ -1487,14 +1487,14 @@ Riml
     expected = <<Viml
 function! s:MyClassConstructor(arg1, arg2, ...)
   let myClassObj = {}
-  let myClassObj.getData = function('s:MyClass_getData')
-  let myClassObj.getOtherData = function('s:MyClass_getOtherData')
+  let myClassObj.getData = function('<SNR>' . s:SID() . '_s:MyClass_getData')
+  let myClassObj.getOtherData = function('<SNR>' . s:SID() . '_s:MyClass_getOtherData')
   return myClassObj
 endfunction
-function! s:MyClass_getData() dict
+function! <SID>s:MyClass_getData() dict
   return self.data
 endfunction
-function! s:MyClass_getOtherData() dict
+function! <SID>s:MyClass_getOtherData() dict
   return self.otherData
 endfunction
 Viml
@@ -1534,10 +1534,10 @@ function! s:FrenchToEnglishTranslationConstructor(input)
   let frenchToEnglishTranslationObj = {}
   let translationObj = s:TranslationConstructor(a:input)
   call extend(frenchToEnglishTranslationObj, translationObj)
-  let frenchToEnglishTranslationObj.translate = function('s:FrenchToEnglishTranslation_translate')
+  let frenchToEnglishTranslationObj.translate = function('<SNR>' . s:SID() . '_s:FrenchToEnglishTranslation_translate')
   return frenchToEnglishTranslationObj
 endfunction
-function! s:FrenchToEnglishTranslation_translate() dict
+function! <SID>s:FrenchToEnglishTranslation_translate() dict
   if self.input ==# "Bonjour!"
     echo "Hello!"
   else
@@ -1621,10 +1621,10 @@ function! s:HotRodConstructor(make, model, color, topSpeed)
   let hotRodObj.topSpeed = a:topSpeed
   let carObj = s:CarConstructor(a:make, a:model, a:color)
   call extend(hotRodObj, carObj)
-  let hotRodObj.drive = function('s:HotRod_drive')
+  let hotRodObj.drive = function('<SNR>' . s:SID() . '_s:HotRod_drive')
   return hotRodObj
 endfunction
-function! s:HotRod_drive() dict
+function! <SID>s:HotRod_drive() dict
   if self.topSpeed ># 140
     echo "Ahhhhhhh!"
   else
@@ -1731,25 +1731,25 @@ Riml
     expected = <<Viml
 function! s:JobConstructor()
   let jobObj = {}
-  let jobObj.doIt = function('s:Job_doIt')
-  let jobObj.setSpeed = function('s:Job_setSpeed')
+  let jobObj.doIt = function('<SNR>' . s:SID() . '_s:Job_doIt')
+  let jobObj.setSpeed = function('<SNR>' . s:SID() . '_s:Job_setSpeed')
   return jobObj
 endfunction
-function! s:Job_doIt() dict
+function! <SID>s:Job_doIt() dict
   echo "Doing job " . speed . "."
 endfunction
-function! s:Job_setSpeed(speed) dict
+function! <SID>s:Job_setSpeed(speed) dict
   let self.speed = a:speed
 endfunction
 function! s:FastJobConstructor()
   let fastJobObj = {}
   let jobObj = s:JobConstructor()
   call extend(fastJobObj, jobObj)
-  let fastJobObj.doIt = function('s:FastJob_doIt')
-  let fastJobObj.Job_doIt = function('s:Job_doIt')
+  let fastJobObj.doIt = function('<SNR>' . s:SID() . '_s:FastJob_doIt')
+  let fastJobObj.Job_doIt = function('<SNR>' . s:SID() . '_s:Job_doIt')
   return fastJobObj
 endfunction
-function! s:FastJob_doIt() dict
+function! <SID>s:FastJob_doIt() dict
   call self.setSpeed('fast')
   call self.Job_doIt()
 endfunction
@@ -1807,6 +1807,21 @@ Riml
     assert_riml_warning do
       assert_equal expected, compile(riml)
     end
+  end
+
+  test "can change scope modifier of class" do
+    riml = <<Riml
+class g:Node
+end
+Riml
+
+    expected = <<Viml
+function! g:NodeConstructor()
+  let nodeObj = {}
+  return nodeObj
+endfunction
+Viml
+    assert_equal expected, compile(riml)
   end
 
   test "viml command (source)" do
@@ -2289,28 +2304,28 @@ Viml
     end
   end
 
-  test "<SID> as scope modifier of function" do
+  test "<SID> in function definition" do
     riml = <<Riml
 def <SID>Func()
 end
 Riml
 
     expected = <<Viml
-function! <SID>Func()
+function! <SID>s:Func()
 endfunction
 Viml
 
     assert_equal expected, compile(riml)
   end
 
-  test "warn if <SID> is misspelled or different case" do
+  test "warn if <SID> is misspelled or different case in function definition" do
     riml = <<Riml
 def <sid>Func()
 end
 Riml
 
     expected = <<Viml
-function! <SID>Func()
+function! <SID>s:Func()
 endfunction
 Viml
 

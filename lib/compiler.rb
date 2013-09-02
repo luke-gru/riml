@@ -433,7 +433,7 @@ module Riml
         set_modifier(node)
         bang = node.bang
         params = process_parameters!(node)
-        declaration = "function#{bang} #{node.scope_modifier}"
+        declaration = "function#{bang} #{node.sid}#{node.scope_modifier}"
         declaration <<
         if node.name.respond_to?(:variable)
           node.name.accept(visitor_for_node(node.name))
@@ -747,7 +747,7 @@ module Riml
     end
 
     def compile_include(source, from_file)
-      root_node = parser.parse(source, parser.ast_rewriter, from_file)
+      root_node = parser.parse(source, parser.ast_rewriter, from_file, true)
       output = compile(root_node)
       (Riml::INCLUDE_COMMENT_FMT % from_file) + output
     end
