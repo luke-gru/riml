@@ -2330,5 +2330,31 @@ Riml
     assert_equal expected, Riml.compile(obj)
   end
 
+  # https://github.com/luke-gru/riml/issues/8
+  test "passing obj constructor call to function doesn't create spurious newline before ending ')'" do
+    riml = <<Riml
+class Person
+end
+
+def add_person(person)
+  echo 'add_person'
+end
+
+add_person(new Person())
+Riml
+
+    expected = <<Viml
+function! g:PersonConstructor()
+  let personObj = {}
+  return personObj
+endfunction
+function! s:add_person(person)
+  echo 'add_person'
+endfunction
+call s:add_person(g:PersonConstructor())
+Viml
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

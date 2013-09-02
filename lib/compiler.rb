@@ -527,9 +527,9 @@ module Riml
           node.compiled_output << ", " unless last_arg?(node.arguments, i)
         end
         node.compiled_output << ")" unless node.builtin_command?
-
         unless node.descendant_of_control_structure? ||
                node.descendant_of_call_node? ||
+               node.descendant_of_object_instantiation_node? ||
                node.descendant_of_list_node? ||
                node.descendant_of_list_or_dict_get_node? ||
                node.descendant_of_operator_node? ||
