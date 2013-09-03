@@ -6,6 +6,7 @@ group :development do
   #
   # $ racc -o parser.rb grammar.y
   gem 'racc'
+  gem 'bundler', '~> 1.3'
 end
 
 group :test do

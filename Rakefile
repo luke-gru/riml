@@ -1,5 +1,7 @@
 require File.expand_path('../lib/environment', __FILE__)
 require 'rake/testtask'
+require 'bundler/setup'
+require 'bundler/gem_tasks'
 
 task :default => :test
 task :test => [:parser]
