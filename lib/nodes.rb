@@ -786,7 +786,7 @@ module Riml
     end
 
     def children
-      [expressions]
+      [condition, body]
     end
   end
 

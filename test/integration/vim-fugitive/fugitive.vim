@@ -98,16 +98,16 @@ function! fugitive#extract_git_dir(path) abort
     let type = getftype(dir)
     if type ==# 'dir' && fugitive#is_git_dir(dir)
       return dir
-    elseif s:type ==# 'link' && fugitive#is_git_dir(s:dir)
+    elseif type ==# 'link' && fugitive#is_git_dir(dir)
       return resolve(dir)
-    elseif s:type !=# '' && filereadable(s:dir)
+    elseif type !=# '' && filereadable(dir)
       let line = get(readfile(dir, '', 1), 0, '')
       if line =~# '^gitdir: \.' && fugitive#is_git_dir(root . '/' . line[8 : -1])
         return simplify(root . '/' . line[8 : -1])
-      elseif s:line =~# '^gitdir: ' && fugitive#is_git_dir(s:line[8 : -1])
+      elseif line =~# '^gitdir: ' && fugitive#is_git_dir(line[8 : -1])
         return line[8 : -1]
       endif
-    elseif fugitive#is_git_dir(s:root)
+    elseif fugitive#is_git_dir(root)
       return root
     endif
     let previous = root
@@ -254,7 +254,7 @@ function! s:repo_head(...) dict abort
   let head = s:repo() . s:head_ref()
   if head =~# '^ref: '
     let branch = s:sub(head, '^ref: %(refs/%(heads/|remotes/|tags/)=)=', '')
-  elseif s:head =~# '^\x\{40\}$'
+  elseif head =~# '^\x\{40\}$'
     let len = a:0 ? a:1 : 0
     let branch = len ? head[0 : len - 1] : ''
   endif
@@ -439,7 +439,7 @@ function! s:buffer_rev() dict abort
   let rev = matchstr(self.spec(), '^fugitive://.\{-\}//\zs.*')
   if rev =~# '^\x/'
     return ':' . rev[0] . ':' . rev[2 : -1]
-  elseif s:rev =~# '.'
+  elseif rev =~# '.'
     return s:sub(rev, '/', ':')
   elseif self.spec() =~# '\.git/index$'
     return ':'
@@ -488,15 +488,15 @@ function! s:buffer_up(...) dict abort
   while c
     if rev =~# '^[/:]$'
       let rev = 'HEAD'
-    elseif s:rev =~# '^:'
+    elseif rev =~# '^:'
       let rev = ':'
-    elseif s:rev =~# '^refs/[^^~:]*$\|^[^^~:]*HEAD$'
+    elseif rev =~# '^refs/[^^~:]*$\|^[^^~:]*HEAD$'
       let rev .= '^{}'
-    elseif s:rev =~# '^/\|:.*/'
+    elseif rev =~# '^/\|:.*/'
       let rev = s:sub(rev, '.*\zs/.*', '')
-    elseif s:rev =~# ':.'
+    elseif rev =~# ':.'
       let rev = matchstr(rev, '^[^:]*:')
-    elseif s:rev =~# ':$'
+    elseif rev =~# ':$'
       let rev = rev[0 : -2]
     else
       return rev . '~' . c
@@ -611,11 +611,11 @@ function! s:stage_info(lnum) abort
   endwhile
   if !lnum
     return ['', '']
-  elseif getline(s:lnum + 1) =~# '^# .*"git \%(reset\|rm --cached\) ' || getline(s:lnum) ==# '# Changes to be committed:'
+  elseif getline(lnum + 1) =~# '^# .*"git \%(reset\|rm --cached\) ' || getline(lnum) ==# '# Changes to be committed:'
     return [matchstr(filename, colon . ' *\zs.*'), 'staged']
-  elseif getline(s:lnum + 2) =~# '^# .*"git checkout ' || getline(s:lnum) ==# '# Changes not staged for commit:'
+  elseif getline(lnum + 2) =~# '^# .*"git checkout ' || getline(lnum) ==# '# Changes not staged for commit:'
     return [matchstr(filename, colon . ' *\zs.*'), 'unstaged']
-  elseif getline(s:lnum + 1) =~# '^# .*"git add/rm ' || getline(s:lnum) ==# '# Unmerged paths:'
+  elseif getline(lnum + 1) =~# '^# .*"git add/rm ' || getline(lnum) ==# '# Unmerged paths:'
     return [matchstr(filename, colon . ' *\zs.*'), 'unmerged']
   else
     return [filename, 'untracked']
@@ -654,13 +654,13 @@ function! s:StageDiff(diff) abort
   let [filename, section] = s:stage_info(line('.'))
   if filename ==# '' && section ==# 'staged'
     return 'Git! diff --cached'
-  elseif s:filename ==# ''
+  elseif filename ==# ''
     return 'Git! diff'
-  elseif s:filename =~# ' -> '
+  elseif filename =~# ' -> '
     let [old, _new] = split(filename, ' -> ')
     execute 'Gedit ' . s:fnameescape(':0:' . _new)
     return a:diff . ' HEAD:' . s:fnameescape(old)
-  elseif s:section ==# 'staged'
+  elseif section ==# 'staged'
     execute 'Gedit ' . s:fnameescape(':0:' . filename)
     return a:diff . ' -'
   else
@@ -673,7 +673,7 @@ function! s:StageDiffEdit() abort
   let arg = (filename ==# '' ? '.' : filename)
   if section ==# 'staged'
     return 'Git! diff --cached ' . s:shellesc(arg)
-  elseif s:section ==# 'untracked'
+  elseif section ==# 'untracked'
     let repo = s:repo()
     call repo.git_chomp_in_tree('add', '--intent-to-add', arg)
     if arg ==# '.'
@@ -703,7 +703,7 @@ function! s:StageToggle(lnum1, lnum2) abort
             call search('^# .*:$', 'W')
           endif
           return ''
-        elseif s:section ==# 'unstaged'
+        elseif section ==# 'unstaged'
           call repo.git_chomp_in_tree('add', '-u')
           silent! edit!
           1if !search('^# .*:\n# .*"git add .*\n#\n\|^# Untracked files:$', 'W')
@@ -727,11 +727,11 @@ function! s:StageToggle(lnum1, lnum2) abort
       if filename =~# ' -> '
         let cmd = ['mv', '--'] + reverse(split(filename, ' -> '))
         let filename = cmd[-1]
-      elseif s:section ==# 'staged'
+      elseif section ==# 'staged'
         let cmd = ['reset', '-q', '--', filename]
-      elseif getline(s:lnum) =~# '^#\tdeleted:'
+      elseif getline(lnum) =~# '^#\tdeleted:'
         let cmd = ['rm', '--', filename]
-      elseif getline(s:lnum) =~# '^#\tmodified:'
+      elseif getline(lnum) =~# '^#\tmodified:'
         let cmd = ['add', '--', filename]
       else
         let cmd = ['add', '-A', '--', filename]
@@ -754,11 +754,11 @@ function! s:StagePatch(lnum1, lnum2) abort
     let [filename, section] = s:stage_info(lnum)
     if getline('.') =~# '^# .*:$' && section ==# 'staged'
       return 'Git reset --patch'
-    elseif getline('.') =~# '^# .*:$' && s:section ==# 'unstaged'
+    elseif getline('.') =~# '^# .*:$' && section ==# 'unstaged'
       return 'Git add --patch'
-    elseif getline('.') =~# '^# .*:$' && s:section ==# 'untracked'
+    elseif getline('.') =~# '^# .*:$' && section ==# 'untracked'
       return 'Git add -N .'
-    elseif s:filename ==# ''
+    elseif filename ==# ''
       continue
     endif
     if !exists('first_filename')
@@ -767,9 +767,9 @@ function! s:StagePatch(lnum1, lnum2) abort
     execute lnum
     if filename =~# ' -> '
       let reset += [split(filename, ' -> ')[1]]
-    elseif s:section ==# 'staged'
+    elseif section ==# 'staged'
       let reset += [filename]
-    elseif getline(s:lnum) !~# '^#\tdeleted:'
+    elseif getline(lnum) !~# '^#\tdeleted:'
       let add += [filename]
     endif
   endfor
@@ -851,7 +851,7 @@ function! s:Commit(args) abort
         let b:fugitive_commit_arguments = args
         setlocal bufhidden=wipe filetype=gitcommit
         return '1'
-      elseif s:error ==# '!'
+      elseif error ==# '!'
         return s:Status()
       else
         call s:throw(error)
@@ -1029,9 +1029,9 @@ function! s:Edit(cmd, bang, ...) abort
           endif
           if getline(lnum) =~# '^+'
             let add += 1
-          elseif getline(s:lnum) =~# '^-'
+          elseif getline(lnum) =~# '^-'
             let remove += 1
-          elseif getline(s:lnum) =~# '^Binary '
+          elseif getline(lnum) =~# '^Binary '
             let binary = 1
           endif
         endfor
@@ -1064,7 +1064,7 @@ function! s:Edit(cmd, bang, ...) abort
     augroup END
   elseif expand('%') ==# ''
     let file = ':'
-  elseif s:buffer.commit() ==# '' && s:buffer.path('/') !~# '^/.git\>'
+  elseif buffer.commit() ==# '' && buffer.path('/') !~# '^/.git\>'
     let file = buffer.path(':')
   else
     let file = buffer.path('/')
@@ -1305,7 +1305,7 @@ function! s:buffer_compare_age(commit) dict abort
   let base = self.repo() . s:git_chomp('merge-base', self.commit(), a:commit)
   if base ==# self.commit()
     return -1
-  elseif s:base ==# a:commit
+  elseif base ==# a:commit
     return 1
   endif
   let my_time = +self.repo() . s:git_chomp('log', '--max-count=1', '--pretty=format:%at', self.commit())
@@ -1333,11 +1333,11 @@ function! s:Diff(bang, ...)
     let arg = join(a:000, ' ')
     if arg ==# ''
       return ''
-    elseif s:arg ==# '/'
+    elseif arg ==# '/'
       let file = s:buffer() . s:path('/')
-    elseif s:arg ==# ':'
+    elseif arg ==# ':'
       let file = s:buffer() . s:path(':0:')
-    elseif s:arg =~# '^:/.'
+    elseif arg =~# '^:/.'
       try
         let file = s:repo() . s:rev_parse(arg) . s:buffer() . s:path(':')
       catch /^fugitive:/
@@ -1617,7 +1617,7 @@ function! s:BlameJump(suffix) abort
   let delta = line('.') - line('w0') - offset
   if delta ># 0
     execute 'normal! ' . delta . "\<C-E>"
-  elseif s:delta <# 0
+  elseif delta <# 0
     execute 'normal! ' . (-delta) . "\<C-Y>"
   endif
   syncbindreturn ''
@@ -1655,7 +1655,7 @@ function! s:Browse(bang, line1, count, ...) abort
     let rev = a:0 ? substitute(join(a:000, ' '), '@[[:alnum:]_-]*\%(://.\{-\}\)\=$', '', '') : ''
     if rev ==# ''
       let expanded = s:buffer() . s:rev()
-    elseif s:rev ==# ':'
+    elseif rev ==# ':'
       let expanded = s:buffer() . s:path('/')
     else
       let expanded = s:buffer() . expand(rev)
@@ -1678,7 +1678,7 @@ function! s:Browse(bang, line1, count, ...) abort
       let path = full[strlen(s:repo() . s:tree()) + 1 : -1]
       if path =~# '^\.git/'
         let type = ''
-      elseif isdirectory(s:full)
+      elseif isdirectory(full)
         let type = 'tree'
       else
         let type = 'blob'
@@ -1690,13 +1690,13 @@ function! s:Browse(bang, line1, count, ...) abort
         let commit = body
         let type = 'commit'
         let path = ''
-      elseif s:body =~# '^ref: refs/'
+      elseif body =~# '^ref: refs/'
         let path = '.git/' . matchstr(body, 'ref: \zs.*')
       endif
     endif
     if a:0 && join(a:000, ' ') =~# '@[[:alnum:]_-]*\%(://.\{-\}\)\=$'
       let remote = matchstr(join(a:000, ' '), '@\zs[[:alnum:]_-]\+\%(://.\{-\}\)\=$')
-    elseif s:path =~# '^\.git/refs/remotes/.'
+    elseif path =~# '^\.git/refs/remotes/.'
       let remote = matchstr(path, '^\.git/refs/remotes/\zs[^/]\+')
     else
       let remote = 'origin'
@@ -1715,7 +1715,7 @@ function! s:Browse(bang, line1, count, ...) abort
           let remote = s:repo() . s:git_chomp('config', 'branch.' . branch . '.remote')
           if remote =~# '^\.\=$'
             let remote = 'origin'
-          elseif s:rev[0 : strlen(s:branch) - 1] ==# s:branch && s:rev[strlen(s:branch)] =~# '[:^~@]'
+          elseif rev[0 : strlen(branch) - 1] ==# branch && rev[strlen(branch)] =~# '[:^~@]'
             let rev = s:repo() . s:git_chomp('config', 'branch.' . branch . '.merge')[11 : -1] . rev[strlen(branch) : -1]
           endif
         endif
@@ -1765,11 +1765,11 @@ function! s:github_url(repo, url, rev, commit, path, type, line1, line2) abort
     else
       return root . '/commits/' . branch
     endif
-  elseif s:path =~# '^\.git/refs/.'
+  elseif path =~# '^\.git/refs/.'
     return root . '/commits/' . matchstr(path, '[^/]\+$')
-  elseif s:path =~# '.git/\%(config$\|hooks\>\)'
+  elseif path =~# '.git/\%(config$\|hooks\>\)'
     return root . '/admin'
-  elseif s:path =~# '^\.git\>'
+  elseif path =~# '^\.git\>'
     return root
   endif
   if a:rev =~# '^[[:alnum:]._-]\+:'
@@ -2142,12 +2142,12 @@ function! s:GF(mode) abort
       let showtree = (getline(1) =~# '^tree ' && getline(2) ==# "")
       if showtree && line('.') ==# 1
         return ""
-      elseif s:showtree && line('.') ># 2
+      elseif showtree && line('.') ># 2
         return s:Edit(a:mode, 0, buffer.commit() . ':' . s:buffer() . s:path() . (buffer.path() =~# '^$\|/$' ? '' : '/') . s:sub(getline('.'), '/$', ''))
       elseif getline('.') =~# '^\d\{6\} \l\{3,8\} \x\{40\}\t'
         return s:Edit(a:mode, 0, buffer.commit() . ':' . s:buffer() . s:path() . (buffer.path() =~# '^$\|/$' ? '' : '/') . s:sub(matchstr(getline('.'), '\t\zs.*'), '/$', ''))
       endif
-    elseif s:buffer.type('blob')
+    elseif buffer.type('blob')
       let ref = expand("<cfile>")
       try
         let sha1 = buffer.repo() . s:rev_parse(ref)
@@ -2206,7 +2206,7 @@ function! s:GF(mode) abort
       elseif getline('.') =~# '^object \x\{40\}$' && getline(line('.') + 1) =~# '^type \%(commit\|tree\|blob\)$'
         let ref = matchstr(getline('.'), '\x\{40\}')
         let type = matchstr(getline(line('.') + 1), 'type \zs.*')
-      elseif getline('.') =~# '^\l\{3,8\} ' . s:myhash . '$'
+      elseif getline('.') =~# '^\l\{3,8\} ' . myhash . '$'
         return ''
       elseif getline('.') =~# '^\l\{3,8\} \x\{40\}\>'
         let ref = matchstr(getline('.'), '\x\{40\}')
@@ -2263,7 +2263,7 @@ function! s:GF(mode) abort
       endif
       if exists('dref')
         return s:Edit(a:mode, 0, ref) . '|' . dcmd . ' ' . s:fnameescape(dref)
-      elseif s:ref !=# ""
+      elseif ref !=# ""
         return s:Edit(a:mode, 0, ref)
       endif
     endif
@@ -2309,9 +2309,9 @@ function! fugitive#foldtext() abort
       endif
       if getline(lnum) =~# '^+'
         let add += 1
-      elseif getline(s:lnum) =~# '^-'
+      elseif getline(lnum) =~# '^-'
         let remove += 1
-      elseif getline(s:lnum) =~# '^Binary '
+      elseif getline(lnum) =~# '^Binary '
         let binary = 1
       endif
     endfor

@@ -52,7 +52,7 @@ function! pathogen#uniq(list) abort
   while i <# len(a:list)
     if (a:list[i] ==# '' && exists('empty')) || has_key(seen, a:list[i])
       call remove(a:list, i)
-    elseif a:list[s:i] ==# ''
+    elseif a:list[i] ==# ''
       let i += 1
       let empty = 1
     else

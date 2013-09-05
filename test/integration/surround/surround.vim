@@ -84,7 +84,7 @@ function! s:process(string)
       if next ==# -1
         let s .= char
       else
-        let insertion = repl_{char2nr(s:char)}
+        let insertion = repl_{char2nr(char)}
         let subs = strpart(a:string, i + 1, next - i - 1)
         let subs = matchstr(subs, '\r.*')
         while subs =~# '^\r.*\r'
@@ -127,24 +127,24 @@ function! s:wrap(string, char, type, ...)
   if newchar ==# ' '
     let before = ''
     let after = ''
-  elseif exists("b:surround_" . char2nr(s:newchar))
-    let all = s:process(b:surround_{char2nr(s:newchar)})
+  elseif exists("b:surround_" . char2nr(newchar))
+    let all = s:process(b:surround_{char2nr(newchar)})
     let before = s:extractbefore(all)
     let after = s:extractafter(all)
-  elseif exists("g:surround_" . char2nr(s:newchar))
-    let all = s:process(g:surround_{char2nr(s:newchar)})
+  elseif exists("g:surround_" . char2nr(newchar))
+    let all = s:process(g:surround_{char2nr(newchar)})
     let before = s:extractbefore(all)
     let after = s:extractafter(all)
-  elseif s:newchar ==# "p"
+  elseif newchar ==# "p"
     let before = "\n"
     let after = "\n\n"
-  elseif s:newchar ==# 's'
+  elseif newchar ==# 's'
     let before = ' '
     let after = ''
-  elseif s:newchar ==# ':'
+  elseif newchar ==# ':'
     let before = ':'
     let after = ''
-  elseif s:newchar =~# "[tT\<C-T><,]"
+  elseif newchar =~# "[tT\<C-T><,]"
     let dounmapp = 0
     let dounmapb = 0
     if !maparg(">", "c")
@@ -182,7 +182,7 @@ function! s:wrap(string, char, type, ...)
         endif
       endif
     endif
-  elseif s:newchar ==# 'l' || s:newchar ==# '\'
+  elseif newchar ==# 'l' || newchar ==# '\'
     let env = input('\begin{')
     let env = '{' . env
     let env .= s:closematch(env)
@@ -191,7 +191,7 @@ function! s:wrap(string, char, type, ...)
       let before = '\begin' . env
       let after = '\end' . matchstr(env, '[^}]*') . '}'
     endif
-  elseif s:newchar ==# 'f' || s:newchar ==# 'F'
+  elseif newchar ==# 'f' || newchar ==# 'F'
     let fnc = input('function: ')
     if fnc !=# ""
       let before = substitute(fnc, '($', '', '') . '('
@@ -201,19 +201,19 @@ function! s:wrap(string, char, type, ...)
         let after = ' ' . after
       endif
     endif
-  elseif s:newchar ==# "\<C-F>"
+  elseif newchar ==# "\<C-F>"
     let fnc = input('function: ')
     let before = '(' . fnc . ' '
     let after = ')'
-  elseif s:idx >=# 0
+  elseif idx >=# 0
     let spc = (idx % 3) ==# 1 ? " " : ""
     let idx = idx / 3 * 3
     let before = strpart(pairs, idx + 1, 1) . spc
     let after = spc . strpart(pairs, idx + 2, 1)
-  elseif s:newchar ==# "\<C-[>" || s:newchar ==# "\<C-]>"
+  elseif newchar ==# "\<C-[>" || newchar ==# "\<C-]>"
     let before = "{\n\t"
     let after = "\n}"
-  elseif s:newchar !~# '\a'
+  elseif newchar !~# '\a'
     let before = newchar
     let after = newchar
   else
@@ -229,7 +229,7 @@ function! s:wrap(string, char, type, ...)
     endif
     if keeper !~# '\n$' && after !~# '^\n'
       let keeper .= "\n"
-    elseif s:keeper =~# '\n$' && s:after =~# '^\n'
+    elseif keeper =~# '\n$' && after =~# '^\n'
       let after = strpart(after, 1)
     endif
     if before !~# '\n\s*$'
@@ -252,7 +252,7 @@ function! s:wrap(string, char, type, ...)
   endif
   if type ==# 'V'
     let keeper = before.keeper.after
-  elseif s:type =~# "^\<C-V>"
+  elseif type =~# "^\<C-V>"
     let repl = substitute(before, '[\\~]', '\\&', 'g') . '\1' . substitute(after, '[\\~]', '\\&', 'g')
     let repl = substitute(repl, '\n', ' ', 'g')
     let keeper = substitute(keeper . "\n", '\(.\{-\}\)\(\n\)', repl . '\n', 'g')
@@ -357,12 +357,12 @@ function! s:dosurround(...)
   let oldlnum = line('.')
   if char ==# "p"
     call setreg('"', '', 'V')
-  elseif s:char ==# "s" || s:char ==# "w" || s:char ==# "W"
+  elseif char ==# "s" || char ==# "w" || char ==# "W"
     call setreg('"', '')
-  elseif s:char =~# "[\"'`]"
+  elseif char =~# "[\"'`]"
     execute "norm! i \<Esc>d2i" . char
     call setreg('"', substitute(getreg('"'), ' ', '', ''))
-  elseif s:char ==# '/'
+  elseif char ==# '/'
     norm! "_x
     call setreg('"', '/**/', "c")
     let keeper = substitute(substitute(keeper, '^/\*\s\=', '', ''), '\s\=\*$', '', '')
@@ -490,11 +490,11 @@ function! s:closematch(str)
   let tail = matchstr(a:str, '.[^\[\](){}<>]*$')
   if tail =~# '^\[.\+'
     return "]"
-  elseif s:tail =~# '^(.\+'
+  elseif tail =~# '^(.\+'
     return ")"
-  elseif s:tail =~# '^{.\+'
+  elseif tail =~# '^{.\+'
     return "}"
-  elseif s:tail =~# '^<.+'
+  elseif tail =~# '^<.+'
     return ">"
   else
     return ""
