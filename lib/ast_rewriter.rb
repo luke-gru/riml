@@ -198,9 +198,12 @@ module Riml
       def replace(node)
         classes[node.full_name] = node
 
+        RegisterPrivateFunctions.new(node, classes).rewrite_on_match
+        DefNodeToPrivateFunction.new(node, classes).rewrite_on_match
         InsertInitializeMethod.new(node, classes).rewrite_on_match
         constructor = node.constructor
         constructor.name = node.constructor_name
+        constructor.original_name = 'initialize'
         constructor.scope_modifier = node.scope_modifier
         # set up dictionary variable at top of function
         dict_name = node.constructor_obj_name
@@ -212,11 +215,93 @@ module Riml
         ExtendObjectWithMethods.new(node, classes).rewrite_on_match
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
         SuperToSuperclassFunction.new(node, classes).rewrite_on_match
+        PrivateFunctionCallToPassObjExplicitly.new(node, classes).rewrite_on_match
 
         constructor.expressions.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
         )
         reestablish_parents(constructor)
+      end
+
+      class RegisterPrivateFunctions < AST_Rewriter
+        def match?(node)
+          node.instance_of?(DefNode) && node.name != 'initialize'
+        end
+
+        def replace(node)
+          ast.private_function_names << node.name
+        end
+      end
+
+      class SelfToObjArgumentInPrivateFunction < AST_Rewriter
+        def initialize(ast, classes, class_node)
+          super(ast, classes)
+          @class_node = class_node
+        end
+
+        def match?(node)
+          return unless GetVariableNode === node && node.scope_modifier == nil && node.name == 'self'
+          return if node.parent.is_a?(DictGetDotNode) && node.parent.parent.is_a?(CallNode) &&
+            (@class_node.private_function_names & node.parent.keys).size == 1
+          # make sure we're not nested in a different function
+          n = node
+          until n.instance_of?(DefNode)
+            n = n.parent
+          end
+          n == ast
+        end
+
+        def replace(node)
+          node.name = @class_node.constructor_obj_name
+          node.scope_modifier = 'a:'
+        end
+      end
+
+      class DefNodeToPrivateFunction < AST_Rewriter
+        def match?(node)
+          return unless node.instance_of?(DefNode) && node.name != 'initialize'
+          node.private_function = true
+        end
+
+        def replace(node)
+          class_node = ast
+          class_name = class_node.name
+          node.scope_modifier = 's:'
+          node.name = "#{class_name}_#{node.name}"
+          node.sid = nil
+          node.keywords -= ['dict']
+          node.parameters.unshift(class_node.constructor_obj_name)
+          # rewrite `self` in function body to a:#{class_name}Obj
+          self_to_obj_argument = SelfToObjArgumentInPrivateFunction.new(node, classes, class_node)
+          self_to_obj_argument.rewrite_on_match
+          reestablish_parents(node)
+        end
+      end
+
+      class PrivateFunctionCallToPassObjExplicitly < AST_Rewriter
+        def match?(node)
+          CallNode === node && DictGetDotNode === node.name && node.name.dict.scope_modifier.nil? &&
+            node.name.dict.name == 'self' && (node.name.keys & ast.private_function_names).size == 1
+        end
+
+        def replace(node)
+          node.scope_modifier = 's:'
+          # find function that I'm in
+          n = node
+          until n.instance_of?(DefNode)
+            n = n.parent
+          end
+          if n.original_name == 'initialize'
+            node.arguments.unshift(GetVariableNode.new(nil, ast.constructor_obj_name))
+          elsif n.private_function
+            node.arguments.unshift(GetVariableNode.new('a:', ast.constructor_obj_name))
+          else
+            node.arguments.unshift(GetVariableNode.new(nil, 'self'))
+          end
+          func_name = node.name.keys.first
+          node.name = "#{ast.name}_#{func_name}"
+          reestablish_parents(node)
+        end
       end
 
       class ExtendObjectWithMethods < AST_Rewriter
@@ -328,6 +413,12 @@ module Riml
         end
 
         def replace(constructor)
+          unless class_node.superclass?
+            # TODO: raise error instead of aborting
+            abort "class #{class_node.full_name.inspect} called super in its " \
+              " initialize function, but it has no superclass."
+          end
+
           superclass = classes.superclass(class_node.full_name)
           super_constructor = superclass.constructor
 
@@ -378,6 +469,7 @@ module Riml
         end
 
         def replace(node)
+          # TODO: check if class even has superclass before all this
           func_scope = 's:'
           superclass = classes[ast.superclass_full_name]
           while superclass && !superclass.has_function?(func_scope, superclass_func_name(superclass)) && superclass.superclass?

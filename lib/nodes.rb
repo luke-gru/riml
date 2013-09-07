@@ -565,6 +565,8 @@ module Riml
     include FullyNameable
     include Walkable
 
+    attr_accessor :private_function
+
     def initialize(*args)
       super
       # max number of arguments in viml
@@ -953,6 +955,10 @@ module Riml
 
     def constructor_obj_name
       name[0].downcase + name[1..-1] + "Obj"
+    end
+
+    def private_function_names
+      @private_function_names ||= []
     end
 
     def children
