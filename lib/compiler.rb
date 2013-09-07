@@ -536,7 +536,8 @@ module Riml
                node.descendant_of_wrap_in_parens_node? ||
                node.descendant_of_sublist_node? ||
                node.descendant_of_dict_get_dot_node? ||
-               node.descendant_of_dictionary_node?
+               node.descendant_of_dictionary_node? ||
+               node.descendant_of_curly_brace_part?
           node.force_newline = true
         end
       end

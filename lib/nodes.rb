@@ -530,7 +530,8 @@ module Riml
     include Walkable
 
     def interpolated?
-      GetVariableNode === value || GetSpecialVariableNode === value || nested?
+      GetVariableNode === value || GetSpecialVariableNode === value ||
+        CallNode === value || nested?
     end
 
     def nested?
@@ -794,7 +795,7 @@ module Riml
     end
 
     def children
-      [expressions]
+      [condition, body]
     end
   end
 

@@ -184,7 +184,7 @@ function! s:insert_or_replace_a_rule(sorted_nrules, nrule)
     let i_med = (i_min + i_max) / 2
     if a:nrule.hash ==# a:sorted_nrules[i_med].hash
       break
-    elseif !(a:nrule.hash <# a:sorted_nrules[s:i_med].hash)
+    elseif !(a:nrule.hash <# a:sorted_nrules[i_med].hash)
       let i_max = i_med - 1
     else
       let i_min = i_med + 1
@@ -192,7 +192,7 @@ function! s:insert_or_replace_a_rule(sorted_nrules, nrule)
   endwhile
   if i_min <=# i_max
     let a:sorted_nrules[i_med] = a:nrule
-  elseif s:i_max <# s:i_med
+  elseif i_max <# i_med
     call insert(a:sorted_nrules, a:nrule, i_med + 0)
   else
     call insert(a:sorted_nrules, a:nrule, i_med + 1)
