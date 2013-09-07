@@ -1,3 +1,80 @@
+0.3.0
+=====
+
+* Fix bug where variables/functions in condition clause of elseif have wrong
+scope (didn't have ScopeVisitor visit the node), so was always 's:' even
+if the variable was local to the function [https://github.com/luke-gru/riml/issues/10].
+
+* Fix bug where calling function inside curly brace named function/variable
+had wrong scope modifier applied to it sometimes (didn't get visited by the
+ScopeVisitor). Ex:
+
+    def send(method_name, *args)
+      return MyLib_{method_name}(args)
+    end
+
+Used to compile to:
+
+    function! s:send(method_name, ...)
+      return s:MyLib_{s:method_name}(a:000)
+    endfunction
+
+And now compiles to:
+
+    function! s:send(method_name, ...)
+      return s:MyLib_{a:method_name}(a:000)
+    endfunction
+
+* Improve private methods (functions in class scope defined with 'def' instead
+* of 'defm'). Now they are truly private to the class and cannot be accessed
+outside of it without using clever Vim trickery. Ex:
+
+    ; really bad implementation of Set#push
+    class Set
+
+      def initialize(list)
+        self.__internal_list = list
+      end
+
+      defm push(elem)
+        ; NOTE: Set#includes is left out of this example
+        add(self.internalList(), elem) unless self.includes(elem)
+        return self.internalList()
+      end
+
+      def internalList
+        return self.__internal_list
+      end
+    end
+
+compiles to:
+
+    function! s:SetConstructor(list)
+      let setObj = {}
+      let setObj.__internal_list = a:list
+      let setObj.push = function('<SNR>' . s:SID() . '_s:Set_push')
+      return setObj
+    endfunction
+    function! s:Set_internalList(setObj)
+      return a:setObj.__internal_list
+    endfunction
+    function! <SID>s:Set_push(elem) dict
+      if !(self.includes(a:elem))
+        call add(s:Set_internalList(self), a:elem)
+      endif
+      return s:Set_internalList(self)
+    endfunction
+
+We can call set.push(elem) now, but not set.internalList().
+
+* Change class scopes from always being global ('g:') to script-local ('s:') by
+default with the ability to change to global by prefixing the class name with
+'g:'. Ex:
+
+    class g:Set
+      ...
+    end
+
 0.2.9
 =====
 

@@ -2464,5 +2464,36 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  # Test that https://github.com/luke-gru/riml/issues/10 is fixed
+  test "elseif sets proper scopes for variables/functions" do
+    riml = <<Riml
+def get_bar()
+  my_var = 'foo'
+
+  if my_var == 'a'
+    return 'A'
+  elseif my_var == 'b'
+    return 'B'
+  else
+    return 'Unknown'
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:get_bar()
+  let my_var = 'foo'
+  if my_var ==# 'a'
+    return 'A'
+  elseif my_var ==# 'b'
+    return 'B'
+  else
+    return 'Unknown'
+  endif
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
 end
 end
