@@ -53,7 +53,7 @@ riml_source 'faster_car.riml'
 Riml
 
     expected = <<Viml
-function! g:CarConstructor(...)
+function! s:CarConstructor(...)
   let carObj = {}
   let carObj.maxSpeed = 100
   let carObj.options = a:000
@@ -68,7 +68,10 @@ Viml
         with_file_cleanup("faster_car.vim") do
           assert_equal expected, compile(riml)
           assert File.exists?("faster_car.vim")
-          assert_equal Riml::FILE_HEADER + File.read("faster_car_expected.vim"), File.read("faster_car.vim")
+          assert_equal(
+            Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read("faster_car_expected.vim"),
+            File.read("faster_car.vim")
+          )
         end
       end
     end
@@ -104,7 +107,7 @@ Riml
     expected = <<Viml
 " included: 'file1.riml'
 echo "hi"
-function! g:CarConstructor(...)
+function! s:CarConstructor(...)
   let carObj = {}
   let carObj.maxSpeed = 100
   let carObj.options = a:000
@@ -133,13 +136,13 @@ Viml
     expected = <<Riml
 " included: 'riml_include_lib.riml'
 " included: 'riml_include_lib2.riml'
-function! g:Lib2Constructor()
+function! s:Lib2Constructor()
   let lib2Obj = {}
   return lib2Obj
 endfunction
-function! g:Lib1Constructor()
+function! s:Lib1Constructor()
   let lib1Obj = {}
-  let lib2Obj = g:Lib2Constructor()
+  let lib2Obj = s:Lib2Constructor()
   call extend(lib1Obj, lib2Obj)
   return lib1Obj
 endfunction
@@ -228,6 +231,24 @@ RIML
         assert_equal expected, compile(riml)
         assert File.exists?(File.join(Riml.source_path.first, 'sourced2.vim')) # in test_source_path dir
         assert File.exists?(File.join(Riml.source_path[1], 'sourced1.vim'))
+      end
+    end
+  end
+
+  test "riml_source grabs all classes defined in the files it sources before any compilation takes place" do
+    riml = <<RIML
+riml_source 'class_test_main.riml'
+RIML
+    expected = "source class_test_main.vim\n"
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      with_file_cleanup('class_test_main.vim', 'class_test.vim') do
+        assert_equal expected, compile(riml)
+        assert File.exists?(File.join(Riml.source_path.first, 'class_test_main.vim'))
+        assert File.exists?(File.join(Riml.source_path.first, 'class_test.vim'))
+        assert_equal Riml::FILE_HEADER + File.read(File.join(Riml.source_path.first, 'class_test_main_expected.vim')),
+                     File.read(File.join(Riml.source_path.first, 'class_test_main.vim'))
+        assert_equal Riml::FILE_HEADER + File.read(File.join(Riml.source_path.first, 'class_test_expected.vim')),
+                     File.read(File.join(Riml.source_path.first, 'class_test.vim'))
       end
     end
   end

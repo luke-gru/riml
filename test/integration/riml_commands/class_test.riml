@@ -1,0 +1,16 @@
+class DogLocal
+  def initialize(name)
+    self.name = name
+  end
+
+  defm bark
+    echo "Woof! My name is #{self.name}"
+  end
+end
+
+class g:DogGlobal < DogLocal
+  defm bark
+    super
+    echo "global!!!"
+  end
+end

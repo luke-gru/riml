@@ -248,9 +248,10 @@ rule
   | /* nothing */          { result = nil }
   ;
 
-  ScopeOrSID:
-    Scope                  { val[0] }
-  | '<' IDENTIFIER '>'          { result = Riml::SIDNode.new(val[1]) }
+  # [SID, scope_modifier]
+  SIDAndScope:
+    Scope                       { result = [ nil, val[0] ] }
+  | '<' IDENTIFIER '>' Scope    { result = [ Riml::SIDNode.new(val[1]), val[3] ] }
   ;
 
   ArgList:
@@ -378,12 +379,12 @@ rule
   ;
 
   # Method definition
-  # [scope_modifier, name, parameters, keyword, expressions]
+  # [SID, scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType ScopeOrSID DefCallIdentifier DefKeywords Block END                               { result = Riml.const_get(val[0]).new('!', val[1], val[2], [], val[3], val[4]) }
-  | FunctionType ScopeOrSID DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4], val[6], val[7]) }
-  | FunctionType ScopeOrSID DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1], val[2], [val[4]], val[6], val[7]) }
-  | FunctionType ScopeOrSID DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Riml.const_get(val[0]).new('!', val[1], val[2], val[4] << val[6], val[8], val[9]) }
+    FunctionType SIDAndScope DefCallIdentifier DefKeywords Block END                               { result = Riml.const_get(val[0]).new('!', val[1][0], val[1][1], val[2], [], val[3], val[4]) }
+  | FunctionType SIDAndScope DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1][0], val[1][1], val[2], val[4], val[6], val[7]) }
+  | FunctionType SIDAndScope DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = Riml.const_get(val[0]).new('!', val[1][0], val[1][1], val[2], [val[4]], val[6], val[7]) }
+  | FunctionType SIDAndScope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = Riml.const_get(val[0]).new('!', val[1][0], val[1][1], val[2], val[4] << val[6], val[8], val[9]) }
   ;
 
   FunctionType:
@@ -507,8 +508,8 @@ rule
   ;
 
   ClassDefinition:
-    CLASS IDENTIFIER Block END                   { result = Riml::ClassDefinitionNode.new(val[1], nil, val[2]) }
-  | CLASS IDENTIFIER '<' IDENTIFIER Block END    { result = Riml::ClassDefinitionNode.new(val[1], val[3], val[4]) }
+    CLASS Scope IDENTIFIER Block END                         { result = Riml::ClassDefinitionNode.new(val[1], val[2], nil, val[3]) }
+  | CLASS Scope IDENTIFIER '<' Scope IDENTIFIER Block END    { result = Riml::ClassDefinitionNode.new(val[1], val[2], (val[4] || ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER) + val[5], val[6]) }
   ;
 
   ObjectInstantiation:
@@ -536,7 +537,7 @@ end
   attr_accessor :ast_rewriter
 
   # parses tokens or code into output nodes
-  def parse(object, ast_rewriter = Riml::AST_Rewriter.new, include_file = nil)
+  def parse(object, ast_rewriter = Riml::AST_Rewriter.new, filename = nil, included = false)
     if tokens?(object)
       @tokens = object
     elsif code?(object)
@@ -559,7 +560,7 @@ end
     @ast_rewriter ||= ast_rewriter
     return ast unless @ast_rewriter
     @ast_rewriter.ast = ast
-    @ast_rewriter.rewrite(include_file)
+    @ast_rewriter.rewrite(filename, included)
   end
 
   # get the next token from either the list of tokens provided, or

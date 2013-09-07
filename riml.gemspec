@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.executables = ['riml']
   s.files = Dir['README.md', 'LICENSE', 'version.rb', 'lib/**/*', 'Rakefile',
-                'CONTRIBUTING', 'Gemfile', 'Gemfile.lock']
+                'CONTRIBUTING', 'CHANGELOG' 'Gemfile', 'Gemfile.lock']
 
   s.add_development_dependency('racc')
   s.add_development_dependency('minitest', '~> 2.5.1')

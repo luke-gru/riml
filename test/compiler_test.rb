@@ -11,7 +11,7 @@ end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new('!', nil, "a_method", ['a', 'b'], nil,
+      DefNode.new('!', nil, nil, "a_method", ['a', 'b'], nil,
         Nodes.new([ ReturnNode.new(TrueNode.new) ])
       )
     ])
@@ -39,7 +39,7 @@ end
 Riml
 
     nodes = Nodes.new([
-      DefNode.new('!', 'b:', "another_method", ['a', 'b'], nil, Nodes.new([
+      DefNode.new('!', nil, 'b:', "another_method", ['a', 'b'], nil, Nodes.new([
         IfNode.new(CallNode.new(nil, "hello", []), Nodes.new([
           FalseNode.new, ElseNode.new(Nodes.new([TrueNode.new]))])),
         ExplicitCallNode.new(nil, "SomeFunction", [])
@@ -1435,7 +1435,7 @@ end
 Riml
 
     expected = <<Viml
-function! g:MyClassConstructor(arg1, arg2, ...)
+function! s:MyClassConstructor(arg1, arg2, ...)
   let myClassObj = {}
   return myClassObj
 endfunction
@@ -1455,7 +1455,7 @@ end
 Riml
 
     expected = <<Viml
-function! g:MyClassConstructor(arg1, arg2, ...)
+function! s:MyClassConstructor(arg1, arg2, ...)
   let myClassObj = {}
   let myClassObj.name = a:arg1
   let myClassObj.country = a:arg2
@@ -1485,16 +1485,16 @@ end
 Riml
 
     expected = <<Viml
-function! g:MyClassConstructor(arg1, arg2, ...)
+function! s:MyClassConstructor(arg1, arg2, ...)
   let myClassObj = {}
-  let myClassObj.getData = function('g:MyClass_getData')
-  let myClassObj.getOtherData = function('g:MyClass_getOtherData')
+  let myClassObj.getData = function('<SNR>' . s:SID() . '_s:MyClass_getData')
+  let myClassObj.getOtherData = function('<SNR>' . s:SID() . '_s:MyClass_getOtherData')
   return myClassObj
 endfunction
-function! g:MyClass_getData() dict
+function! <SID>s:MyClass_getData() dict
   return self.data
 endfunction
-function! g:MyClass_getOtherData() dict
+function! <SID>s:MyClass_getOtherData() dict
   return self.otherData
 endfunction
 Viml
@@ -1525,26 +1525,26 @@ translation.translate()
 Riml
 
     expected = <<Viml
-function! g:TranslationConstructor(input)
+function! s:TranslationConstructor(input)
   let translationObj = {}
   let translationObj.input = a:input
   return translationObj
 endfunction
-function! g:FrenchToEnglishTranslationConstructor(input)
+function! s:FrenchToEnglishTranslationConstructor(input)
   let frenchToEnglishTranslationObj = {}
-  let translationObj = g:TranslationConstructor(a:input)
+  let translationObj = s:TranslationConstructor(a:input)
   call extend(frenchToEnglishTranslationObj, translationObj)
-  let frenchToEnglishTranslationObj.translate = function('g:FrenchToEnglishTranslation_translate')
+  let frenchToEnglishTranslationObj.translate = function('<SNR>' . s:SID() . '_s:FrenchToEnglishTranslation_translate')
   return frenchToEnglishTranslationObj
 endfunction
-function! g:FrenchToEnglishTranslation_translate() dict
+function! <SID>s:FrenchToEnglishTranslation_translate() dict
   if self.input ==# "Bonjour!"
     echo "Hello!"
   else
     echo "Sorry, I don't know that word."
   endif
 endfunction
-let s:translation = g:FrenchToEnglishTranslationConstructor("Bonjour!")
+let s:translation = s:FrenchToEnglishTranslationConstructor("Bonjour!")
 call s:translation.translate()
 Viml
 
@@ -1569,11 +1569,11 @@ d = new Dog
 Riml
 
     expected = <<Viml
-function! g:DogConstructor()
+function! s:DogConstructor()
   let dogObj = {}
   return dogObj
 endfunction
-let s:d = g:DogConstructor()
+let s:d = s:DogConstructor()
 Viml
 
     assert_equal expected, compile(riml)
@@ -1609,29 +1609,29 @@ newCar.drive()
 Riml
 
     expected = <<Viml
-function! g:CarConstructor(make, model, color)
+function! s:CarConstructor(make, model, color)
   let carObj = {}
   let carObj.make = a:make
   let carObj.model = a:model
   let carObj.color = a:color
   return carObj
 endfunction
-function! g:HotRodConstructor(make, model, color, topSpeed)
+function! s:HotRodConstructor(make, model, color, topSpeed)
   let hotRodObj = {}
   let hotRodObj.topSpeed = a:topSpeed
-  let carObj = g:CarConstructor(a:make, a:model, a:color)
+  let carObj = s:CarConstructor(a:make, a:model, a:color)
   call extend(hotRodObj, carObj)
-  let hotRodObj.drive = function('g:HotRod_drive')
+  let hotRodObj.drive = function('<SNR>' . s:SID() . '_s:HotRod_drive')
   return hotRodObj
 endfunction
-function! g:HotRod_drive() dict
+function! <SID>s:HotRod_drive() dict
   if self.topSpeed ># 140
     echo "Ahhhhhhh!"
   else
     echo "Nice"
   endif
 endfunction
-let s:newCar = g:HotRodConstructor("chevy", "mustang", "red", 160)
+let s:newCar = s:HotRodConstructor("chevy", "mustang", "red", 160)
 call s:newCar.drive()
 Viml
     assert_equal expected, compile(riml)
@@ -1655,15 +1655,15 @@ end
 Riml
 
     expected = <<Viml
-function! g:AConstructor(foo, bar)
+function! s:AConstructor(foo, bar)
   let aObj = {}
   let aObj.foo = a:foo
   let aObj.bar = a:bar
   return aObj
 endfunction
-function! g:BConstructor(foo, bar)
+function! s:BConstructor(foo, bar)
   let bObj = {}
-  let aObj = g:AConstructor(a:foo, a:bar)
+  let aObj = s:AConstructor(a:foo, a:bar)
   call extend(bObj, aObj)
   let bObj.other = s:totalCost(a:foo, a:bar)
   return bObj
@@ -1691,16 +1691,16 @@ end
 Riml
 
     expected = <<Viml
-function! g:AConstructor(foo, ...)
+function! s:AConstructor(foo, ...)
   let aObj = {}
   let aObj.foo = a:foo
   let aObj.options = a:000
   return aObj
 endfunction
-function! g:BConstructor(foo, ...)
+function! s:BConstructor(foo, ...)
   let bObj = {}
   let bObj.other = s:calculateOther()
-  let aObj = g:AConstructor(a:foo, a:000)
+  let aObj = s:AConstructor(a:foo, a:000)
   call extend(bObj, aObj)
   return bObj
 endfunction
@@ -1729,27 +1729,27 @@ end
 Riml
 
     expected = <<Viml
-function! g:JobConstructor()
+function! s:JobConstructor()
   let jobObj = {}
-  let jobObj.doIt = function('g:Job_doIt')
-  let jobObj.setSpeed = function('g:Job_setSpeed')
+  let jobObj.doIt = function('<SNR>' . s:SID() . '_s:Job_doIt')
+  let jobObj.setSpeed = function('<SNR>' . s:SID() . '_s:Job_setSpeed')
   return jobObj
 endfunction
-function! g:Job_doIt() dict
+function! <SID>s:Job_doIt() dict
   echo "Doing job " . speed . "."
 endfunction
-function! g:Job_setSpeed(speed) dict
+function! <SID>s:Job_setSpeed(speed) dict
   let self.speed = a:speed
 endfunction
-function! g:FastJobConstructor()
+function! s:FastJobConstructor()
   let fastJobObj = {}
-  let jobObj = g:JobConstructor()
+  let jobObj = s:JobConstructor()
   call extend(fastJobObj, jobObj)
-  let fastJobObj.doIt = function('g:FastJob_doIt')
-  let fastJobObj.Job_doIt = function('g:Job_doIt')
+  let fastJobObj.doIt = function('<SNR>' . s:SID() . '_s:FastJob_doIt')
+  let fastJobObj.Job_doIt = function('<SNR>' . s:SID() . '_s:Job_doIt')
   return fastJobObj
 endfunction
-function! g:FastJob_doIt() dict
+function! <SID>s:FastJob_doIt() dict
   call self.setSpeed('fast')
   call self.Job_doIt()
 endfunction
@@ -1807,6 +1807,21 @@ Riml
     assert_riml_warning do
       assert_equal expected, compile(riml)
     end
+  end
+
+  test "can change scope modifier of class" do
+    riml = <<Riml
+class g:Node
+end
+Riml
+
+    expected = <<Viml
+function! g:NodeConstructor()
+  let nodeObj = {}
+  return nodeObj
+endfunction
+Viml
+    assert_equal expected, compile(riml)
   end
 
   test "viml command (source)" do
@@ -2289,28 +2304,28 @@ Viml
     end
   end
 
-  test "<SID> as scope modifier of function" do
+  test "<SID> in function definition" do
     riml = <<Riml
 def <SID>Func()
 end
 Riml
 
     expected = <<Viml
-function! <SID>Func()
+function! <SID>s:Func()
 endfunction
 Viml
 
     assert_equal expected, compile(riml)
   end
 
-  test "warn if <SID> is misspelled or different case" do
+  test "warn if <SID> is misspelled or different case in function definition" do
     riml = <<Riml
 def <sid>Func()
 end
 Riml
 
     expected = <<Viml
-function! <SID>Func()
+function! <SID>s:Func()
 endfunction
 Viml
 
@@ -2344,14 +2359,14 @@ add_person(new Person())
 Riml
 
     expected = <<Viml
-function! g:PersonConstructor()
+function! s:PersonConstructor()
   let personObj = {}
   return personObj
 endfunction
 function! s:add_person(person)
   echo 'add_person'
 endfunction
-call s:add_person(g:PersonConstructor())
+call s:add_person(s:PersonConstructor())
 Viml
     assert_equal expected, compile(riml)
   end

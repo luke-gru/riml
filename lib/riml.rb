@@ -34,7 +34,7 @@ module Riml
     elsif input.respond_to?(:read)
       source = input.read
       path = input.respond_to?(:path) ? input.path : nil
-      nodes = parser.parse(source, AST_Rewriter.new, path)
+      nodes = parser.parse(source, parser.ast_rewriter || AST_Rewriter.new, path)
     else
       raise ArgumentError, "input must be one of AST (Nodes), tokens (Array), " \
         "code (String) or respond_to?(:read), is #{input.inspect}"
@@ -190,6 +190,7 @@ module Riml
 
   FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')
   INCLUDE_COMMENT_FMT = File.read(File.expand_path("../included.vim", __FILE__))
+  GET_SID_FUNCTION_SRC = File.read(File.expand_path("../get_sid_function.vim", __FILE__))
 
   def self.write_file(compiler, output, fname, cmdline_file = true)
     # writing out a file that's compiled from cmdline, output into output_dir

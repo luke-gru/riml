@@ -7,24 +7,31 @@ module Riml
     include Riml::Constants
 
     attr_accessor :ast
-    attr_reader   :classes, :rewritten_include_files
+    attr_reader   :classes, :rewritten_included_and_sourced_files
 
     def initialize(ast = nil, classes = nil)
       @ast = ast
       @classes = classes || ClassMap.new
-      @rewritten_include_files = {}
-      # keeps track of which files included which, to prevent infinite loops
-      @included_file_refs = {}
+      # Keeps track of filenames with their rewritten ASTs, to prevent rewriting
+      # the same AST more than once.
+      @rewritten_included_and_sourced_files = {}
+      # Keeps track of which filenames included/sourced which.
+      # ex: { nil => ["main.riml"], "main.riml" => ["lib1.riml", "lib2.riml"],
+      # "lib1.riml" => [], "lib2.riml" => [] }
+      @included_and_sourced_file_refs = Hash.new { |h, k| h[k] = [] }
     end
 
-    def rewrite(from_file = nil)
-      if from_file
-        if rewritten_ast = rewritten_include_files[from_file]
-          return rewritten_ast
-        end
-        rewrite_included_files!(from_file)
+    def rewrite(filename = nil, included = false)
+      if filename && (rewritten_ast = rewritten_included_and_sourced_files[filename])
+        return rewritten_ast
       end
       establish_parents(ast)
+      class_registry = RegisterDefinedClasses.new(ast, classes)
+      class_registry.rewrite_on_match
+      rewrite_included_and_sourced_files!(filename)
+      if filename && !included && add_SID_function?(filename)
+        add_SID_function!
+      end
       rewriters = [
         StrictEqualsComparisonOperator.new(ast, classes),
         VarEqualsComparisonOperator.new(ast, classes),
@@ -60,30 +67,33 @@ module Riml
       replace node if match?(node)
     end
 
-    # We need to rewrite the included files before anything else. This is in
-    # order to keep track of any classes defined in the included files (and
-    # files included in those, etc...). We keep a cache of rewritten asts
-    # because the 'riml_include'd files are parsed more than once. They're
-    # parsed first before anything else, plus whenever the compiler visits a
-    # 'compile_include' node in order to compile it on the spot.
-    def rewrite_included_files!(from_file)
+    # We need to rewrite the included/sourced files before anything else. This is in
+    # order to keep track of any classes defined in the included and sourced files (and
+    # files included/sourced in those, etc...). We keep a cache of rewritten asts
+    # because the included/sourced files are parsed more than once. They're parsed
+    # first in this step, plus whenever the compiler visits a 'riml_include'/'riml_source'
+    # node in order to compile it on the spot.
+    def rewrite_included_and_sourced_files!(filename)
       old_ast = ast
       ast.children.each do |node|
-        next unless RimlCommandNode === node && node.name == 'riml_include'
+        next unless RimlCommandNode === node
+        action = node.name == 'riml_include' ? 'include' : 'source'
+
         node.each_existing_file! do |file, fullpath|
-          if from_file && @included_file_refs[file] == from_file
-            msg = "#{from_file.inspect} can't include #{file.inspect}, as " \
-                  " #{file.inspect} already included #{from_file.inspect}"
-            raise IncludeFileLoop, msg
-          elsif from_file == file
+          if filename && @included_and_sourced_file_refs[file].include?(filename)
+            msg = "#{filename.inspect} can't #{action} #{file.inspect}, as " \
+                  " #{file.inspect} already included/sourced #{filename.inspect}"
+            # IncludeFileLoop/SourceFileLoop
+            raise Riml.const_get("#{action.capitalize}FileLoop"), msg
+          elsif filename == file
             raise UserArgumentError, "#{file.inspect} can't include itself"
           end
-          @included_file_refs[from_file] = file
+          @included_and_sourced_file_refs[filename] << file
           riml_src = File.read(fullpath)
           # recursively parse included files with this ast_rewriter in order
           # to pick up any classes that are defined there
-          rewritten_ast = Parser.new.parse(riml_src, self, file)
-          rewritten_include_files[file] = rewritten_ast
+          rewritten_ast = Parser.new.parse(riml_src, self, file, action == 'include')
+          rewritten_included_and_sourced_files[file] = rewritten_ast
         end
       end
     ensure
@@ -92,6 +102,53 @@ module Riml
 
     def recursive?
       true
+    end
+
+    # Add SID function if this is the main file and it has defined classes, or
+    # if it included other files and any one of those other files defined classes.
+    def add_SID_function?(filename)
+      return true if ast.children.grep(ClassDefinitionNode).any?
+      included_files = @included_and_sourced_file_refs[filename]
+      while included_files.any?
+        incs = []
+        included_files.each do |included_file|
+          if (ast = rewritten_included_and_sourced_files[included_file])
+            return true if ast.children.grep(ClassDefinitionNode).any?
+          end
+          incs.concat @included_and_sourced_file_refs[included_file]
+        end
+        included_files = incs
+      end
+      false
+    end
+
+    # :h <SID>
+    def add_SID_function!
+      fchild = ast.nodes.first
+      return false if DefNode === fchild && fchild.name == 'SID' && fchild.scope_modifier == 's:'
+      fn = DefNode.new('!', nil, 's:', 'SID', [], nil, Nodes.new([
+          ReturnNode.new(CallNode.new(nil, 'matchstr', [
+            CallNode.new(nil, 'expand', [StringNode.new('<sfile>', :s)]),
+            StringNode.new('<SNR>\zs\d\+\ze_SID$', :s)
+          ]
+          ))
+        ])
+      )
+      fn.parent = ast.nodes
+      establish_parents(fn)
+      ast.nodes.unshift fn
+    end
+
+    class RegisterDefinedClasses < AST_Rewriter
+      def match?(node)
+        ClassDefinitionNode === node
+      end
+
+      def replace(node)
+        n = node.dup
+        n.instance_variable_set("@registered_state", true)
+        classes[node.full_name] = n
+      end
     end
 
     class StrictEqualsComparisonOperator < AST_Rewriter
@@ -139,12 +196,12 @@ module Riml
       end
 
       def replace(node)
-        classes[node.name] = node
+        classes[node.full_name] = node
 
         InsertInitializeMethod.new(node, classes).rewrite_on_match
         constructor = node.constructor
-        constructor.scope_modifier = 'g:' unless constructor.scope_modifier
         constructor.name = node.constructor_name
+        constructor.scope_modifier = node.scope_modifier
         # set up dictionary variable at top of function
         dict_name = node.constructor_obj_name
         constructor.expressions.unshift(
@@ -177,10 +234,12 @@ module Riml
           node.remove
           def_node.original_name = def_node.name.dup
           def_node.name.insert(0, "#{ast.name}_")
+          def_node.sid = SIDNode.new
           reestablish_parents(def_node)
           extend_obj_with_methods(def_node)
         end
 
+        # Ex: `let dogObj.bark = function('<SNR>' . s:SID() . '_s:Dog_bark')`
         def extend_obj_with_methods(def_node)
           constructor = ast.constructor
           extension =
@@ -190,9 +249,23 @@ module Riml
                 [def_node.original_name]
               ),
               CallNode.new(
-                nil, 'function', [StringNode.new("#{def_node.scope_modifier}#{def_node.name}", :s)]
+                nil, 'function', [
+                  BinaryOperatorNode.new(
+                    '.',
+                    [
+                      BinaryOperatorNode.new(
+                        '.',
+                        [
+                          StringNode.new('<SNR>', :s),
+                          CallNode.new('s:', 'SID', []),
+                        ]
+                      ),
+                      StringNode.new("_s:#{def_node.name}", :s)
+                    ],
+                  )
+                ],
               )
-          )
+            )
           constructor.expressions << extension
           extension.parent = constructor.expressions
         end
@@ -223,11 +296,11 @@ module Riml
         def replace(class_node)
           if class_node.superclass?
             def_node = DefNode.new(
-              '!', nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
+              '!', nil, nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
             )
           else
             def_node = DefNode.new(
-              '!', nil, "initialize", [], nil, Nodes.new([])
+              '!', nil, nil, "initialize", [], nil, Nodes.new([])
             )
           end
           class_node.expressions.unshift(def_node)
@@ -235,7 +308,7 @@ module Riml
         end
 
         def superclass_params
-          classes.superclass(ast.name).constructor.parameters
+          classes.superclass(ast.full_name).constructor.parameters
         end
 
         def recursive?
@@ -255,7 +328,7 @@ module Riml
         end
 
         def replace(constructor)
-          superclass = classes.superclass(class_node.name)
+          superclass = classes.superclass(class_node.full_name)
           super_constructor = superclass.constructor
 
           set_var_node = AssignNode.new('=', GetVariableNode.new(nil, superclass.constructor_obj_name),
@@ -305,14 +378,14 @@ module Riml
         end
 
         def replace(node)
-          func_scope = @function_node.scope_modifier
-          superclass = classes[ast.superclass_name]
+          func_scope = 's:'
+          superclass = classes[ast.superclass_full_name]
           while superclass && !superclass.has_function?(func_scope, superclass_func_name(superclass)) && superclass.superclass?
-            superclass = classes[superclass.superclass_name]
+            superclass = classes[superclass.superclass_full_name]
           end
           if superclass.nil? || !superclass.has_function?(func_scope, superclass_func_name(superclass))
             raise Riml::UserFunctionNotFoundError,
-              "super was called in class #{ast.name} in " \
+              "super was called in class #{ast.full_name} in " \
               "function #{@function_node.original_name}, but there are no " \
               "functions with this name in that class's superclass hierarchy."
           end
@@ -342,9 +415,21 @@ module Riml
               [super_func_name]
             ),
             CallNode.new(
-              nil,
-              'function',
-              [StringNode.new("g:#{super_func_name}", :s)]
+              nil, 'function', [
+                BinaryOperatorNode.new(
+                  '.',
+                  [
+                    BinaryOperatorNode.new(
+                      '.',
+                      [
+                        StringNode.new('<SNR>', :s),
+                        CallNode.new('s:', 'SID', []),
+                      ]
+                    ),
+                    StringNode.new("_s:#{super_func_name}", :s)
+                  ],
+                )
+              ],
             )
           )
           ast.constructor.expressions << assign_node
@@ -359,7 +444,9 @@ module Riml
       end
 
       def replace(node)
-        constructor_name = node.call_node.name
+        constructor_name = (node.call_node.scope_modifier ||
+                            ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER) +
+                            node.call_node.name
         class_node = classes[constructor_name]
         call_node = node.call_node
         call_node.name = class_node.constructor_name

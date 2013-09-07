@@ -7,6 +7,7 @@ module Riml
 
   FileNotFound = Class.new(RimlError)
   IncludeFileLoop = Class.new(RimlError)
+  SourceFileLoop = Class.new(RimlError)
   IncludeNotTopLevel = Class.new(RimlError)
   # bad user arguments to Riml functions
   UserArgumentError = Class.new(RimlError)

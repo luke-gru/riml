@@ -10,7 +10,7 @@ class BasicParserTest < Riml::TestCase
     end
     Viml
     expected = Nodes.new([
-      DefNode.new('!', nil, "a_method", ['a', 'b'], nil,
+      DefNode.new('!', nil, nil, "a_method", ['a', 'b'], nil,
         Nodes.new([TrueNode.new])
       )
     ])
@@ -28,7 +28,7 @@ def b:another_method(a, b)
 end
 Viml
     expected = Nodes.new([
-      DefNode.new('!', 'b:', "another_method", ['a', 'b'], nil, Nodes.new(
+      DefNode.new('!', nil, 'b:', "another_method", ['a', 'b'], nil, Nodes.new(
         [IfNode.new(CallNode.new(nil, "hello", []),
                       Nodes.new([TrueNode.new,
                                  ElseNode.new(
@@ -103,7 +103,7 @@ Riml
 Riml
 
     expected = Nodes.new([
-        DefNode.new("!", nil, "urules.add", ["name", "urules"], nil, Nodes.new([
+        DefNode.new("!", nil, nil, "urules.add", ["name", "urules"], nil, Nodes.new([
           ExplicitCallNode.new(nil, "add", [DictGetDotNode.new(
             GetVariableNode.new(nil, "self"), ["names"]), GetVariableNode.new("a:", "name")]),
           AssignNode.new("=", ListOrDictGetNode.new(
@@ -213,5 +213,6 @@ Riml
 
     assert parse(riml)
   end
+
 end
 end
