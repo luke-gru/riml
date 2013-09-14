@@ -1,3 +1,10 @@
+0.3.1
+=====
+
+* Fix bug where trailing whitespace [ \t\f] was causing errors for certain
+statements [https://github.com/luke-gru/riml/issues/10].
+
+
 0.3.0
 =====
 

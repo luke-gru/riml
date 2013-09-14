@@ -5,7 +5,7 @@ module Riml
   class Lexer
     include Riml::Constants
 
-    SINGLE_LINE_COMMENT_REGEX = /\A\s*"(.*)$/
+    SINGLE_LINE_COMMENT_REGEX = /\A[ \t\f]*"(.*)$/
     OPERATOR_REGEX = /\A#{Regexp.union(['||', '&&', '===', '+=', '-=', '.='] + COMPARISON_OPERATORS)}/
     INTERPOLATION_REGEX = /"([^"]*?)(\#\{([^"]*?)\})([^"]*?)"/m
     ANCHORED_INTERPOLATION_REGEX = /\A#{INTERPOLATION_REGEX}/m
@@ -63,14 +63,14 @@ module Riml
     def tokenize_chunk(chunk)
       @chunk = chunk
       # deal with line continuations
-      if cont = chunk[/\A\n*\s*\\/m]
+      if cont = chunk[/\A\r?\n*[ \t\f]*\\/m]
         @i += cont.size
         @lineno += cont.each_line.to_a.size - 1
         return
       end
 
       # all lines that start with ':' pass right through unmodified
-      if (prev_token.nil? || prev_token[0] == :NEWLINE) && (ex_literal = chunk[/\A\s*:(.*)?$/])
+      if (prev_token.nil? || prev_token[0] == :NEWLINE) && (ex_literal = chunk[/\A[ \t\f]*:(.*)?$/])
         @i += ex_literal.size
         @token_buf << [:EX_LITERAL, $1]
         return
@@ -171,7 +171,7 @@ module Riml
       elsif (single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX]) && (prev_token.nil? || prev_token[0] == :NEWLINE)
         @i += single_line_comment.size + 1 # consume next newline character
         @lineno += single_line_comment.each_line.to_a.size
-      elsif inline_comment = chunk[/\A\s*"[^"]*?$/]
+      elsif inline_comment = chunk[/\A[ \t\f]*"[^"]*?$/]
         @i += inline_comment.size # inline comment, don't consume newline character
         @lineno += inline_comment.each_line.to_a.size - 1
       elsif string_double = chunk[/\A"(.*?)(?<!\\)"/, 1]
@@ -180,7 +180,7 @@ module Riml
       elsif string_single = chunk[/\A'(([^']|'')*)'/, 1]
         @token_buf << [:STRING_S, string_single]
         @i += string_single.size + 2
-      elsif newlines = chunk[/\A(\n+)/, 1]
+      elsif newlines = chunk[/\A([\r\n]+)/, 1]
         # push only 1 newline
         @token_buf << [:NEWLINE, "\n"] unless prev_token && prev_token[0] == :NEWLINE
 
@@ -216,7 +216,7 @@ module Riml
       elsif regexp = chunk[%r{\A/.*?[^\\]/}]
         @token_buf << [:REGEXP, regexp]
         @i += regexp.size
-      elsif whitespaces = chunk[/\A\s+/]
+      elsif whitespaces = chunk[/\A[ \t\f]+/]
         @i += whitespaces.size
       # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < > /
       else

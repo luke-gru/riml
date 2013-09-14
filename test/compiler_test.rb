@@ -2464,7 +2464,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  # Test that https://github.com/luke-gru/riml/issues/10 is fixed
+  # issue: https://github.com/luke-gru/riml/issues/10
   test "elseif sets proper scopes for variables/functions" do
     riml = <<Riml
 def get_bar()
@@ -2490,6 +2490,17 @@ function! s:get_bar()
   else
     return 'Unknown'
   endif
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  # issue: https://github.com/luke-gru/riml/issues/11
+  test "trailing whitespaces after function name or () in function definition doesn't error out" do
+    riml = "def hello()        \n\t\t end"
+
+    expected = <<Viml
+function! s:hello()
 endfunction
 Viml
     assert_equal expected, compile(riml)

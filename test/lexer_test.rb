@@ -171,7 +171,7 @@ Riml
     assert_equal expected, lex(riml)
   end
 
-  test "function variables don't get lexed as function keyword" do
+  test "BUILTIN_FUNCTION 'function' doesn't get lexed as FUNCTION keyword" do
     riml = <<Riml
 let M = function('smartinput#map_to_trigger')
 Riml
@@ -199,6 +199,20 @@ Riml
       [":", ":"], [:IDENTIFIER, "lnum"]
     ]
     assert_equal expected, lex(riml)
+  end
+
+  # https://github.com/luke-gru/riml/issues/11
+  test "newlines can be either <NL>, <CR> or <CR><NL>" do
+    newline_map = {"<NL>" => "\n", "<CR>" => "\r", "<CR><NL>" => "\r\n"}
+
+    newline_map.each do |name, nl|
+      riml = "echo 'hello'#{nl}#{nl}  ;"
+      expected = [
+        [:BUILTIN_COMMAND, "echo"], [:STRING_S, 'hello'], [:NEWLINE, "\n"],
+        [';', ';']
+      ]
+      assert_equal expected, lex(riml), "expected newline '#{name}' to act as a :NEWLINE"
+    end
   end
 end
 end
