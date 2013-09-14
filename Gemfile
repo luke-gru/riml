@@ -6,9 +6,10 @@ group :development do
   #
   # $ racc -o parser.rb grammar.y
   gem 'racc'
+  gem 'bundler', '~> 1.3'
 end
 
 group :test do
-  gem 'rake' # for travis-ci
+  gem 'rake', '~> 10.1.0'
   gem 'minitest', '~> 2.5.1'
 end
