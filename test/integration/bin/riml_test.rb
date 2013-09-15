@@ -8,7 +8,7 @@ class BinRimlTest < Riml::TestCase
   test "compiles riml from stdin to viml on stdout with -s option" do
     pathogen_riml_path = File.expand_path('../../pathogen/pathogen.riml', __FILE__)
     expected = File.read File.expand_path('../../pathogen/pathogen.vim', __FILE__)
-    assert_equal expected, `cat #{Shellwords.escape(pathogen_riml_path)} | #{EXEC} -s`
+    assert_equal expected, `cat #{Shellwords.escape(pathogen_riml_path)} | #{EXEC} -s -d`
     assert_equal 0, $?.exitstatus
   end
 

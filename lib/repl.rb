@@ -9,7 +9,7 @@ require_relative 'riml'
 module Riml
   class Repl
     attr_reader :line
-    attr_reader :parser, :compiler
+    attr_reader :parser, :compiler, :compiler_options
     private :parser, :compiler
 
     COMPILE_ON = %w(compile c)
@@ -22,9 +22,10 @@ clear previous class definitions: #{RELOAD_ON.join(', ')}
 exit repl:                        #{EXIT_ON.join(', ')}
 msg
 
-    def initialize(vi_readline = false)
+    def initialize(vi_readline = false, compile_options = {})
       @indent_amount = 0
       @line = nil
+      @compiler_options = DEFAULT_COMPILE_OPTIONS.merge(compile_options)
       prepare_new_context
       Readline.vi_editing_mode if vi_readline
       trap(:INT) { reset!; puts }
@@ -55,6 +56,7 @@ msg
 
     def prepare_new_context
       @compiler = Compiler.new
+      @compiler.options = compiler_options
       @parser = Parser.new
     end
     alias reload! prepare_new_context
@@ -76,7 +78,7 @@ msg
     end
 
     def compile_unit!
-      viml = Riml.compile(current_compilation_unit.join("\n"), parser, compiler).chomp
+      viml = Riml.do_compile(current_compilation_unit.join("\n"), parser, compiler).chomp
       puts viml, "\n"
     rescue => e
       print_error(e)

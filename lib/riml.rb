@@ -9,6 +9,12 @@ require 'compiler'
 require 'warning_buffer'
 
 module Riml
+
+  DEFAULT_COMPILE_OPTIONS = { :readable => true }
+  DEFAULT_COMPILE_FILES_OPTIONS = DEFAULT_COMPILE_OPTIONS.merge(
+    :output_dir => nil
+  )
+
   # lex code (String) into tokens (Array)
   def self.lex(code)
     Lexer.new(code).tokenize
@@ -23,10 +29,17 @@ module Riml
     Parser.new.parse(input, ast_rewriter, filename)
   end
 
+  def self.compile(input, options = {})
+    parser = Parser.new
+    compiler = Compiler.new
+    compiler.options = DEFAULT_COMPILE_OPTIONS.merge(options)
+    do_compile(input, parser, compiler)
+  end
+
   # compile AST (Nodes), tokens (Array), code (String) or object that returns
   # String from :read to output code (String). Writes file(s) if `input` is a
   # File.
-  def self.compile(input, parser = Parser.new, compiler = Compiler.new)
+  def self.do_compile(input, parser = Parser.new, compiler = Compiler.new)
     if input.is_a?(Nodes)
       nodes = input
     elsif input.is_a?(String) || input.is_a?(Array)
@@ -59,16 +72,15 @@ module Riml
     process_compile_queue!(compiler)
   end
 
-  # expects `filenames` (String) arguments, to be readable files. Optional options (Hash) as
-  # last argument.
+  # expects `filenames` (String) arguments, to be readable files.
+  # Optional options (Hash) as last argument.
   def self.compile_files(*filenames)
     parser, compiler = Parser.new, Compiler.new
 
     if filenames.last.is_a?(Hash)
-      opts = filenames.pop
-      if dir = opts[:output_dir]
-        compiler.output_dir = dir
-      end
+      compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.merge(filenames.pop)
+    else
+      compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.dup
     end
 
     if filenames.size > 1
@@ -78,19 +90,20 @@ module Riml
           _parser, _compiler = parser, compiler
         else
           _parser, _compiler = Parser.new, Compiler.new
-          _compiler.output_dir = compiler.output_dir
+          _compiler.options = compiler.options
         end
         threads << Thread.new do
           f = File.open(fname)
-          compile(f, _parser, _compiler)
+          # `do_compile` will close file handle
+          do_compile(f, _parser, _compiler)
         end
       end
       threads.each {|t| t.join}
     elsif filenames.size == 1
       fname = filenames.first
       f = File.open(fname)
-      # `compile` will close file handle
-      compile(f, parser, compiler)
+      # `do_compile` will close file handle
+      do_compile(f, parser, compiler)
     else
       raise ArgumentError, "need filenames to compile"
     end
@@ -183,7 +196,7 @@ module Riml
     while full_path = compiler.compile_queue.shift
       unless compiler.sourced_files_compiled.include?(full_path)
         compiler.sourced_files_compiled << full_path
-        compile(File.open(full_path), compiler.parser, compiler)
+        do_compile(File.open(full_path), compiler.parser, compiler)
       end
     end
   end
@@ -210,6 +223,9 @@ module Riml
     basename_without_riml_ext = File.basename(fname).sub(/\.riml\Z/i, '')
     FileUtils.mkdir_p(output_dir) unless File.directory?(output_dir)
     full_path = File.join(output_dir, "#{basename_without_riml_ext}.vim")
+    if output[-2..-1] == "\n\n"
+      output.chomp!
+    end
     File.open(full_path, 'w') do |f|
       f.write FILE_HEADER + output
     end

@@ -3,7 +3,22 @@ require File.expand_path('../nodes', __FILE__)
 # visits AST nodes and translates them into VimL
 module Riml
   class Compiler
-    attr_accessor :parser, :output_dir
+    attr_accessor :parser
+    attr_writer :options
+
+    # compiler options
+
+    def options
+      @options ||= {}
+    end
+
+    def output_dir
+      options[:output_dir]
+    end
+
+    def readable
+      options.has_key?(:readable) and options[:readable]
+    end
 
     # Base abstract visitor
     class Visitor
@@ -19,12 +34,25 @@ module Riml
         propagate_up_tree(node, output)
       end
 
+      protected
+
       def propagate_up_tree(node, output)
         node.parent_node.compiled_output << output.to_s unless @propagate_up_tree == false || node.parent_node.nil?
       end
 
       def visitor_for_node(node, params={})
         Compiler.const_get("#{node.class.name.split('::').last}Visitor").new(params)
+      end
+
+      def root_node(node)
+        @root_node ||= begin
+          node = node.parent until node.parent.nil?
+          node
+        end
+      end
+
+      def current_compiler(node)
+        root_node(node).current_compiler
       end
     end
 
@@ -452,6 +480,11 @@ module Riml
           end
         end
         node.compiled_output = declaration << body << "endfunction\n"
+        if current_compiler(node).readable
+          node.compiled_output << "\n"
+        else
+          node.compiled_output
+        end
       end
 
       private
@@ -565,7 +598,7 @@ module Riml
         if node.name == 'riml_source'
           node.name = 'source'
           node.each_existing_file! do |basename, full_path|
-            root_node(node).current_compiler.compile_queue << full_path
+            current_compiler(node).compile_queue << full_path
           end
         elsif node.name == 'riml_include'
           # riml_include has to be top-level
@@ -575,7 +608,7 @@ module Riml
           end
           node.each_existing_file! do |basename, full_path|
             riml_src = File.read(full_path)
-            node.compiled_output << root_node(node).current_compiler.compile_include(riml_src, basename)
+            node.compiled_output << current_compiler(node).compile_include(riml_src, basename)
           end
           return node.compiled_output
         end
@@ -584,13 +617,6 @@ module Riml
         node.compiled_output.gsub!(/['"]/, '')
         node.compiled_output.sub!('.riml', '.vim')
         node.compiled_output
-      end
-
-      def root_node(node)
-        @root_node ||= begin
-          node = node.parent until node.parent.nil?
-          node
-        end
       end
     end
 

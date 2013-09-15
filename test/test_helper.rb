@@ -94,8 +94,8 @@ EOS
       Riml.parse(input, ast_rewriter)
     end
 
-    def compile(input)
-      Riml.compile(input)
+    def compile(input, options = {:readable => false})
+      Riml.compile(input, options)
     end
 
     %w(source_path include_path).each do |path|

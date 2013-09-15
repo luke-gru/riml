@@ -2342,7 +2342,7 @@ let i = 0
 Riml
     end
     expected = "let s:i = 0\n"
-    assert_equal expected, Riml.compile(obj)
+    assert_equal expected, Riml.compile(obj, :readable => false)
   end
 
   # https://github.com/luke-gru/riml/issues/8
@@ -2504,6 +2504,23 @@ function! s:hello()
 endfunction
 Viml
     assert_equal expected, compile(riml)
+  end
+
+  test "passing :readable => true to `Riml.compile` outputs 2 <NL> after function definition" do
+    riml = <<Riml
+def test
+end
+def test2
+end
+Riml
+    expected = <<Viml
+function! s:test()
+endfunction
+
+function! s:test2()
+endfunction
+Viml
+    assert_equal expected, Riml.compile(riml, :readable => true)
   end
 
 end
