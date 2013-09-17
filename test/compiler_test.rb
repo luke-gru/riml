@@ -2519,6 +2519,7 @@ endfunction
 
 function! s:test2()
 endfunction
+
 Viml
     assert_equal expected, Riml.compile(riml, :readable => true)
   end
