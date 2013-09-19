@@ -94,6 +94,7 @@ module Riml
       return unless idx
       parent.children.insert(idx, new_node)
       parent.children.slice!(idx + 1)
+      new_node.parent = parent
       new_node
     end
   end
@@ -160,7 +161,7 @@ module Riml
     end
 
     def children
-      nodes
+      @children ||= nodes
     end
   end
 
@@ -192,7 +193,7 @@ module Riml
     alias nodes string_nodes
 
     def children
-      string_nodes
+      @children ||= string_nodes
     end
   end
 
@@ -206,13 +207,13 @@ module Riml
     end
 
     def children
-      value
+      @children ||= value
     end
   end
 
   class ListUnpackNode < ListNode
     def rest
-      value.last
+      @children ||= value.last
     end
   end
 
@@ -220,7 +221,7 @@ module Riml
     include Walkable
 
     def children
-      value.to_a.compact.inject([], :concat)
+      @children ||= value.to_a.compact.inject([], :concat)
     end
   end
 
@@ -266,7 +267,7 @@ module Riml
     include Walkable
 
     def children
-      [expression]
+      @children ||= [expression]
     end
   end
 
@@ -275,7 +276,7 @@ module Riml
     include Walkable
 
     def children
-      [expression]
+      @children ||= [expression]
     end
   end
 
@@ -340,7 +341,7 @@ module Riml
     end
 
     def children
-      if name.is_a?(String)
+      @children ||= if name.is_a?(String)
         arguments
       else
         [name] + arguments
@@ -401,7 +402,7 @@ module Riml
     include Walkable
 
     def children
-      operands
+      @children ||= operands
     end
   end
 
@@ -453,7 +454,7 @@ module Riml
     include Walkable
 
     def children
-      [lhs, rhs]
+      @children ||= [lhs, rhs]
     end
   end
 
@@ -462,7 +463,7 @@ module Riml
     include Walkable
 
     def children
-      assigns
+      @children ||= assigns
     end
   end
 
@@ -507,7 +508,7 @@ module Riml
     include Walkable
 
     def children
-      [variable]
+      @children ||= [variable]
     end
   end
 
@@ -521,7 +522,7 @@ module Riml
     end
 
     def children
-      parts
+      @children ||= parts
     end
   end
 
@@ -539,9 +540,13 @@ module Riml
     end
 
     def children
-      return [] unless interpolated?
-      return value if nested?
-      [value]
+      @children ||= if !interpolated?
+        []
+      elsif nested?
+        value
+      else
+        [value]
+      end
     end
   end
 
@@ -555,7 +560,7 @@ module Riml
     end
 
     def children
-      variables
+      @children ||= variables
     end
   end
 
@@ -647,12 +652,14 @@ module Riml
     end
 
     def children
-      children = if sid?
-        [sid, expressions]
-      else
-        [expressions]
+      @children ||= begin
+        children = if sid?
+          [sid, expressions]
+        else
+          [expressions]
+        end
+        children.concat(default_param_nodes)
       end
-      children.concat(default_param_nodes)
     end
 
     def method_missing(method, *args, &blk)
@@ -669,7 +676,7 @@ module Riml
     include Walkable
 
     def children
-      [parameter, expression]
+      @children ||= [parameter, expression]
     end
   end
 
@@ -724,7 +731,7 @@ module Riml
     include Walkable
 
     def children
-      [condition, body]
+      @children ||= [condition, body]
     end
 
     def wrap_condition_in_parens!
@@ -772,7 +779,7 @@ module Riml
     end
 
     def children
-      [expressions]
+      @children ||= [expressions]
     end
   end
 
@@ -795,7 +802,7 @@ module Riml
     end
 
     def children
-      [condition, body]
+      @children ||= [condition, body]
     end
   end
 
@@ -832,7 +839,7 @@ module Riml
     end
 
     def children
-      [variable, in_expression, expressions]
+      @children ||= [variable, in_expression, expressions]
     end
   end
 
@@ -841,7 +848,7 @@ module Riml
     include Walkable
 
     def children
-      [dict] + keys
+      @children ||= [dict] + keys
     end
   end
 
@@ -865,7 +872,7 @@ module Riml
     alias list list_or_dict
     alias dict list_or_dict
     def children
-      [list_or_dict] + keys
+      @children ||= [list_or_dict] + keys
     end
   end
 
@@ -874,7 +881,7 @@ module Riml
     include Walkable
 
     def children
-      [scope_modifier] + keys
+      @children ||= [scope_modifier] + keys
     end
   end
 
@@ -884,7 +891,7 @@ module Riml
     include Walkable
 
     def children
-      [try_block] + catch_nodes.to_a + [finally_block].compact
+      @children ||= [try_block] + catch_nodes.to_a + [finally_block].compact
     end
   end
 
@@ -894,7 +901,7 @@ module Riml
     include NotNestedUnder
 
     def children
-      [expressions]
+      @children ||= [expressions]
     end
 
   end
@@ -963,7 +970,7 @@ module Riml
     end
 
     def children
-      [expressions]
+      @children ||= [expressions]
     end
   end
 
@@ -976,7 +983,7 @@ module Riml
     end
 
     def children
-      arguments
+      @children ||= arguments
     end
   end
 
@@ -985,7 +992,7 @@ module Riml
     include Walkable
 
     def children
-      [call_node]
+      @children ||= [call_node]
     end
   end
 end
