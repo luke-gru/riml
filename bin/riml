@@ -60,7 +60,7 @@ module Riml
           options.output_dir = dir
         end
 
-        opts.on("-d", "--condensed", "Compiled VimL contains no extraneous newlines") do
+        opts.on("-d", "--condensed", "Omit readability improvements such as blank lines.") do
           options.readable = false
         end
 

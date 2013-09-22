@@ -1,9 +1,23 @@
+0.3.2
+=====
+
+* Add a blank line after every function definition to improve readability.
+This can be disabled with the '--consended' flag.
+See [https://github.com/luke-gru/riml/issues/5]
+
+* `unless` condition with nested `if` inside now works properly.
+Fixes [https://github.com/luke-gru/riml/issues/15]
+
+* Allow `super` to be the right-side of an assignment. This fix is much
+deeper than just this case, however, and it uncovered a rather serious bug
+in how children were being added/removed/replaced in the ASTRewriter.
+Fixes [https://github.com/luke-gru/riml/issues/13]
+
 0.3.1
 =====
 
 * Fix bug where trailing whitespace [ \t\f] was causing errors for certain
 statements [https://github.com/luke-gru/riml/issues/10].
-
 
 0.3.0
 =====
