@@ -307,15 +307,13 @@ module Riml
       end
 
       def visit_lhs(node)
-        lhs = node.children.first
-        lhs.accept(visitor_for_node(node.lhs, :propagate_up_tree => false))
-        "let #{lhs.compiled_output} #{node.operator} "
+        node.lhs.accept(visitor_for_node(node.lhs, :propagate_up_tree => false))
+        "let #{node.lhs.compiled_output} #{node.operator} "
       end
 
       def visit_rhs(node)
-        rhs = node.children[1]
-        rhs.accept(visitor_for_node(rhs, :propagate_up_tree => false))
-        rhs.compiled_output
+        node.rhs.accept(visitor_for_node(node.rhs, :propagate_up_tree => false))
+        node.rhs.compiled_output
       end
     end
 

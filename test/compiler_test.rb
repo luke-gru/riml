@@ -2524,5 +2524,53 @@ Viml
     assert_equal expected, Riml.compile(riml, :readable => true)
   end
 
+  # issue: https://github.com/luke-gru/riml/issues/13
+  test "super can be in right-side of assignment" do
+    riml = <<Riml
+class Box
+  defm get_color(a, b)
+    return 'white'
+  end
+end
+
+class RedBox < Box
+  defm get_color(a, b, c)
+    color = super(a, b)
+    return color . ' red'
+  end
+end
+
+red_box = new RedBox()
+echo red_box.get_color(1, 2, 3)
+Riml
+
+    expected = <<Viml
+function! s:BoxConstructor()
+  let boxObj = {}
+  let boxObj.get_color = function('<SNR>' . s:SID() . '_s:Box_get_color')
+  return boxObj
+endfunction
+function! <SID>s:Box_get_color(a, b) dict
+  return 'white'
+endfunction
+function! s:RedBoxConstructor()
+  let redBoxObj = {}
+  let boxObj = s:BoxConstructor()
+  call extend(redBoxObj, boxObj)
+  let redBoxObj.get_color = function('<SNR>' . s:SID() . '_s:RedBox_get_color')
+  let redBoxObj.Box_get_color = function('<SNR>' . s:SID() . '_s:Box_get_color')
+  return redBoxObj
+endfunction
+function! <SID>s:RedBox_get_color(a, b, c) dict
+  let color = self.Box_get_color(a:a, a:b)
+  return color . ' red'
+endfunction
+let s:red_box = s:RedBoxConstructor()
+echo s:red_box.get_color(1, 2, 3)
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end
 end
