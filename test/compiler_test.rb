@@ -2572,5 +2572,30 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  # issue: https://github.com/luke-gru/riml/issues/15
+  test "if block inside unless block" do
+    riml = <<Riml
+unless 'a' == 'b'
+  if 1 == 2
+    echo 'nope'
+  else
+    echo 'yup'
+  end
+end
+Riml
+
+    expected = <<Viml
+if !('a' ==# 'b')
+  if 1 ==# 2
+    echo 'nope'
+  else
+    echo 'yup'
+  endif
+endif
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

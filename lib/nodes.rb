@@ -775,7 +775,7 @@ module Riml
   end
   class WhileNode < ControlStructure; end
 
-  class UnlessNode < ControlStructure
+  class UnlessNode < IfNode
     def initialize(*)
       super
       wrap_condition_in_parens!
