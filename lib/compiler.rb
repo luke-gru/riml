@@ -608,7 +608,8 @@ module Riml
           end
           node.each_existing_file! do |basename, full_path|
             riml_src = File.read(full_path)
-            node.compiled_output << current_compiler(node).compile_include(riml_src, basename)
+            output = current_compiler(node).compile_include(riml_src, basename)
+            node.compiled_output << output if output
           end
           return node.compiled_output
         end
@@ -773,10 +774,16 @@ module Riml
       @sourced_files_compiled ||= []
     end
 
-    def compile_include(source, from_file)
-      root_node = parser.parse(source, parser.ast_rewriter, from_file, true)
+    def included_files_compiled
+      @included_files_compiled ||= []
+    end
+
+    def compile_include(source, filename)
+      return if included_files_compiled.include?(filename)
+      root_node = parser.parse(source, parser.ast_rewriter, filename, true)
       output = compile(root_node)
-      (Riml::INCLUDE_COMMENT_FMT % from_file) + output
+      included_files_compiled << filename
+      (Riml::INCLUDE_COMMENT_FMT % filename) + output
     end
 
     # compiles nodes into output code
