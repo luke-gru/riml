@@ -134,10 +134,10 @@ EOS
   end
 end
 
-all_files_before = Dir.glob('*/**')
+all_files_before = Dir.glob('**/*')
 
 MiniTest::Unit.after_tests do
-  all_files_after = Dir.glob('*/**')
+  all_files_after = Dir.glob('**/*')
   if all_files_after != all_files_before
     STDERR.puts "WARNING: test suite added/removed file(s). Diff: " \
       "#{all_files_after.to_set.difference(all_files_before.to_set).to_a}"
