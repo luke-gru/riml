@@ -22,7 +22,10 @@ module Riml
       else
         @cache[included_filename] = m.synchronize { yield }
       end
+    end
 
+    def [](included_filename)
+      @cache[included_filename]
     end
 
     # `clear` should only be called by the main thread that is using the

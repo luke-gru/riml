@@ -22,8 +22,11 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.executables = ['riml']
   s.files = Dir['README.md', 'LICENSE', 'version.rb', 'lib/**/*', 'Rakefile',
-                'CONTRIBUTING', 'CHANGELOG' 'Gemfile', 'Gemfile.lock']
+                'CONTRIBUTING', 'CHANGELOG' 'Gemfile']
 
   s.add_development_dependency('racc')
+  s.add_development_dependency('rake', '~> 10.1.0')
+  s.add_development_dependency('bundler', '~> 1.3')
   s.add_development_dependency('minitest', '~> 2.5.1')
+  s.add_development_dependency('mocha', '~> 0.14.0')
 end

@@ -252,4 +252,40 @@ RIML
       end
     end
   end
+
+  test "included files get cached in Riml.include_cache during compilation run" do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
+      riml = <<Riml
+riml_include "file1.riml"
+riml_include "file1.riml"
+riml_include "riml_include_lib.riml"
+Riml
+      with_mock_include_cache do |cache|
+        # During single compilation run, compiler checks if already included a
+        # file, so the compiler should only call `Riml.include_cache.fetch` once
+        # per file included.
+        cache.expects(:fetch).yields(true).with('file1.riml').once
+        cache.expects(:fetch).yields(true).with('riml_include_lib.riml').once
+        cache.expects(:fetch).yields(true).with('riml_include_lib2.riml').once
+        assert compile(riml)
+      end
+    end
+  end
+
+  test "Riml.include_cache is not cleared between compilation runs" do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
+      riml = <<Riml
+riml_include "file1.riml"
+riml_include "file1.riml"
+riml_include "riml_include_lib.riml"
+Riml
+      with_mock_include_cache do |cache|
+        cache.expects(:fetch).yields(true).with('file1.riml').twice
+        cache.expects(:fetch).yields(true).with('riml_include_lib.riml').twice
+        cache.expects(:fetch).yields(true).with('riml_include_lib2.riml').twice
+        cache.expects(:clear).never
+        2.times { compile(riml) }
+      end
+    end
+  end
 end

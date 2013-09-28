@@ -1,5 +1,6 @@
 gem 'minitest'
 require 'minitest/unit'
+require 'mocha/setup'
 
 $VERBOSE = 1
 require File.expand_path('../../lib/riml', __FILE__)
@@ -120,6 +121,16 @@ EOS
         end
       end
     end
+
+    def with_mock_include_cache
+      old_cache = Riml.include_cache
+      new_cache = mock('include_cache')
+      Riml.instance_variable_set("@include_cache", new_cache)
+      yield new_cache
+    ensure
+      Riml.instance_variable_set("@include_cache", old_cache)
+    end
+
   end
 end
 
