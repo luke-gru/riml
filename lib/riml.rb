@@ -7,6 +7,7 @@ require 'lexer'
 require 'parser'
 require 'compiler'
 require 'warning_buffer'
+require 'include_cache'
 
 module Riml
 
@@ -107,6 +108,7 @@ module Riml
     else
       raise ArgumentError, "need filenames to compile"
     end
+    true
   ensure
     flush_warnings
   end
@@ -144,6 +146,10 @@ module Riml
 
   def self.warn(warning)
     warning_buffer << warning
+  end
+
+  def self.include_cache
+    @include_cache ||= IncludeCache.new
   end
 
   class << self
