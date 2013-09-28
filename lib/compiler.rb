@@ -780,10 +780,12 @@ module Riml
 
     def compile_include(source, filename)
       return if included_files_compiled.include?(filename)
-      root_node = parser.parse(source, parser.ast_rewriter, filename, true)
-      output = compile(root_node)
-      included_files_compiled << filename
-      (Riml::INCLUDE_COMMENT_FMT % filename) + output
+      Riml.include_cache.fetch(filename) do
+        root_node = parser.parse(source, parser.ast_rewriter, filename, true)
+        output = compile(root_node)
+        included_files_compiled << filename
+        (Riml::INCLUDE_COMMENT_FMT % filename) + output
+      end
     end
 
     # compiles nodes into output code
