@@ -8,7 +8,7 @@ module Riml
       visitor.visit(self)
     end
 
-    attr_accessor :parent_node, :scope, :force_newline
+    attr_accessor :parent_node, :scope, :force_newline, :parser_info
     alias parent parent_node
     alias parent= parent_node=
 
