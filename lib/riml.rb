@@ -76,6 +76,7 @@ module Riml
   # expects `filenames` (String) arguments, to be readable files.
   # Optional options (Hash) as last argument.
   def self.compile_files(*filenames)
+    filenames = filenames.dup
     parser, compiler = Parser.new, Compiler.new
 
     if filenames.last.is_a?(Hash)
@@ -84,22 +85,24 @@ module Riml
       compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.dup
     end
 
+    filenames.uniq!
+    # compile files using one thread per file, max 4 threads at once
     if filenames.size > 1
       threads = []
-      filenames.each_with_index do |fname, i|
-        if i.zero?
-          _parser, _compiler = parser, compiler
-        else
+      while filenames.any?
+        to_compile = filenames.shift(4)
+        to_compile.each do |fname|
           _parser, _compiler = Parser.new, Compiler.new
           _compiler.options = compiler.options
+          threads << Thread.new do
+            f = File.open(fname)
+            # `do_compile` will close file handle
+            do_compile(f, _parser, _compiler)
+          end
         end
-        threads << Thread.new do
-          f = File.open(fname)
-          # `do_compile` will close file handle
-          do_compile(f, _parser, _compiler)
-        end
+        threads.each(&:join)
+        threads.clear
       end
-      threads.each {|t| t.join}
     elsif filenames.size == 1
       fname = filenames.first
       f = File.open(fname)
