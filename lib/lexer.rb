@@ -248,16 +248,17 @@ module Riml
       end
     end
 
-    def prev_token_is_keyword?
-      if prev_token && prev_token[1]
-        if KEYWORDS.include?(prev_token[1])
-          return @invalid_keyword = prev_token[1]
-        end
-        prev_prev_token = tokens[-2]
-        if prev_prev_token && KEYWORDS.include?(prev_prev_token[1])
-          return @invalid_keyword = prev_prev_token[1]
+    # Checks if any of previous n tokens are keywords.
+    # If any found, sets `@invalid_keyword` to the found token value.
+    def prev_token_is_keyword?(n = 2)
+      return false if n <= 0
+      (1..n).each do |i|
+        t = tokens[-i]
+        if t && t[1] && KEYWORDS.include?(t[1])
+          return @invalid_keyword = t[1]
         end
       end
+      false
     end
 
     private

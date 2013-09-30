@@ -34,7 +34,7 @@ module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 535)
         warning = "#{@lexer.invalid_keyword.inspect} is a keyword, and cannot " \
           "be used as a variable name"
       end
-      error_msg = "on line #{@lexer.lineno}: #{e.message}"
+      error_msg = "#{e.message} at #{@lexer.filename}:#{@lexer.lineno}"
       error_msg << "\n\n#{warning}" if warning
       raise Riml::ParseError, error_msg
     end

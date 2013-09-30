@@ -31,7 +31,9 @@ module Riml
     # `clear` should only be called by the main thread that is using the
     # `Riml.compile_files` method.
     def clear
-      @thread_mutex_map[Thread.current].synchronize { @cache.clear }
+      (@thread_mutex_map[Thread.current] ||= Mutex.new).synchronize do
+        @cache.clear
+      end
       self
     end
   end
