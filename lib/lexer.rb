@@ -11,13 +11,17 @@ module Riml
     ANCHORED_INTERPOLATION_REGEX = /\A#{INTERPOLATION_REGEX}/m
     INTERPOLATION_SPLIT_REGEX = /(\#\{.*?\})/m
 
-    attr_reader :tokens, :prev_token, :lineno, :chunk, :current_indent, :invalid_keyword
+    attr_reader :tokens, :prev_token, :lineno, :chunk,
+      :current_indent, :invalid_keyword, :filename,
+      :parser_info
     # for REPL
     attr_accessor :ignore_indentation_check
 
-    def initialize(code)
+    def initialize(code, filename = nil, parser_info = false)
       @code = code
       @code.chomp!
+      @filename = filename
+      @parser_info = parser_info
       set_start_state!
     end
 
@@ -27,6 +31,11 @@ module Riml
       # array of doubles and triples: [tokenname, tokenval, lineno_to_add(optional)]
       # ex: [[:NEWLINE, "\n"]] OR [[:NEWLINE, "\n", 1]]
       @token_buf = []
+      # array of doubles OR triples, depending if `@parser_info` is set to true
+      # doubles: [tokenname, tokenval]
+      # ex: [[:NEWLINE, "\n"], ...]
+      # triples: [tokenname, tokenval, parser_info]
+      # ex: [[:NEWLINE, "\n", { :lineno => 1, :filename => 'main.riml' }], ...]
       @tokens = []
       @prev_token = nil
       @lineno = 1
@@ -53,8 +62,14 @@ module Riml
         if token.size == 3
           @lineno += token.pop
         end
-        tokens << token
-        return @prev_token = token
+        if @parser_info
+          tokens << decorate_token(token)
+          @prev_token = token.first(2)
+          return token
+        else
+          tokens << token
+          return @prev_token = token
+        end
       end
       check_indentation unless ignore_indentation_check
       nil
@@ -233,19 +248,28 @@ module Riml
       end
     end
 
-    def prev_token_is_keyword?
-      if prev_token && prev_token[1]
-        if KEYWORDS.include?(prev_token[1])
-          return @invalid_keyword = prev_token[1]
-        end
-        prev_prev_token = tokens[-2]
-        if prev_prev_token && KEYWORDS.include?(prev_prev_token[1])
-          return @invalid_keyword = prev_prev_token[1]
+    # Checks if any of previous n tokens are keywords.
+    # If any found, sets `@invalid_keyword` to the found token value.
+    def prev_token_is_keyword?(n = 2)
+      return false if n <= 0
+      (1..n).each do |i|
+        t = tokens[-i]
+        if t && t[1] && KEYWORDS.include?(t[1])
+          return @invalid_keyword = t[1]
         end
       end
+      false
     end
 
     private
+
+    def decorate_token(token)
+      token << {
+        :lineno => @lineno,
+        :filename => @filename
+      }
+      token
+    end
 
     def track_indent_level(chunk, identifier)
       case identifier.to_sym

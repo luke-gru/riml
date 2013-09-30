@@ -8,13 +8,25 @@ module Riml
       visitor.visit(self)
     end
 
-    attr_accessor :parent_node, :scope, :force_newline
+    attr_accessor :parent_node, :scope, :force_newline, :parser_info
     alias parent parent_node
     alias parent= parent_node=
 
     attr_writer :compiled_output
     def compiled_output
       @compiled_output ||= ''
+    end
+
+    def location_info
+      n = self
+      while n != nil && !n.parser_info
+        n = n.parent
+      end
+      if n.nil?
+        return '<unknown>'
+      end
+      filename = parser_info[:filename] || Constants::COMPILED_STRING_LOCATION
+      "#{filename}:#{parser_info[:lineno]}"
     end
 
     # catches "descendant_of_#{some_class}?" methods

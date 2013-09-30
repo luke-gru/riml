@@ -1,4 +1,5 @@
 require File.expand_path('../nodes', __FILE__)
+require File.expand_path('../errors', __FILE__)
 
 # visits AST nodes and translates them into VimL
 module Riml
@@ -42,6 +43,8 @@ module Riml
 
       def visitor_for_node(node, params={})
         Compiler.const_get("#{node.class.name.split('::').last}Visitor").new(params)
+      rescue NameError
+        raise CompileError, "unexpected construct at #{node.location_info}"
       end
 
       def root_node(node)
