@@ -48,6 +48,10 @@ module Riml
       '@'
     ].flatten
 
+    # For when showing source location (file:lineno) during error
+    # and no file was given
+    COMPILED_STRING_LOCATION = '<String>'
+
     # :help function-list
     BUILTIN_FUNCTIONS =
     %w(
