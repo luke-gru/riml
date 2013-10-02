@@ -214,5 +214,20 @@ Riml
       assert_equal expected, lex(riml), "expected newline '#{name}' to act as a :NEWLINE"
     end
   end
+
+  # https://github.com/luke-gru/riml/issues/18
+  test "one line conditional false positive" do
+    riml = <<Riml
+def change_destination(lines, range, opts)
+  if opts.append " this line gave false positives for `one_line_conditional`
+    append(line('$'), lines)
+  else
+    setline(1, lines)
+  end
+end
+Riml
+    assert lex(riml)
+  end
+
 end
 end

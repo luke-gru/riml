@@ -95,7 +95,7 @@ module Riml
         @i += splat_var.size
         @token_buf << [:SCOPE_MODIFIER, 'a:'] << [:IDENTIFIER, splat_var[2..-1]]
       # the 'n' scope modifier is added by riml
-      elsif scope_modifier = chunk[/\A([bwtglsavn]:)(\w|{)/, 1]
+      elsif scope_modifier = chunk[/\A([bwtglsavn]:)(\w|\{)/, 1]
         @i += 2
         @token_buf << [:SCOPE_MODIFIER, scope_modifier]
       elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
@@ -313,7 +313,7 @@ module Riml
     end
 
     def one_line_conditional?(chunk)
-      chunk[/^(if|unless).+?(else)?.+?end$/]
+      chunk[/^(if|unless)\b.+?(else)?.+?\bend$/]
     end
 
     def handle_interpolation(*parts)
