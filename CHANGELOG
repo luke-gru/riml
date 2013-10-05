@@ -1,3 +1,36 @@
+0.3.3
+=====
+* When using `riml_include "file.vim"`, this is now cached both during one
+compilation run and between calls of `Riml.compile` and `Riml.compile_files`.
+In order to clear the cache, you must manually call
+`Riml.include_cache.clear`.
+See [https://github.com/luke-gru/riml/issues/16]
+
+* If file A includes file B and file C, and file B also includes file C,
+file C is only included __once__ in the final output code. This is in order
+to specify dependencies in your included files, but not have the actual files
+be included twice.
+See [https://github.com/luke-gru/riml/issues/14]
+
+* Use maximum of 4 threads when giving multiple files to compile at once.
+Compiling multiple files at once can be done by
+`riml -c file1.riml,file2.riml,file3.riml,file4.riml` or with
+`Riml.compile_files('file1.riml', 'file2.riml', 'file3.rmil', 'file4.riml')`
+Each file (and its dependencies) is compiled in its own thread, but now the
+files are compiled in batches of 4 at once.
+
+* Fix error in lexer where old code from a feature that was removed from Riml
+wasn't taken out, resulting in the error `missing 1 END statement` where
+that was not actually the case.
+See [https://github.com/luke-gru/riml/issues/18]
+
+* Allow omitting the '.riml' when including and sourcing files. Now,
+`riml_include 'mylib'` will look first for 'mylib' in Riml.include_path,
+then if that file is not found it will look for 'mylib.riml'.
+See [https://github.com/luke-gru/riml/issues/6]
+
+*
+
 0.3.2
 =====
 
