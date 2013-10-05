@@ -356,7 +356,6 @@ module Riml
       remove_parens_wrapper if builtin_command?
     end
 
-    # TODO: find way to remove this hack
     def remove_parens_wrapper
       return unless WrapInParensNode === arguments.first
       arguments[0] = arguments[0].expression

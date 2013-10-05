@@ -152,8 +152,10 @@ module Riml
   end
 
   def self.include_cache
-    @include_cache ||= IncludeCache.new
+    @include_cache
   end
+  # initialize non-lazily because ||= isn't thread-safe
+  @include_cache = IncludeCache.new
 
   class << self
     attr_accessor :warnings
@@ -171,8 +173,10 @@ module Riml
   end
 
   def self.warning_buffer
-    @warning_buffer ||= WarningBuffer.new
+    @warning_buffer
   end
+  # initialize non-lazily because ||= isn't thread-safe
+  @warning_buffer = WarningBuffer.new
 
   def self.set_path(name, path)
     return instance_variable_set("@#{name}", nil) if path.nil?

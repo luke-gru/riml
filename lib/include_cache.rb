@@ -1,14 +1,12 @@
-require 'set'
-
 module Riml
   class IncludeCache
 
     def initialize
       @cache = {}
-      @locked = Set.new
+      @m = Mutex.new
+      # Only Ruby 2.0+ has Mutex#owned? method
+      @owns_lock = nil
     end
-
-    WRITE_LOCK = Mutex.new
 
     # `fetch` can be called recursively in the `yield`ed block, so must
     # make sure not to try to lock a Mutex if it's already locked, as this
@@ -18,27 +16,30 @@ module Riml
         return source
       end
 
-      if WRITE_LOCK.locked? && @locked.include?(Thread.current)
+      if @m.locked? && @owns_lock == Thread.current
         @cache[included_filename] = yield
       else
         ret = nil
-        @cache[included_filename] = WRITE_LOCK.synchronize do
-          @locked << Thread.current
-          ret = yield
+        @cache[included_filename] = @m.synchronize do
+          begin
+            @owns_lock = Thread.current
+            ret = yield
+          ensure
+            @owns_lock = nil
+          end
         end
-        @locked.delete(Thread.current)
         ret
       end
     end
 
     def [](included_filename)
-      @cache[included_filename]
+      @m.synchronize { @cache[included_filename] }
     end
 
     # `clear` should only be called by the main thread that is using the
     # `Riml.compile_files` method.
     def clear
-      WRITE_LOCK.synchronize { @cache.clear }
+      @m.synchronize { @cache.clear }
       self
     end
   end
