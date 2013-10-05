@@ -42,7 +42,6 @@ module Riml
       @current_indent = 0
       @indent_pending = false
       @dedent_pending = false
-      @one_line_conditional_end_pending = false
       @in_function_declaration = false
       @invalid_keyword = nil
     end
@@ -200,9 +199,7 @@ module Riml
         @token_buf << [:NEWLINE, "\n"] unless prev_token && prev_token[0] == :NEWLINE
 
         # pending indents/dedents
-        if @one_line_conditional_end_pending
-          @one_line_conditional_end_pending = false
-        elsif @indent_pending
+        if @indent_pending
           @indent_pending = false
         elsif @dedent_pending
           @dedent_pending = false
@@ -277,17 +274,13 @@ module Riml
         @current_indent += 2
         @indent_pending = true
       when :if, :unless
-        if one_line_conditional?(chunk)
-          @one_line_conditional_end_pending = true
-        elsif !statement_modifier?
+        if !statement_modifier?
           @current_indent += 2
           @indent_pending = true
         end
       when *END_KEYWORDS.map(&:to_sym)
-        unless @one_line_conditional_end_pending
-          @current_indent -= 2
-          @dedent_pending = true
-        end
+        @current_indent -= 2
+        @dedent_pending = true
       end
     end
 
@@ -310,10 +303,6 @@ module Riml
     def check_indentation
       raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0
       raise SyntaxError, "#{(@current_indent / 2).abs} too many END identifiers" if @current_indent < 0
-    end
-
-    def one_line_conditional?(chunk)
-      chunk[/^(if|unless)\b.+?(else)?.+?\bend$/]
     end
 
     def handle_interpolation(*parts)
