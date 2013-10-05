@@ -91,6 +91,7 @@ module Riml
     def self.append_filenames_to_list_if_valid(list, *filenames)
       filenames.each do |fname|
         expanded = File.expand_path(fname)
+        readable = true
         if File.exists?(expanded) && (readable = File.readable?(expanded))
           list << fname
         elsif not readable
@@ -117,7 +118,7 @@ module Riml
         elsif options.compile_files.any?
           Riml.compile_files(*options.compile_files, compile_files_options)
         elsif options.check_syntax_files.any?
-          files = options.check_syntax_files
+          files = options.check_syntax_files.uniq
           Riml.check_syntax_files(*files)
           size = files.size
           # "ok (1 file)" OR "ok (2 files)"

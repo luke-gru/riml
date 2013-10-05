@@ -253,6 +253,24 @@ RIML
     end
   end
 
+  test "riml_include allows leaving '.riml' off the included file name" do
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
+      riml = 'riml_include "file1"'
+      assert compile(riml)
+    end
+  end
+
+  test "riml_source allows leaving '.riml' off the sourced file name" do
+    with_riml_source_path(File.expand_path("../", __FILE__)) do
+      with_file_cleanup('file1.vim') do
+        riml = 'riml_source "file1"'
+        expected = "source file1.vim\n"
+        assert_equal expected, compile(riml)
+        assert File.exists?(File.join(Riml.source_path.first, 'file1.vim'))
+      end
+    end
+  end
+
   test "included files get cached in Riml.include_cache during compilation run" do
     with_riml_include_path(File.expand_path("../", __FILE__)) do
       riml = <<Riml

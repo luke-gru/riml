@@ -396,6 +396,8 @@ module Riml
   #   call Method()
   #   call s:Method(argument1, argument2)
   class ExplicitCallNode < CallNode; end
+
+  # riml_include and riml_source
   class RimlCommandNode  < CallNode
 
     def initialize(*)
@@ -405,21 +407,29 @@ module Riml
       end
     end
 
-    # yields full file path for each existing file found in Riml.source_path
+    # yields basename and full file path for each existing file found in
+    # Riml.source_path or Riml.include_path
     def each_existing_file!
       files = {}
-      arguments.map(&:value).each do |file|
+      file_variants.each do |(fname_given, fname_ext_added)|
+        fname = nil
         if base_path = paths.detect do |path|
-             full = File.join(path, file)
-             File.exists?(full)
+             full_given = File.join(path, fname_given)
+             full_ext_added = File.join(path, fname_ext_added)
+             fname = if File.exists?(full_given)
+               fname_given
+             elsif File.exists?(full_ext_added)
+               add_ext_to_filename(fname_given)
+               fname_ext_added
+             end
            end
-          files[file] = File.join(base_path, file)
+          files[fname] = File.join(base_path, fname)
         else
-          raise Riml::FileNotFound, "#{file.inspect} could not be found in " \
+          raise Riml::FileNotFound, "#{fname_given.inspect} could not be found in " \
             "Riml.#{name.sub('riml_', '')}_path (#{paths.join(':').inspect})"
         end
       end
-      return files.values unless block_given?
+      return files unless block_given?
       # all files exist
       files.each do |basename, full_path|
         begin
@@ -436,6 +446,22 @@ module Riml
       else
         Riml.source_path
       end
+    end
+
+    private
+
+    def file_variants
+      arguments.map { |arg| file_variants_for_arg(arg) }
+    end
+
+    def file_variants_for_arg(arg)
+      [arg.value, "#{arg.value}.riml"]
+    end
+
+    def add_ext_to_filename(fname)
+      arg = arguments.detect { |a| a.value == fname }
+      return unless arg
+      arg.value = file_variants_for_arg(arg).last
     end
   end
 
