@@ -1,4 +1,5 @@
 require File.expand_path("../constants", __FILE__)
+require File.expand_path("../imported_class", __FILE__)
 require File.expand_path("../class_map", __FILE__)
 require File.expand_path("../walker", __FILE__)
 
@@ -26,6 +27,8 @@ module Riml
         return rewritten_ast
       end
       establish_parents(ast)
+      class_imports  = RegisterImportedClasses.new(ast, classes)
+      class_imports.rewrite_on_match
       class_registry = RegisterDefinedClasses.new(ast, classes)
       class_registry.rewrite_on_match
       rewrite_included_and_sourced_files!(filename)
@@ -76,7 +79,7 @@ module Riml
     def rewrite_included_and_sourced_files!(filename)
       old_ast = ast
       ast.children.each do |node|
-        next unless RimlCommandNode === node
+        next unless RimlFileCommandNode === node
         action = node.name == 'riml_include' ? 'include' : 'source'
 
         node.each_existing_file! do |file, fullpath|
@@ -137,6 +140,22 @@ module Riml
       fn.parent = ast.nodes
       establish_parents(fn)
       ast.nodes.unshift fn
+    end
+
+    class RegisterImportedClasses < AST_Rewriter
+      def match?(node)
+        RimlClassCommandNode === node
+      end
+
+      def replace(node)
+        node.class_names_without_modifiers.each do |class_name|
+          # TODO: check for wrong scope modifier
+          imported_class = ImportedClass.new(class_name)
+          imported_class.instance_variable_set("@registered_state", true)
+          classes["g:#{class_name}"] = imported_class
+        end
+        node.remove
+      end
     end
 
     class RegisterDefinedClasses < AST_Rewriter
@@ -379,9 +398,15 @@ module Riml
         end
 
         def replace(class_node)
-          if class_node.superclass?
+          if class_node.superclass? && !imported_superclass?
             def_node = DefNode.new(
               '!', nil, nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
+            )
+          # has imported superclass and no initialize method. Must create
+          # initialize method taking *splat parameter and call super it
+          elsif class_node.superclass?
+            def_node = DefNode.new(
+              '!', nil, nil, "initialize", ['...'], nil, Nodes.new([SuperNode.new([], false)])
             )
           else
             def_node = DefNode.new(
@@ -394,6 +419,10 @@ module Riml
 
         def superclass_params
           classes.superclass(ast.full_name).constructor.parameters
+        end
+
+        def imported_superclass?
+          classes.superclass(ast.full_name).imported?
         end
 
         def recursive?

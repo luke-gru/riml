@@ -306,4 +306,16 @@ Riml
       end
     end
   end
+
+  test "riml_import allows using imported class" do
+    riml = <<Riml
+riml_import g:Animal
+animal = new g:Animal('cat', 'black', 'boomer')
+Riml
+    expected = <<Viml
+let s:animal = g:AnimalConstructor('cat', 'black', 'boomer')
+Viml
+
+    assert_equal expected, compile(riml)
+  end
 end

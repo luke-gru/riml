@@ -5,7 +5,8 @@ token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH FINALLY
 token FOR IN
 token DEF DEF_BANG SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
-token CLASS NEW DEFM DEFM_BANG SUPER RIML_COMMAND
+token CLASS NEW DEFM DEFM_BANG SUPER
+token RIML_FILE_COMMAND RIML_CLASS_COMMAND
 token RETURN
 token NEWLINE
 token NUMBER
@@ -64,7 +65,8 @@ rule
   | ClassDefinition                       { result = val[0] }
   | LoopKeyword                           { result = val[0] }
   | EndScript                             { result = val[0] }
-  | RimlCommand                           { result = val[0] }
+  | RimlFileCommand                       { result = val[0] }
+  | RimlClassCommand                      { result = val[0] }
   | MultiAssign                           { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
@@ -233,9 +235,19 @@ rule
   | Scope DefCallIdentifier                       { result = make_node(val) { |v| Riml::CallNode.new(v[0], v[1], []) } }
   ;
 
-  RimlCommand:
-    RIML_COMMAND '(' ArgList ')'                  { result = make_node(val) { |v| Riml::RimlCommandNode.new(nil, v[0], v[2]) } }
-  | RIML_COMMAND ArgList                          { result = make_node(val) { |v| Riml::RimlCommandNode.new(nil, v[0], v[1]) } }
+  RimlFileCommand:
+    RIML_FILE_COMMAND '(' ArgList ')'             { result = make_node(val) { |v| Riml::RimlFileCommandNode.new(nil, v[0], v[2]) } }
+  | RIML_FILE_COMMAND ArgList                     { result = make_node(val) { |v| Riml::RimlFileCommandNode.new(nil, v[0], v[1]) } }
+  ;
+
+  RimlClassCommand:
+    RIML_CLASS_COMMAND '(' ClassArgList ')'       { result = make_node(val) { |v| Riml::RimlClassCommandNode.new(nil, v[0], v[2]) } }
+  | RIML_CLASS_COMMAND ClassArgList               { result = make_node(val) { |v| Riml::RimlClassCommandNode.new(nil, v[0], v[1]) } }
+  ;
+
+  ClassArgList:
+    Scope IDENTIFIER                              { result = ["#{val[0]}#{val[1]}"] }
+  | ClassArgList ',' Scope IDENTIFIER             { result = val[0].concat ["#{val[2]}#{val[3]}"] }
   ;
 
   ExplicitCall:

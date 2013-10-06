@@ -141,8 +141,10 @@ module Riml
 
         elsif BUILTIN_COMMANDS.include?(identifier) && !chunk[/\A#{Regexp.escape(identifier)}\(/]
           @token_buf << [:BUILTIN_COMMAND, identifier]
-        elsif RIML_COMMANDS.include? identifier
-          @token_buf << [:RIML_COMMAND, identifier]
+        elsif RIML_FILE_COMMANDS.include? identifier
+          @token_buf << [:RIML_FILE_COMMAND, identifier]
+        elsif RIML_CLASS_COMMANDS.include? identifier
+          @token_buf << [:RIML_CLASS_COMMAND, identifier]
         elsif VIML_COMMANDS.include?(identifier) && (prev_token.nil? || prev_token[0] == :NEWLINE)
           @i += identifier.size
           new_chunk = get_new_chunk

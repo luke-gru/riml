@@ -396,8 +396,12 @@ module Riml
   #   call s:Method(argument1, argument2)
   class ExplicitCallNode < CallNode; end
 
-  # riml_include and riml_source
-  class RimlCommandNode  < CallNode
+  # riml_include, riml_source, riml_import
+  class RimlCommandNode < CallNode
+  end
+
+  # riml_include, riml_source
+  class RimlFileCommandNode < RimlCommandNode
 
     def initialize(*)
       super
@@ -439,6 +443,8 @@ module Riml
       end
     end
 
+    private
+
     def paths
       if name == 'riml_include'
         Riml.include_path
@@ -446,8 +452,6 @@ module Riml
         Riml.source_path
       end
     end
-
-    private
 
     def file_variants
       arguments.map { |arg| file_variants_for_arg(arg) }
@@ -461,6 +465,14 @@ module Riml
       arg = arguments.detect { |a| a.value == fname }
       return unless arg
       arg.value = file_variants_for_arg(arg).last
+    end
+  end
+
+  class RimlClassCommandNode < RimlCommandNode
+    def class_names_without_modifiers
+      arguments.map do |full_name|
+        full_name.sub(/\A\w:/, '')
+      end
     end
   end
 
@@ -989,6 +1001,12 @@ module Riml
 
     def superclass?
       not superclass_name.nil?
+    end
+
+    # This if for the AST_Rewriter, checking if a class is an `ImportedClass`
+    # or not without resorting to type checking.
+    def imported?
+      false
     end
 
     def full_name
