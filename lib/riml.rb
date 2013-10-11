@@ -154,7 +154,8 @@ module Riml
   def self.include_cache
     @include_cache
   end
-  # initialize non-lazily because ||= isn't thread-safe
+  # initialize non-lazily because ||= isn't thread-safe and
+  # this is used across threads
   @include_cache = IncludeCache.new
 
   class << self
@@ -175,7 +176,8 @@ module Riml
   def self.warning_buffer
     @warning_buffer
   end
-  # initialize non-lazily because ||= isn't thread-safe
+  # initialize non-lazily because ||= isn't thread-safe and
+  # this is used across threads
   @warning_buffer = WarningBuffer.new
 
   def self.set_path(name, path)

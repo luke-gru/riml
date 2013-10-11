@@ -151,8 +151,12 @@ module Riml
         node.class_names_without_modifiers.each do |class_name|
           # TODO: check for wrong scope modifier
           imported_class = ImportedClass.new(class_name)
-          imported_class.instance_variable_set("@registered_state", true)
-          classes["g:#{class_name}"] = imported_class
+          if imported_class.globbed?
+            classes.globbed_imports << imported_class
+          else
+            imported_class.instance_variable_set("@registered_state", true)
+            classes["g:#{class_name}"] = imported_class
+          end
         end
         node.remove
       end
@@ -235,6 +239,7 @@ module Riml
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
         SuperToSuperclassFunction.new(node, classes).rewrite_on_match
         PrivateFunctionCallToPassObjExplicitly.new(node, classes).rewrite_on_match
+        SplatsToExecuteInCallingContext.new(node, classes).rewrite_on_match
 
         constructor.expressions.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
@@ -249,6 +254,79 @@ module Riml
 
         def replace(node)
           ast.private_function_names << node.name
+        end
+      end
+
+      # Rewrite constructs like:
+      #
+      #   let animalObj = s:AnimalConstructor(*a:000)
+      #
+      # to:
+      #
+      #   execute 'let animalObj = s:AnimalConstructor('
+      #     \ . join(map(copy(a:000), '"''" . v:val . "''"'), ', ')
+      #     \ . ')'
+      #
+      # Basically, mimic Ruby's approach to expanding lists to their
+      # constituent argument parts with '*' in calling context
+      class SplatsToExecuteInCallingContext < AST_Rewriter
+        def match?(node)
+          SplatNode === node && CallNode === node.parent
+        end
+
+        def replace(node)
+          call_node_args =
+            CallNode.new(
+              nil,
+              'join',
+              [CallNode.new(
+                nil,
+                'map',
+                [
+                  CallNode.new(
+                    nil,
+                    'copy',
+                    [splat_value(node)]
+                  ),
+                  StringNode.new('"\'\'" . v:val . "\'\'"', :s)
+                ],
+              ),
+                StringNode.new(', ', :s)
+              ]
+            )
+          call_node = node.parent
+          if AssignNode === call_node.parent
+            assign_node = call_node.parent
+            assign_node.lhs.scope_modifier = 'l:'
+            call_node.arguments.clear
+            compiler = Compiler.new
+            output = compiler.compile(Nodes.new([assign_node.dup]))
+            assign_string_node = StringNode.new(output.chomp[0..-2], :s)
+            execute_arg = BinaryOperatorNode.new(
+              '.',
+              [
+                assign_string_node,
+                BinaryOperatorNode.new(
+                  '.',
+                  [
+                    call_node_args,
+                    StringNode.new(')', :s)
+                  ]
+                )
+              ]
+            )
+            execute_node = CallNode.new(nil, 'execute', [execute_arg])
+            establish_parents(execute_node)
+            node.remove
+            assign_node.replace_with(execute_node)
+          else
+          end
+        end
+
+        private
+
+        def splat_value(node)
+          LiteralNode.new(node.value[1..-1])
         end
       end
 
@@ -403,10 +481,10 @@ module Riml
               '!', nil, nil, "initialize", superclass_params, nil, Nodes.new([SuperNode.new([], false)])
             )
           # has imported superclass and no initialize method. Must create
-          # initialize method taking *splat parameter and call super it
+          # initialize method taking *splat parameter and call super with it
           elsif class_node.superclass?
             def_node = DefNode.new(
-              '!', nil, nil, "initialize", ['...'], nil, Nodes.new([SuperNode.new([], false)])
+              '!', nil, nil, "initialize", ['...'], nil, Nodes.new([SuperNode.new([SplatNode.new('*a:000')], false)])
             )
           else
             def_node = DefNode.new(
@@ -498,7 +576,6 @@ module Riml
         end
 
         def replace(node)
-          # TODO: check if class even has superclass before all this
           func_scope = 's:'
           superclass = classes[ast.superclass_full_name]
           while superclass && !superclass.has_function?(func_scope, superclass_func_name(superclass)) && superclass.superclass?

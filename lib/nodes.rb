@@ -284,6 +284,12 @@ module Riml
     end
   end
 
+  # right now just used in splats in a calling context with super,
+  # such as `super(*args)` or `super(*a:000)`
+  class SplatNode < LiteralNode
+    include Walkable
+  end
+
   class SIDNode < LiteralNode
     def initialize(ident = 'SID')
       Riml.warn("expected #{ident} to be SID") unless ident == 'SID'
@@ -469,10 +475,30 @@ module Riml
   end
 
   class RimlClassCommandNode < RimlCommandNode
+    def initialize(*args)
+      super
+      string_node_arguments.each do |arg|
+        class_name = arg.value
+        # if '*' isn't a char in `class_name`, raise error
+        if class_name.index('*').nil?
+          msg = "* must be a character in class name '#{class_name}' if riml_import " \
+          "is given a string. Try\n`riml_import` #{class_name}` instead."
+          error = UserArgumentError.new(msg)
+          error.node = self
+          raise error
+        end
+      end
+    end
+
     def class_names_without_modifiers
       arguments.map do |full_name|
+        full_name = full_name.value if full_name.respond_to?(:value)
         full_name.sub(/\A\w:/, '')
       end
+    end
+
+    def string_node_arguments
+      arguments.select { |arg| StringNode === arg }
     end
   end
 

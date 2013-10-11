@@ -3,13 +3,35 @@ require File.expand_path('../nodes', __FILE__)
 module Riml
   class ImportedClass
 
+    ANCHOR_BEGIN = '\A'
+    ANCHOR_END = '\Z'
+
     attr_reader :name
     def initialize(name)
-      @name = name
+      @name = rm_modifier(name)
     end
 
     def imported?
       true
+    end
+
+    # an ImportedClass is #globbed? if its name contains 1 or more '*'
+    # characters.
+    def globbed?
+      not @name.index('*').nil?
+    end
+
+    # returns MatchData or `nil`
+    def match?(glob_key)
+      match_regexp.match(rm_modifier(glob_key))
+    end
+
+    # returns Regexp
+    def match_regexp
+      @match_regexp ||= begin
+        normalized_glob = @name.gsub(/\*/, '.*?')
+        Regexp.new(ANCHOR_BEGIN + normalized_glob + ANCHOR_END)
+      end
     end
 
     def scope_modifier
@@ -28,7 +50,13 @@ module Riml
     end
 
     def constructor_obj_name
-      name[0].downcase + name[1..-1] + "Obj"
+      @name[0].downcase + @name[1..-1] + "Obj"
+    end
+
+    private
+
+    def rm_modifier(class_name)
+      class_name.sub(/g:/, '')
     end
 
   end

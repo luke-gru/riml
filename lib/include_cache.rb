@@ -9,8 +9,8 @@ module Riml
     end
 
     # `fetch` can be called recursively in the `yield`ed block, so must
-    # make sure not to try to lock a Mutex if it's already locked, as this
-    # would result in a deadlock.
+    # make sure not to try to lock the Mutex if it's already locked by the
+    # current thread, as this would result in an error.
     def fetch(included_filename)
       if source = @cache[included_filename]
         return source
@@ -32,6 +32,7 @@ module Riml
       end
     end
 
+    # Not used internally but might be useful as an API
     def [](included_filename)
       @m.synchronize { @cache[included_filename] }
     end

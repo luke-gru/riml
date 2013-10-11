@@ -247,6 +247,7 @@ rule
 
   ClassArgList:
     Scope IDENTIFIER                              { result = ["#{val[0]}#{val[1]}"] }
+  | String                                        { result = val }
   | ClassArgList ',' Scope IDENTIFIER             { result = val[0].concat ["#{val[2]}#{val[3]}"] }
   ;
 
@@ -269,6 +270,18 @@ rule
   ArgList:
     /* nothing */                         { result = [] }
   | ArgListWithoutNothing                 { result = val[0] }
+  ;
+
+  ArgListWithSplat:
+    /* nothing */                         { result = [] }
+  | ArgListWithoutNothingWithSplat        { result = val[0] }
+  ;
+
+  ArgListWithoutNothingWithSplat:
+    Expression                                        { result = val }
+  | SPLAT                                             { result = [ make_node(val) { |v| Riml::SplatNode.new(v[0]) } ] }
+  | ArgListWithoutNothingWithSplat "," Expression     { result = val[0] << val[2] }
+  | ArgListWithoutNothingWithSplat "," SPLAT          { result = val[0] << make_node(val) { |v| Riml::SplatNode.new(v[2]) } }
   ;
 
   ArgListWithoutNothing:
@@ -529,8 +542,8 @@ rule
   ;
 
   Super:
-    SUPER '(' ArgList ')'     { result = make_node(val) { |v| Riml::SuperNode.new(v[2], true) } }
-  | SUPER                     { result = make_node(val) { |_| Riml::SuperNode.new([], false) } }
+    SUPER '(' ArgListWithSplat ')'     { result = make_node(val) { |v| Riml::SuperNode.new(v[2], true) } }
+  | SUPER                              { result = make_node(val) { |_| Riml::SuperNode.new([], false) } }
   ;
 
   ExLiteral:
