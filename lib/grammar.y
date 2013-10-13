@@ -4,8 +4,9 @@ token IF ELSE ELSEIF THEN UNLESS END
 token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH FINALLY
 token FOR IN
-token DEF DEF_BANG SPLAT CALL BUILTIN_COMMAND # such as echo "hi"
-token CLASS NEW DEFM DEFM_BANG SUPER RIML_COMMAND
+token DEF DEF_BANG SPLAT_PARAM SPLAT_ARG CALL BUILTIN_COMMAND # such as echo "hi"
+token CLASS NEW DEFM DEFM_BANG SUPER
+token RIML_FILE_COMMAND RIML_CLASS_COMMAND
 token RETURN
 token NEWLINE
 token NUMBER
@@ -64,7 +65,8 @@ rule
   | ClassDefinition                       { result = val[0] }
   | LoopKeyword                           { result = val[0] }
   | EndScript                             { result = val[0] }
-  | RimlCommand                           { result = val[0] }
+  | RimlFileCommand                       { result = val[0] }
+  | RimlClassCommand                      { result = val[0] }
   | MultiAssign                           { result = val[0] }
   | If                                    { result = val[0] }
   | Unless                                { result = val[0] }
@@ -233,9 +235,20 @@ rule
   | Scope DefCallIdentifier                       { result = make_node(val) { |v| Riml::CallNode.new(v[0], v[1], []) } }
   ;
 
-  RimlCommand:
-    RIML_COMMAND '(' ArgList ')'                  { result = make_node(val) { |v| Riml::RimlCommandNode.new(nil, v[0], v[2]) } }
-  | RIML_COMMAND ArgList                          { result = make_node(val) { |v| Riml::RimlCommandNode.new(nil, v[0], v[1]) } }
+  RimlFileCommand:
+    RIML_FILE_COMMAND '(' ArgList ')'             { result = make_node(val) { |v| Riml::RimlFileCommandNode.new(nil, v[0], v[2]) } }
+  | RIML_FILE_COMMAND ArgList                     { result = make_node(val) { |v| Riml::RimlFileCommandNode.new(nil, v[0], v[1]) } }
+  ;
+
+  RimlClassCommand:
+    RIML_CLASS_COMMAND '(' ClassArgList ')'       { result = make_node(val) { |v| Riml::RimlClassCommandNode.new(nil, v[0], v[2]) } }
+  | RIML_CLASS_COMMAND ClassArgList               { result = make_node(val) { |v| Riml::RimlClassCommandNode.new(nil, v[0], v[1]) } }
+  ;
+
+  ClassArgList:
+    Scope IDENTIFIER                              { result = ["#{val[0]}#{val[1]}"] }
+  | String                                        { result = val }
+  | ClassArgList ',' Scope IDENTIFIER             { result = val[0].concat ["#{val[2]}#{val[3]}"] }
   ;
 
   ExplicitCall:
@@ -257,6 +270,18 @@ rule
   ArgList:
     /* nothing */                         { result = [] }
   | ArgListWithoutNothing                 { result = val[0] }
+  ;
+
+  ArgListWithSplat:
+    /* nothing */                         { result = [] }
+  | ArgListWithoutNothingWithSplat        { result = val[0] }
+  ;
+
+  ArgListWithoutNothingWithSplat:
+    Expression                                        { result = val }
+  | SPLAT_ARG                                         { result = [ make_node(val) { |v| Riml::SplatNode.new(v[0]) } ] }
+  | ArgListWithoutNothingWithSplat "," Expression     { result = val[0] << val[2] }
+  | ArgListWithoutNothingWithSplat "," SPLAT_ARG      { result = val[0] << make_node(val) { |v| Riml::SplatNode.new(v[2]) } }
   ;
 
   ArgListWithoutNothing:
@@ -381,10 +406,10 @@ rule
   # Method definition
   # [SID, scope_modifier, name, parameters, keyword, expressions]
   Def:
-    FunctionType SIDAndScope DefCallIdentifier DefKeywords Block END                               { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], [], v[3], v[4]) } }
-  | FunctionType SIDAndScope DefCallIdentifier '(' ParamList ')' DefKeywords Block END             { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], v[4], v[6], v[7]) } }
-  | FunctionType SIDAndScope DefCallIdentifier '(' SPLAT     ')' DefKeywords Block END             { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], [v[4]], v[6], v[7]) } }
-  | FunctionType SIDAndScope DefCallIdentifier '(' ParamList ',' SPLAT ')' DefKeywords Block END   { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], v[4] << v[6], v[8], v[9]) } }
+    FunctionType SIDAndScope DefCallIdentifier DefKeywords Block END                                     { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], [], v[3], v[4]) } }
+  | FunctionType SIDAndScope DefCallIdentifier '(' ParamList ')' DefKeywords Block END                   { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], v[4], v[6], v[7]) } }
+  | FunctionType SIDAndScope DefCallIdentifier '(' SPLAT_PARAM     ')' DefKeywords Block END             { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], [v[4]], v[6], v[7]) } }
+  | FunctionType SIDAndScope DefCallIdentifier '(' ParamList ',' SPLAT_PARAM ')' DefKeywords Block END   { result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], v[4] << v[6], v[8], v[9]) } }
   ;
 
   FunctionType:
@@ -517,8 +542,8 @@ rule
   ;
 
   Super:
-    SUPER '(' ArgList ')'     { result = make_node(val) { |v| Riml::SuperNode.new(v[2], true) } }
-  | SUPER                     { result = make_node(val) { |_| Riml::SuperNode.new([], false) } }
+    SUPER '(' ArgListWithSplat ')'     { result = make_node(val) { |v| Riml::SuperNode.new(v[2], true) } }
+  | SUPER                              { result = make_node(val) { |_| Riml::SuperNode.new([], false) } }
   ;
 
   ExLiteral:
@@ -535,6 +560,12 @@ end
   # This code will be put as-is in the parser class
 
   attr_accessor :ast_rewriter
+  attr_writer :options
+
+  # The Parser and AST_Rewriter share this same hash of options
+  def options
+    @options ||= {}
+  end
 
   # parses tokens or code into output nodes
   def parse(object, ast_rewriter = Riml::AST_Rewriter.new, filename = nil, included = false)
@@ -560,6 +591,7 @@ end
     @ast_rewriter ||= ast_rewriter
     return ast unless @ast_rewriter
     @ast_rewriter.ast = ast
+    @ast_rewriter.options ||= options
     @ast_rewriter.rewrite(filename, included)
   end
 

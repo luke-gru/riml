@@ -20,6 +20,7 @@ module Riml
       options.check_syntax_files = []
       options.repl = false
       options.vi_readline = false
+      options.allow_undefined_global_classes = DEFAULT_PARSE_OPTIONS[:allow_undefined_global_classes]
       options.readable = DEFAULT_COMPILE_OPTIONS[:readable]
       options.output_dir = DEFAULT_COMPILE_FILES_OPTIONS[:output_dir]
 
@@ -36,7 +37,7 @@ module Riml
           options.stdio = true
         end
 
-        opts.on("-k", "--check FILES", Array, "Checks syntax of file(s). Because Riml is (mostly) compatible with VimL, this can be used to check VimL's syntax as well.") do |filenames|
+        opts.on("-k", "--check FILES", Array, "Checks syntax of file(s). Because Riml is (mostly) compatible with VimL, this can also be used to check VimL syntax.") do |filenames|
           append_filenames_to_list_if_valid(options.check_syntax_files, *filenames)
         end
 
@@ -54,6 +55,10 @@ module Riml
           rescue UserArgumentError => e
             abort e.message
           end
+        end
+
+        opts.on("-a", "--allow-undef-global-classes", "Continue compilation when encountering undefined global class(es).") do
+          options.allow_undefined_global_classes = true
         end
 
         opts.on("-o", "--output-dir DIR", "Output all .vim files in specified directory.") do |dir|
@@ -108,7 +113,8 @@ module Riml
       def start
         options = Options.parse(ARGV)
         compile_options = {
-          :readable => options.readable
+          :readable => options.readable,
+          :allow_undefined_global_classes => options.allow_undefined_global_classes
         }
         compile_files_options = compile_options.merge(
           :output_dir => options.output_dir

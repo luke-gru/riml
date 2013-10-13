@@ -284,6 +284,12 @@ module Riml
     end
   end
 
+  # right now just used in splats in a calling context with super,
+  # such as `super(*args)` or `super(*a:000)`
+  class SplatNode < LiteralNode
+    include Walkable
+  end
+
   class SIDNode < LiteralNode
     def initialize(ident = 'SID')
       Riml.warn("expected #{ident} to be SID") unless ident == 'SID'
@@ -396,8 +402,12 @@ module Riml
   #   call s:Method(argument1, argument2)
   class ExplicitCallNode < CallNode; end
 
-  # riml_include and riml_source
-  class RimlCommandNode  < CallNode
+  # riml_include, riml_source, riml_import
+  class RimlCommandNode < CallNode
+  end
+
+  # riml_include, riml_source
+  class RimlFileCommandNode < RimlCommandNode
 
     def initialize(*)
       super
@@ -439,6 +449,8 @@ module Riml
       end
     end
 
+    private
+
     def paths
       if name == 'riml_include'
         Riml.include_path
@@ -446,8 +458,6 @@ module Riml
         Riml.source_path
       end
     end
-
-    private
 
     def file_variants
       arguments.map { |arg| file_variants_for_arg(arg) }
@@ -461,6 +471,34 @@ module Riml
       arg = arguments.detect { |a| a.value == fname }
       return unless arg
       arg.value = file_variants_for_arg(arg).last
+    end
+  end
+
+  class RimlClassCommandNode < RimlCommandNode
+    def initialize(*args)
+      super
+      string_node_arguments.each do |arg|
+        class_name = arg.value
+        # if '*' isn't a char in `class_name`, raise error
+        if class_name.index('*').nil?
+          msg = "* must be a character in class name '#{class_name}' if riml_import " \
+          "is given a string. Try\n`riml_import` #{class_name}` instead."
+          error = UserArgumentError.new(msg)
+          error.node = self
+          raise error
+        end
+      end
+    end
+
+    def class_names_without_modifiers
+      arguments.map do |full_name|
+        full_name = full_name.value if full_name.respond_to?(:value)
+        full_name.sub(/\A\w:/, '')
+      end
+    end
+
+    def string_node_arguments
+      arguments.select { |arg| StringNode === arg }
     end
   end
 
@@ -989,6 +1027,12 @@ module Riml
 
     def superclass?
       not superclass_name.nil?
+    end
+
+    # This if for the AST_Rewriter, checking if a class is an `ImportedClass`
+    # or not without resorting to type checking.
+    def imported?
+      false
     end
 
     def full_name

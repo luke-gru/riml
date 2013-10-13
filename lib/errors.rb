@@ -1,5 +1,7 @@
 module Riml
-  RimlError = Class.new(StandardError)
+  RimlError = Class.new(StandardError) do
+    attr_accessor :node
+  end
 
   SyntaxError  = Class.new(RimlError)
   ParseError   = Class.new(RimlError)

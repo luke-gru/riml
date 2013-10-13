@@ -1,17 +1,20 @@
 module Riml
   class WarningBuffer
-    BUFFER_WRITE_LOCK = Mutex.new
+    # This class acts as a singleton, so no instance-level mutexes are
+    # required. This facilitates locking both class and instance
+    # methods with a single mutex.
+    WRITE_LOCK = Mutex.new
     WARNING_FMT = "Warning: %s"
 
     class << self
       def stream=(stream)
-        BUFFER_WRITE_LOCK.synchronize { @stream = stream }
+        WRITE_LOCK.synchronize { @stream = stream }
       end
       attr_reader :stream
     end
 
     # default stream
-    self.stream = $stderr
+    @stream = $stderr
 
     attr_reader :buffer
 
@@ -20,12 +23,12 @@ module Riml
     end
 
     def <<(warning)
-      BUFFER_WRITE_LOCK.synchronize { buffer << warning }
+      WRITE_LOCK.synchronize { buffer << warning }
     end
     alias push <<
 
     def flush
-      BUFFER_WRITE_LOCK.synchronize do
+      WRITE_LOCK.synchronize do
         stream = self.class.stream
         buffer.each { |w| stream.puts WARNING_FMT % w }
         buffer.clear
@@ -34,7 +37,7 @@ module Riml
     end
 
     def clear
-      BUFFER_WRITE_LOCK.synchronize { buffer.clear }
+      WRITE_LOCK.synchronize { buffer.clear }
     end
 
   end
