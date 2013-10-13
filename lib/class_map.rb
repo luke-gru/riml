@@ -1,4 +1,5 @@
 require File.expand_path("../errors", __FILE__)
+require File.expand_path("../imported_class", __FILE__)
 
 module Riml
   # Map of {"ClassName" => ClassDefinitionNode}
@@ -52,7 +53,12 @@ module Riml
       @map.keys
     end
 
+    def has_global_import?
+      @globbed_imports.any? { |import| import.global_import? }
+    end
+
     protected
+
     def ensure_key_is_string!(key)
       unless key.is_a?(String)
         raise ArgumentError, "key must be name of class (String)"

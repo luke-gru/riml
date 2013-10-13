@@ -7,12 +7,15 @@ module Riml
   class AST_Rewriter
     include Riml::Constants
 
-    attr_accessor :ast
-    attr_reader   :classes, :rewritten_included_and_sourced_files
+    attr_accessor :ast, :options
+    attr_reader :classes, :rewritten_included_and_sourced_files
 
     def initialize(ast = nil, classes = nil)
       @ast = ast
       @classes = classes || ClassMap.new
+      # AST_Rewriter shares options with Parser. Parser set AST_Rewriter's
+      # options before call to `rewrite`.
+      @options = nil
       # Keeps track of filenames with their rewritten ASTs, to prevent rewriting
       # the same AST more than once.
       @rewritten_included_and_sourced_files = {}
@@ -26,8 +29,11 @@ module Riml
       if filename && (rewritten_ast = rewritten_included_and_sourced_files[filename])
         return rewritten_ast
       end
+      if @options && @options[:allow_undefined_global_classes] && !@classes.has_global_import?
+        @classes.globbed_imports.unshift(ImportedClass.new('*'))
+      end
       establish_parents(ast)
-      class_imports  = RegisterImportedClasses.new(ast, classes)
+      class_imports = RegisterImportedClasses.new(ast, classes)
       class_imports.rewrite_on_match
       class_registry = RegisterDefinedClasses.new(ast, classes)
       class_registry.rewrite_on_match
@@ -89,13 +95,14 @@ module Riml
             # IncludeFileLoop/SourceFileLoop
             raise Riml.const_get("#{action.capitalize}FileLoop"), msg
           elsif filename == file
-            raise UserArgumentError, "#{file.inspect} can't include itself"
+            raise UserArgumentError, "#{file.inspect} can't #{action} itself"
           end
           @included_and_sourced_file_refs[filename] << file
           riml_src = File.read(fullpath)
           # recursively parse included files with this ast_rewriter in order
           # to pick up any classes that are defined there
-          rewritten_ast = Parser.new.parse(riml_src, self, file, action == 'include')
+          rewritten_ast = Parser.new.tap { |p| p.options = @options }.
+            parse(riml_src, self, file, action == 'include')
           rewritten_included_and_sourced_files[file] = rewritten_ast
         end
       end
@@ -295,38 +302,53 @@ module Riml
               ]
             )
           call_node = node.parent
-          if AssignNode === call_node.parent
+          node_to_execute = if AssignNode === call_node.parent
             assign_node = call_node.parent
+            # This is necessary because this node is getting put into a new
+            # compiler where it's not wrapped in a function context, therefore
+            # variables will be script-local there unless their scope_modifier
+            # is set
             assign_node.lhs.scope_modifier = 'l:'
-            call_node.arguments.clear
-            compiler = Compiler.new
-            output = compiler.compile(Nodes.new([assign_node.dup]))
-            assign_string_node = StringNode.new(output.chomp[0..-2], :s)
-            execute_arg = BinaryOperatorNode.new(
-              '.',
-              [
-                assign_string_node,
-                BinaryOperatorNode.new(
-                  '.',
-                  [
-                    call_node_args,
-                    StringNode.new(')', :s)
-                  ]
-                )
-              ]
-            )
-            execute_node = CallNode.new(nil, 'execute', [execute_arg])
-            establish_parents(execute_node)
-            node.remove
-            assign_node.replace_with(execute_node)
+            assign_node
           else
+            call_node
           end
+          call_node.arguments.clear
+          compiler = Compiler.new
+          # have to dup node_to_execute here because, if not, its parent will
+          # get reset during this next compilation step
+          output = compiler.compile(Nodes.new([node_to_execute.dup]))
+          execute_string_node = StringNode.new(output.chomp[0..-2], :s)
+          execute_string_node.value.insert(0, 'call ') if CallNode === node_to_execute
+          execute_arg = BinaryOperatorNode.new(
+            '.',
+            [
+              execute_string_node,
+              BinaryOperatorNode.new(
+                '.',
+                [
+                  call_node_args,
+                  StringNode.new(')', :s)
+                ]
+              )
+            ]
+          )
+          execute_node = CallNode.new(nil, 'execute', [execute_arg])
+          establish_parents(execute_node)
+          node.remove
+          node_to_execute.replace_with(execute_node)
         end
 
         private
 
         def splat_value(node)
-          LiteralNode.new(node.value[1..-1])
+          n = node
+          until DefNode === n || n.nil?
+            n = n.parent
+          end
+          var_without_star = LiteralNode.new(node.value[1..-1])
+          return var_without_star if n.nil? || !n.splat || (n.splat != node.value)
+          LiteralNode.new('a:000')
         end
       end
 
@@ -581,11 +603,17 @@ module Riml
           while superclass && !superclass.has_function?(func_scope, superclass_func_name(superclass)) && superclass.superclass?
             superclass = classes[superclass.superclass_full_name]
           end
-          if superclass.nil? || !superclass.has_function?(func_scope, superclass_func_name(superclass))
+          superclass_function = superclass.find_function(func_scope, superclass_func_name(superclass))
+          if superclass.nil? || !superclass_function
             raise Riml::UserFunctionNotFoundError,
               "super was called in class #{ast.full_name} in " \
               "function #{@function_node.original_name}, but there are no " \
               "functions with this name in that class's superclass hierarchy."
+          end
+          node_args = if node.arguments.empty? && superclass_function.splat
+            [SplatNode.new('*a:000')]
+          else
+            node.arguments
           end
           call_node = CallNode.new(
             nil,
@@ -593,7 +621,7 @@ module Riml
               GetVariableNode.new(nil, 'self'),
               [superclass_func_name(superclass)]
             ),
-            node.arguments
+            node_args
           )
 
           node.replace_with(call_node)

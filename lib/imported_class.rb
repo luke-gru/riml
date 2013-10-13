@@ -22,8 +22,8 @@ module Riml
     end
 
     # returns MatchData or `nil`
-    def match?(glob_key)
-      match_regexp.match(rm_modifier(glob_key))
+    def match?(class_name)
+      match_regexp.match(rm_modifier(class_name))
     end
 
     # returns Regexp
@@ -32,6 +32,10 @@ module Riml
         normalized_glob = @name.gsub(/\*/, '.*?')
         Regexp.new(ANCHOR_BEGIN + normalized_glob + ANCHOR_END)
       end
+    end
+
+    def global_import?
+      @name == '*'
     end
 
     def scope_modifier
