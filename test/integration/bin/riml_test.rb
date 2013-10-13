@@ -182,4 +182,16 @@ class BinRimlTest < Riml::TestCase
     end
   end
 
+  test "--allow-undef-global-classes option keeps on compiling when hitting undefined global class" do
+    Dir.chdir(File.expand_path("../", __FILE__)) do
+      begin
+        system "#{EXEC} --allow-undef-global-classes -c undefined_global_class.riml"
+        assert_equal 0, $?.exitstatus
+        assert File.exists?('./undefined_global_class.vim')
+      ensure
+        File.delete('./undefined_global_class.vim') if File.exists?('./undefined_global_class.vim')
+      end
+    end
+  end
+
 end

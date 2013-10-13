@@ -596,7 +596,7 @@ module Riml
       end
     end
 
-    class RimlCommandNodeVisitor < CallNodeVisitor
+    class RimlFileCommandNodeVisitor < CallNodeVisitor
       def compile(node)
         if node.name == 'riml_source'
           node.name = 'source'

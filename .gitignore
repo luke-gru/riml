@@ -1,2 +1,5 @@
 lib/parser.output
 Gemfile.lock
+.ruby-gemset
+.ruby-version
+README.md.html

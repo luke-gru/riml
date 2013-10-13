@@ -20,8 +20,10 @@ module Riml
       %w(& @ $)
     BUILTIN_COMMANDS  =
       %w(echo echon echomsg echoerr echohl execute exec sleep throw)
-    RIML_COMMANDS =
+    RIML_FILE_COMMANDS =
       %w(riml_source riml_include)
+    RIML_CLASS_COMMANDS = %w(riml_import)
+    RIML_COMMANDS = RIML_FILE_COMMANDS + RIML_CLASS_COMMANDS
     VIML_COMMANDS =
       %w(source source! command! command silent silent!)
 

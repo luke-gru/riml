@@ -306,4 +306,79 @@ Riml
       end
     end
   end
+
+  # `riml_import tests`
+
+  test "riml_import allows using imported class" do
+    riml = <<Riml
+riml_import g:Animal
+animal = new g:Animal('cat', 'black', 'boomer')
+Riml
+    expected = <<Viml
+let s:animal = g:AnimalConstructor('cat', 'black', 'boomer')
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "riml_import allows importing multiple classes" do
+    riml = <<Riml
+riml_import g:ASCIIArtFormatter, g:StringGenerator
+str_g = new g:StringGenerator()
+formatter = new g:ASCIIArtFormatter()
+echo formatter.format(str_g.generate())
+Riml
+    assert compile(riml)
+  end
+
+  test "riml_import can be given classes with or without g: scope modifier" do
+    riml = <<Riml
+riml_import ASCIIArtFormatter, StringGenerator
+str_g = new g:StringGenerator()
+formatter = new g:ASCIIArtFormatter()
+echo formatter.format(str_g.generate())
+Riml
+    assert compile(riml)
+  end
+
+  test "riml_import can be given strings with globbed characters to match classes" do
+    riml = <<Riml
+riml_import 'MyNamespace*', ActualClass
+objA = new g:MyNamespaceClassA('globs!')
+objB = new g:MyNamespaceClassB('omg!')
+actualObj = new g:ActualClass()
+Riml
+    assert compile(riml)
+  end
+
+  test "riml_import raises error when string arguments don't contain '*' character" do
+    riml = <<Riml
+riml_import 'HasToHaveGlobChar'
+Riml
+    assert_raises Riml::UserArgumentError do
+      compile(riml)
+    end
+  end
+
+  test "extending imported classes smartly does some vim `execute` magic " \
+       "to expand parameters to pass to super when no initialize method is " \
+       "given to extending class" do
+
+    riml = <<Riml
+riml_import Animal
+class Dog < g:Animal
+end
+Riml
+
+    expected = <<Viml
+function! s:DogConstructor(...)
+  let dogObj = {}
+  execute 'let l:animalObj = g:AnimalConstructor(' . join(map(copy(a:000), '"''" . v:val . "''"'), ', ') . ')'
+  call extend(dogObj, animalObj)
+  return dogObj
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
 end

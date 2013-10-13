@@ -15,6 +15,11 @@ module Riml
   DEFAULT_COMPILE_FILES_OPTIONS = DEFAULT_COMPILE_OPTIONS.merge(
     :output_dir => nil
   )
+  DEFAULT_PARSE_OPTIONS = { :allow_undefined_global_classes => false }
+
+  EXTRACT_PARSE_OPTIONS   = lambda { |k,_| DEFAULT_PARSE_OPTIONS.keys.include?(k.to_sym) }
+  EXTRACT_COMPILE_OPTIONS = lambda { |k,_| DEFAULT_COMPILE_OPTIONS.keys.include?(k.to_sym) }
+  EXTRACT_COMPILE_FILES_OPTIONS = lambda { |k,_| DEFAULT_COMPILE_FILES_OPTIONS.keys.include?(k.to_sym) }
 
   # lex code (String) into tokens (Array)
   def self.lex(code)
@@ -31,9 +36,12 @@ module Riml
   end
 
   def self.compile(input, options = {})
+    parse_options = options.select(&EXTRACT_PARSE_OPTIONS)
+    compile_options = options.select(&EXTRACT_COMPILE_OPTIONS)
     parser = Parser.new
+    parser.options = DEFAULT_PARSE_OPTIONS.merge(parse_options)
     compiler = Compiler.new
-    compiler.options = DEFAULT_COMPILE_OPTIONS.merge(options)
+    compiler.options = DEFAULT_COMPILE_OPTIONS.merge(compile_options)
     do_compile(input, parser, compiler)
   end
 
@@ -79,10 +87,17 @@ module Riml
     filenames = filenames.dup
     parser, compiler = Parser.new, Compiler.new
 
+    # extract parser and compiler options from last argument, or use default
+    # options
     if filenames.last.is_a?(Hash)
-      compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.merge(filenames.pop)
+      options = filenames.pop
+      compile_options = options.select(&EXTRACT_COMPILE_FILES_OPTIONS)
+      parse_options = options.select(&EXTRACT_PARSE_OPTIONS)
+      compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.merge(compile_options)
+      parser.options = DEFAULT_PARSE_OPTIONS.merge(parse_options)
     else
       compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.dup
+      parser.options = DEFAULT_PARSE_OPTIONS.dup
     end
 
     filenames.uniq!
@@ -93,7 +108,8 @@ module Riml
         to_compile = filenames.shift(4)
         to_compile.each do |fname|
           _parser, _compiler = Parser.new, Compiler.new
-          _compiler.options = compiler.options
+          _compiler.options = compiler.options.dup
+          _parser.options = parser.options.dup
           threads << Thread.new do
             f = File.open(fname)
             # `do_compile` will close file handle
@@ -154,7 +170,8 @@ module Riml
   def self.include_cache
     @include_cache
   end
-  # initialize non-lazily because ||= isn't thread-safe
+  # initialize non-lazily because ||= isn't thread-safe and
+  # this is used across threads
   @include_cache = IncludeCache.new
 
   class << self
@@ -175,7 +192,8 @@ module Riml
   def self.warning_buffer
     @warning_buffer
   end
-  # initialize non-lazily because ||= isn't thread-safe
+  # initialize non-lazily because ||= isn't thread-safe and
+  # this is used across threads
   @warning_buffer = WarningBuffer.new
 
   def self.set_path(name, path)
@@ -236,6 +254,8 @@ module Riml
     basename_without_riml_ext = File.basename(fname).sub(/\.riml\Z/i, '')
     FileUtils.mkdir_p(output_dir) unless File.directory?(output_dir)
     full_path = File.join(output_dir, "#{basename_without_riml_ext}.vim")
+    # if a function definition is at the end of a file and the :readable compiler
+    # option is `true`, there will be 2 NL at EOF
     if output[-2..-1] == "\n\n"
       output.chomp!
     end

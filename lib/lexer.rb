@@ -141,8 +141,10 @@ module Riml
 
         elsif BUILTIN_COMMANDS.include?(identifier) && !chunk[/\A#{Regexp.escape(identifier)}\(/]
           @token_buf << [:BUILTIN_COMMAND, identifier]
-        elsif RIML_COMMANDS.include? identifier
-          @token_buf << [:RIML_COMMAND, identifier]
+        elsif RIML_FILE_COMMANDS.include? identifier
+          @token_buf << [:RIML_FILE_COMMAND, identifier]
+        elsif RIML_CLASS_COMMANDS.include? identifier
+          @token_buf << [:RIML_CLASS_COMMAND, identifier]
         elsif VIML_COMMANDS.include?(identifier) && (prev_token.nil? || prev_token[0] == :NEWLINE)
           @i += identifier.size
           new_chunk = get_new_chunk
@@ -159,12 +161,12 @@ module Riml
 
         parse_dict_vals!
 
-        if @in_function_declaration
-          @in_function_declaration = false unless DEFINE_KEYWORDS.include?(identifier) && @token_buf.size == 1
-        end
-      elsif splat = chunk[/\A(\.{3}|\*[a-zA-Z_]\w*)/]
-        @token_buf << [:SPLAT, splat]
-        @i += splat.size
+      elsif @in_function_declaration && (splat_param = chunk[/\A(\.{3}|\*[a-zA-Z_]\w*)/])
+        @token_buf << [:SPLAT_PARAM, splat_param]
+        @i += splat_param.size
+      elsif !@in_function_declaration && (splat_arg = chunk[/\A\*([bwtglsavn]:)?([a-zA-Z_]\w*|\d+)/])
+        @token_buf << [:SPLAT_ARG, splat_arg]
+        @i += splat_arg.size
       # integer (octal)
       elsif octal = chunk[/\A0[0-7]+/]
         @token_buf << [:NUMBER, octal]
@@ -203,6 +205,9 @@ module Riml
           @indent_pending = false
         elsif @dedent_pending
           @dedent_pending = false
+        end
+        if @in_function_declaration
+          @in_function_declaration = false
         end
 
         @i += newlines.size
