@@ -94,7 +94,7 @@ endfunction
 function! s:DogConstructor(...)
   let dogObj = {}
   let splat_args = a:000
-  let __riml_splat_list = a:000
+  let __riml_splat_list = splat_args
   let __riml_splat_size = len(__riml_splat_list)
   let __riml_splat_str_vars = []
   let __riml_splat_idx = 1
@@ -236,6 +236,66 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "explicit splat with non-variable splat expression" do
+    riml = <<Riml
+class Animal
+  def initialize(name, color)
+    self.name = name
+    self.color = color
+  end
+
+  defm bark(*args)
+    echo args
+  end
+end
+
+class Dog < Animal
+  defm bark(count, *args)
+    super(*(args + [count]))
+  end
+end
+
+d = new Dog('otis', 'golden')
+d.bark(2, 'arg1')
+Riml
+    expected = <<Viml
+function! s:AnimalConstructor(name, color)
+  let animalObj = {}
+  let animalObj.name = a:name
+  let animalObj.color = a:color
+  let animalObj.bark = function('<SNR>' . s:SID() . '_s:Animal_bark')
+  return animalObj
+endfunction
+function! <SID>s:Animal_bark(...) dict
+  echo a:000
+endfunction
+function! s:DogConstructor(name, color)
+  let dogObj = {}
+  let animalObj = s:AnimalConstructor(a:name, a:color)
+  call extend(dogObj, animalObj)
+  let dogObj.bark = function('<SNR>' . s:SID() . '_s:Dog_bark')
+  let dogObj.Animal_bark = function('<SNR>' . s:SID() . '_s:Animal_bark')
+  return dogObj
+endfunction
+function! <SID>s:Dog_bark(...) dict
+  let __riml_splat_list = a:000
+  let __riml_splat_size = len(__riml_splat_list)
+  let __riml_splat_str_vars = []
+  let __riml_splat_idx = 1
+  while __riml_splat_idx <=# __riml_splat_size
+    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
+    let __riml_splat_idx += 1
+  endwhile
+  execute 'call self.Animal_bark(' . join(__riml_splat_str_vars, ', ') . ')'
+endfunction
+let s:d = s:DogConstructor('otis', 'golden')
+call s:d.bark('woof!')
+Viml
+    skip 'splats only work with variables for now'
+    assert_equal expected, compile(riml)
+  end
+
   test "splat in calling context in private function with call to `super`" do
     riml = <<Riml
 class A
@@ -265,7 +325,7 @@ function! s:BConstructor()
   return bObj
 endfunction
 function! s:B_private_func(bObj, ...)
-  let __riml_splat_list = [bObj] + a:000
+  let __riml_splat_list = [a:bObj] + a:000
   let __riml_splat_size = len(__riml_splat_list)
   let __riml_splat_str_vars = []
   let __riml_splat_idx = 1
@@ -274,10 +334,9 @@ function! s:B_private_func(bObj, ...)
     call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
     let __riml_splat_idx += 1
   endwhile
-  execute 'call A_private_func(' . join(__riml_splat_str_vars, ', ') . ')'
+  execute 'call s:A_private_func(' . join(__riml_splat_str_vars, ', ') . ')'
 endfunction
 Viml
-    skip
     assert_equal expected, compile(riml)
   end
 

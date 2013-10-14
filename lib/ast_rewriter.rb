@@ -316,7 +316,9 @@ module Riml
       class SplatsToExecuteInCallingContext < AST_Rewriter
 
         def match?(node)
-          SplatNode === node && CallNode === node.parent
+          if SplatNode === node && CallNode === node.parent
+            @splat_node = node
+          end
         end
 
         def replace(node)
@@ -377,7 +379,7 @@ module Riml
           splat_list_init = AssignNode.new(
             '=',
             GetVariableNode.new('n:', '__riml_splat_list'),
-            GetVariableNode.new('a:', '000')
+            splat_value
           )
           splat_size = AssignNode.new(
             '=',
@@ -423,14 +425,15 @@ module Riml
           nodes
         end
 
-        def splat_value(node)
-          n = node
+        def splat_value
+          n = @splat_node
           until DefNode === n || n.nil?
             n = n.parent
           end
-          var_without_star = LiteralNode.new(node.value[1..-1])
-          return var_without_star if n.nil? || !n.splat || (n.splat != node.value)
-          LiteralNode.new('a:000')
+          var_str_without_star = @splat_node.value[1..-1]
+          var_without_star = GetVariableNode.new(nil, var_str_without_star)
+          return var_without_star if n.nil? || !n.splat || (n.splat != @splat_node.value)
+          GetVariableNode.new('a:', '000')
         end
       end
 
@@ -508,7 +511,7 @@ module Riml
 
       class ExtendObjectWithMethods < AST_Rewriter
         def match?(node)
-          DefMethodNode === node
+          node.instance_of?(DefMethodNode)
         end
 
         def replace(node)
@@ -670,7 +673,7 @@ module Riml
         end
       end
 
-      # rewrites calls to 'super' in non-initialize function
+      # rewrites calls to 'super' in public/private non-initialize functions
       class SuperToSuperclassFunction < AST_Rewriter
         def match?(node)
           return false unless SuperNode === node
@@ -693,9 +696,12 @@ module Riml
               "function #{@function_node.original_name}, but there are no " \
               "functions with this name in that class's superclass hierarchy."
           end
-          node_args = if node.arguments.empty? && superclass_function.splat
+          node_args = if node.arguments.empty? && !node.with_parens && superclass_function.splat
             [SplatNode.new('*a:000')]
           else
+            if @function_node.private_function?
+              node.arguments.unshift GetVariableNode.new(nil, @function_node.parameters.first)
+            end
             node.arguments
           end
           # check if SplatNode is in node_args. If it is, check if the splat
@@ -703,23 +709,30 @@ module Riml
           # private function, we have to add the explicit object (first
           # parameter to the function we're in) to the splat arg
           if @function_node.private_function?
-            if (splat_node = node_args.detect { |arg| SplatNode === arg })
-              if @function_node.splat == splat_node.value
-                splat_node.value = "*a:000 + [a:#{@function_node.parameters.first}]"
-              end
+            if (splat_node = node_args.detect { |arg| SplatNode === arg }) &&
+              @function_node.splat == splat_node.value
+                splat_node.value = "*[a:#{@function_node.parameters.first}] + a:000"
             end
+            # call s.ClassA_private_func(args)
+            call_node_name = superclass_func_name(superclass)
+          else
+            # call self.ClassA_public_func(args)
+            call_node_name = DictGetDotNode.new(
+              GetVariableNode.new(nil, 'self'),
+              [superclass_func_name(superclass)]
+            )
           end
           call_node = CallNode.new(
             nil,
-            DictGetDotNode.new(
-              GetVariableNode.new(nil, 'self'),
-              [superclass_func_name(superclass)]
-            ),
+            call_node_name,
             node_args
           )
 
           node.replace_with(call_node)
-          add_superclass_func_ref_to_constructor(superclass)
+          # private functions are NOT extended in constructor function
+          unless @function_node.private_function?
+            add_superclass_func_ref_to_constructor(superclass)
+          end
           reestablish_parents(@function_node)
         end
 
