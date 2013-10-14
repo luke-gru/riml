@@ -373,7 +373,16 @@ Riml
     expected = <<Viml
 function! s:DogConstructor(...)
   let dogObj = {}
-  execute 'let l:animalObj = g:AnimalConstructor(' . join(map(copy(a:000), '"''" . v:val . "''"'), ', ') . ')'
+  let __riml_splat_list = a:000
+  let __riml_splat_size = len(__riml_splat_list)
+  let __riml_splat_str_vars = []
+  let __riml_splat_idx = 1
+  while __riml_splat_idx <=# __riml_splat_size
+    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
+    let __riml_splat_idx += 1
+  endwhile
+  execute 'let l:animalObj = g:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
   call extend(dogObj, animalObj)
   return dogObj
 endfunction

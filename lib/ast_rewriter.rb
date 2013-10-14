@@ -299,34 +299,34 @@ module Riml
       #
       # to:
       #
-      #   execute 'let animalObj = s:AnimalConstructor('
-      #     \ . join(map(copy(a:000), '"''" . v:val . "''"'), ', ')
-      #     \ . ')'
+      #   let __riml_splat_list = a:000
+      #   let __riml_splat_size = len(__riml_splat_list)
+      #   let __riml_splat_str_vars = []
+      #   let __riml_splat_idx = 1
+      #   while __riml_splat_idx <=# __riml_splat_size
+      #     let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+      #     call add(__riml_splat_str_vars, __riml_splat_var_{__riml_splat_idx})
+      #     let __riml_splat_idx += 1
+      #   endwhile
+      #   execute 'let l:animalObj = s:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
       #
       # Basically, mimic Ruby's approach to expanding lists to their
-      # constituent argument parts with '*' in calling context
+      # constituent argument parts with '*' in calling context.
+      # NOTE: currently only works with `super`.
       class SplatsToExecuteInCallingContext < AST_Rewriter
+
         def match?(node)
           SplatNode === node && CallNode === node.parent
         end
 
         def replace(node)
+          construct_splat_str_vars_node = build_construct_splat_str_vars_node
           call_node_args =
             CallNode.new(
               nil,
               'join',
-              [CallNode.new(
-                nil,
-                'map',
-                [
-                  CallNode.new(
-                    nil,
-                    'copy',
-                    [splat_value(node)]
-                  ),
-                  StringNode.new('"\'\'" . v:val . "\'\'"', :s)
-                ],
-              ),
+              [
+                GetVariableNode.new('n:', '__riml_splat_str_vars'),
                 StringNode.new(', ', :s)
               ]
             )
@@ -365,10 +365,63 @@ module Riml
           execute_node = CallNode.new(nil, 'execute', [execute_arg])
           establish_parents(execute_node)
           node.remove
-          node_to_execute.replace_with(execute_node)
+          node_to_execute.replace_with(construct_splat_str_vars_node)
+          execute_node.parent = construct_splat_str_vars_node.parent
+          construct_splat_str_vars_node.parent.insert_after(construct_splat_str_vars_node, execute_node)
         end
 
         private
+
+        def build_construct_splat_str_vars_node
+          nodes = Nodes.new([])
+          splat_list_init = AssignNode.new(
+            '=',
+            GetVariableNode.new('n:', '__riml_splat_list'),
+            GetVariableNode.new('a:', '000')
+          )
+          splat_size = AssignNode.new(
+            '=',
+            GetVariableNode.new('n:', '__riml_splat_size'),
+            CallNode.new(nil, 'len', [GetVariableNode.new('n:', '__riml_splat_list')])
+          )
+          splat_string_vars_init = AssignNode.new(
+            '=',
+            GetVariableNode.new('n:', '__riml_splat_str_vars'),
+            ListNode.new([])
+          )
+          splat_list_idx_init = AssignNode.new(
+            '=',
+            GetVariableNode.new('n:', '__riml_splat_idx'),
+            NumberNode.new('1')
+          )
+          while_loop = WhileNode.new(
+            # condition
+            BinaryOperatorNode.new('<=', [GetVariableNode.new('n:', '__riml_splat_idx'), GetVariableNode.new('n:', '__riml_splat_size')]),
+            # body
+            Nodes.new([
+              AssignNode.new(
+                '=',
+                GetCurlyBraceNameNode.new('n:', CurlyBraceVariable.new([CurlyBracePart.new('__riml_splat_var_'), CurlyBraceVariable.new([CurlyBracePart.new(GetVariableNode.new('n:', '__riml_splat_idx'))])])),
+                CallNode.new(nil, 'get', [
+                  GetVariableNode.new('n:', '__riml_splat_list'),
+                  BinaryOperatorNode.new('-', [
+                    GetVariableNode.new('n:', '__riml_splat_idx'),
+                    NumberNode.new('1')
+                  ])
+                ])
+              ),
+              ExplicitCallNode.new(nil, 'add', [
+                GetVariableNode.new('n:', '__riml_splat_str_vars'),
+                BinaryOperatorNode.new('.', [StringNode.new('__riml_splat_var_', :s), GetVariableNode.new('n:', '__riml_splat_idx')])
+              ]),
+              AssignNode.new('+=', GetVariableNode.new('n:', '__riml_splat_idx'), NumberNode.new('1'))
+            ])
+          )
+          nodes << splat_list_init << splat_size << splat_string_vars_init <<
+            splat_list_idx_init << while_loop
+          establish_parents(nodes)
+          nodes
+        end
 
         def splat_value(node)
           n = node
@@ -415,6 +468,7 @@ module Riml
           class_node = ast
           class_name = class_node.name
           node.scope_modifier = 's:'
+          node.original_name = node.name
           node.name = "#{class_name}_#{node.name}"
           node.sid = nil
           node.keywords -= ['dict']
@@ -643,6 +697,17 @@ module Riml
             [SplatNode.new('*a:000')]
           else
             node.arguments
+          end
+          # check if SplatNode is in node_args. If it is, check if the splat
+          # value is equal to splat param. If it is, and we're inside a
+          # private function, we have to add the explicit object (first
+          # parameter to the function we're in) to the splat arg
+          if @function_node.private_function?
+            if (splat_node = node_args.detect { |arg| SplatNode === arg })
+              if @function_node.splat == splat_node.value
+                splat_node.value = "*a:000 + [a:#{@function_node.parameters.first}]"
+              end
+            end
           end
           call_node = CallNode.new(
             nil,

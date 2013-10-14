@@ -671,6 +671,7 @@ module Riml
     include Walkable
 
     attr_accessor :private_function
+    alias private_function? private_function
 
     def initialize(*args)
       super
