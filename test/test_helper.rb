@@ -97,6 +97,8 @@ EOS
 
     def compile(input, options = {:readable => false})
       Riml.compile(input, options)
+    ensure
+      Riml.rewritten_ast_cache.clear
     end
 
     %w(source_path include_path).each do |path|

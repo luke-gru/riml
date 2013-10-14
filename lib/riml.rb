@@ -8,6 +8,8 @@ require 'parser'
 require 'compiler'
 require 'warning_buffer'
 require 'include_cache'
+require 'path_cache'
+require 'rewritten_ast_cache'
 
 module Riml
 
@@ -150,17 +152,15 @@ module Riml
   def self.source_path
     get_path(:source_path)
   end
-
-  def self.source_path=(path)
-    set_path(:source_path, path)
+  def self.source_path=(path, force_cache_bust = false)
+    set_path(:source_path, path, force_cache_bust)
   end
 
   def self.include_path
     get_path(:include_path)
   end
-
-  def self.include_path=(path)
-    set_path(:include_path, path)
+  def self.include_path=(path, force_cache_bust = false)
+    set_path(:include_path, path, force_cache_bust)
   end
 
   def self.warn(warning)
@@ -173,6 +173,16 @@ module Riml
   # initialize non-lazily because ||= isn't thread-safe and
   # this is used across threads
   @include_cache = IncludeCache.new
+
+  def self.path_cache
+    @path_cache
+  end
+  @path_cache = PathCache.new
+
+  def self.rewritten_ast_cache
+    @rewritten_ast_cache
+  end
+  @rewritten_ast_cache = RewrittenASTCache.new
 
   class << self
     attr_accessor :warnings
@@ -196,7 +206,7 @@ module Riml
   # this is used across threads
   @warning_buffer = WarningBuffer.new
 
-  def self.set_path(name, path)
+  def self.set_path(name, path, force_cache_bust = false)
     return instance_variable_set("@#{name}", nil) if path.nil?
     path = path.split(':') if path.is_a?(String)
     path.each do |dir|
@@ -206,9 +216,16 @@ module Riml
       end
     end
     instance_variable_set("@#{name}", path)
+    cache_files_in_path(path, force_cache_bust)
+    path
   end
   self.source_path  = nil  # eliminate ivar warnings
   self.include_path = nil  # eliminate ivar warnings
+
+  def self.cache_files_in_path(path, force_cache_bust = false)
+    @path_cache[path] = nil if force_cache_bust
+    @path_cache[path] || @path_cache.cache(path)
+  end
 
   def self.get_path(name)
     ivar = instance_variable_get("@#{name}")

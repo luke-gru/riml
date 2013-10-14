@@ -420,22 +420,16 @@ module Riml
     # Riml.source_path or Riml.include_path
     def each_existing_file!
       files = {}
+      path_dirs
       file_variants.each do |(fname_given, fname_ext_added)|
-        fname = nil
-        if base_path = paths.detect do |path|
-             full_given = File.join(path, fname_given)
-             full_ext_added = File.join(path, fname_ext_added)
-             fname = if File.exists?(full_given)
-               fname_given
-             elsif File.exists?(full_ext_added)
-               add_ext_to_filename(fname_given)
-               fname_ext_added
-             end
-           end
-          files[fname] = File.join(base_path, fname)
+        if (full_path = Riml.path_cache.file(path_dirs, fname_given))
+          files[fname_given] = full_path
+        elsif (full_path = Riml.path_cache.file(path_dirs, fname_ext_added))
+          add_ext_to_filename(fname_given)
+          files[fname_ext_added] = full_path
         else
           raise Riml::FileNotFound, "#{fname_given.inspect} could not be found in " \
-            "Riml.#{name.sub('riml_', '')}_path (#{paths.join(':').inspect})"
+            "Riml.#{name.sub('riml_', '')}_path (#{path_dirs.join(':').inspect})"
         end
       end
       return files unless block_given?
@@ -451,7 +445,7 @@ module Riml
 
     private
 
-    def paths
+    def path_dirs
       if name == 'riml_include'
         Riml.include_path
       else

@@ -610,8 +610,7 @@ module Riml
             raise IncludeNotTopLevel, error_msg
           end
           node.each_existing_file! do |basename, full_path|
-            riml_src = File.read(full_path)
-            output = current_compiler(node).compile_include(riml_src, basename)
+            output = current_compiler(node).compile_include(basename, full_path)
             node.compiled_output << output if output
           end
           return node.compiled_output
@@ -781,13 +780,14 @@ module Riml
       @included_files_compiled ||= []
     end
 
-    def compile_include(source, filename)
-      return if included_files_compiled.include?(filename)
-      Riml.include_cache.fetch(filename) do
-        root_node = parser.parse(source, parser.ast_rewriter, filename, true)
+    def compile_include(file_basepath, file_fullpath)
+      return if included_files_compiled.include?(file_basepath)
+      Riml.include_cache.fetch(file_basepath) do
+        source = File.read(file_fullpath)
+        root_node = parser.parse(source, parser.ast_rewriter, file_basepath, true)
+        included_files_compiled << file_basepath
         output = compile(root_node)
-        included_files_compiled << filename
-        (Riml::INCLUDE_COMMENT_FMT % filename) + output
+        (Riml::INCLUDE_COMMENT_FMT % file_basepath) + output
       end
     end
 

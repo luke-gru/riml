@@ -53,6 +53,10 @@ module Riml
       @map.keys
     end
 
+    def safe_fetch(key)
+      @map[key]
+    end
+
     def has_global_import?
       @globbed_imports.any? { |import| import.global_import? }
     end

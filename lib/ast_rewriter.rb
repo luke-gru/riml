@@ -26,8 +26,9 @@ module Riml
     end
 
     def rewrite(filename = nil, included = false)
-      if filename && (rewritten_ast = rewritten_included_and_sourced_files[filename])
-        return rewritten_ast
+      if filename && (rewritten_ast = Riml.rewritten_ast_cache[filename])
+        rewrite_included_and_sourced_files!(filename)
+        rewritten_ast
       end
       if @options && @options[:allow_undefined_global_classes] && !@classes.has_global_import?
         @classes.globbed_imports.unshift(ImportedClass.new('*'))
@@ -98,16 +99,44 @@ module Riml
             raise UserArgumentError, "#{file.inspect} can't #{action} itself"
           end
           @included_and_sourced_file_refs[filename] << file
-          riml_src = File.read(fullpath)
           # recursively parse included files with this ast_rewriter in order
           # to pick up any classes that are defined there
-          rewritten_ast = Parser.new.tap { |p| p.options = @options }.
-            parse(riml_src, self, file, action == 'include')
-          rewritten_included_and_sourced_files[file] = rewritten_ast
+          rewritten_ast = nil
+          watch_for_class_pickup do
+            rewritten_ast = Riml.rewritten_ast_cache.fetch(file) do
+              riml_src = File.read(fullpath)
+              Parser.new.tap { |p| p.options = @options }.
+                parse(riml_src, self, file, action == 'include')
+            end
+          end
+          @rewritten_included_and_sourced_files[file] ||= rewritten_ast
         end
       end
     ensure
       self.ast = old_ast
+    end
+
+    def watch_for_class_pickup
+      before_class_names = classes.class_names
+      ast = yield
+      after_class_names = classes.class_names
+      diff_class_names = after_class_names - before_class_names
+      class_diff = diff_class_names.inject({}) do |hash, class_name|
+        hash[class_name] = classes[class_name]
+        hash
+      end
+      # no classes were picked up, it could be that the cache was hit. Let's
+      # register the cached classes for this ast, if there are any
+      if class_diff.empty?
+        real_diff = Riml.rewritten_ast_cache.fetch_classes_registered(ast)
+        return if real_diff.empty?
+        real_diff.each do |k,v|
+          classes[k] = v unless classes.safe_fetch(k)
+        end
+      # new classes were picked up, let's save them with this ast as the key
+      else
+        Riml.rewritten_ast_cache.save_classes_registered(ast, class_diff)
+      end
     end
 
     def recursive?
@@ -122,7 +151,7 @@ module Riml
       while included_files.any?
         incs = []
         included_files.each do |included_file|
-          if (ast = rewritten_included_and_sourced_files[included_file])
+          if (ast = @rewritten_included_and_sourced_files[included_file])
             return true if ast.children.grep(ClassDefinitionNode).any?
           end
           incs.concat @included_and_sourced_file_refs[included_file]
