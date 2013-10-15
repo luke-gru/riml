@@ -1,4 +1,4 @@
-require File.expand_path('../lib/environment', __FILE__)
+require File.expand_path('../lib/riml/environment', __FILE__)
 require 'rake/testtask'
 require 'bundler/setup'
 require 'bundler/gem_tasks'
@@ -22,7 +22,7 @@ task :debug_parser do
 end
 
 def in_libdir
-  Dir.chdir(File.expand_path("../lib", __FILE__)) do
+  Dir.chdir(File.expand_path("../lib/riml", __FILE__)) do
     yield
   end
 end

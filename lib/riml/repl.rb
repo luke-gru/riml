@@ -4,7 +4,7 @@ rescue LoadError => e
   $stderr.puts e, "Readline is required to run repl."
   exit 1
 end
-require_relative 'riml'
+require File.expand_path('../../riml', __FILE__)
 
 module Riml
   class Repl

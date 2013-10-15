@@ -1,15 +1,15 @@
 require 'pathname'
 require 'fileutils'
 
-require File.expand_path('../environment', __FILE__)
-require 'nodes'
-require 'lexer'
-require 'parser'
-require 'compiler'
-require 'warning_buffer'
-require 'include_cache'
-require 'path_cache'
-require 'rewritten_ast_cache'
+require File.expand_path('../riml/environment', __FILE__)
+require 'riml/nodes'
+require 'riml/lexer'
+require 'riml/parser'
+require 'riml/compiler'
+require 'riml/warning_buffer'
+require 'riml/include_cache'
+require 'riml/path_cache'
+require 'riml/rewritten_ast_cache'
 
 module Riml
 
@@ -249,9 +249,9 @@ module Riml
     end
   end
 
-  FILE_HEADER = File.read(File.expand_path("../header.vim", __FILE__)) % VERSION.join('.')
-  INCLUDE_COMMENT_FMT = File.read(File.expand_path("../included.vim", __FILE__))
-  GET_SID_FUNCTION_SRC = File.read(File.expand_path("../get_sid_function.vim", __FILE__))
+  FILE_HEADER = File.read(File.expand_path("../riml/header.vim", __FILE__)) % VERSION.join('.')
+  INCLUDE_COMMENT_FMT = File.read(File.expand_path("../riml/included.vim", __FILE__))
+  GET_SID_FUNCTION_SRC = File.read(File.expand_path("../riml/get_sid_function.vim", __FILE__))
 
   def self.write_file(compiler, output, fname, cmdline_file = true)
     # writing out a file that's compiled from cmdline, output into output_dir

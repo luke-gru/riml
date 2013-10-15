@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # vim: syntax=ruby
 
-require File.expand_path("../../lib/environment", __FILE__)
+require File.expand_path("../../lib/riml/environment", __FILE__)
 
 module Riml
   include Environment
@@ -130,7 +130,7 @@ module Riml
           # "ok (1 file)" OR "ok (2 files)"
           puts "ok (#{size} file#{'s' if size > 1})"
         elsif options.repl
-          require 'repl'
+          require 'riml/repl'
           Riml::Repl.new(options.vi_readline, compile_options).run
         else
           ARGV.replace ['--help']

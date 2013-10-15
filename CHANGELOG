@@ -1,5 +1,37 @@
+0.3.4
+=====
+
+* Add `riml_import` command. `riml_import` takes a list of arguments that
+can be class names or strings, and imports those classes into the system
+during compilation so that no ClassNotFound errors are thrown when
+encountering those classes in use without their definitions present. This
+is useful for using third-party Riml libraries to make the classes they
+expose available to your scripts.
+
+Example:
+
+    riml_import g:TestUnitTestCase, g:TestUnitUtils
+
+Now, I can use this class, and even inherit from it!
+
+class MyTestCase < g:TestUnitTestCase
+end
+
+* Add --allow-undef-global-classes (-a) flag. This flag makes the compiler
+import all global classes that it doesn't find. The same functionality can
+be achieved by doing:
+
+* Cache more heavily between calls to `Riml.compile_files`. Riml now caches
+Riml.include_path and Riml.source_path files globally, as well as
+rewritten ASTs.
+
+* Only expose 'riml' as the top-level file for requiring. Move all other files
+to riml/ namespace. Ex: require 'riml/parser' now instead of require 'parser'.
+About time :)
+
 0.3.3
 =====
+
 * When using `riml_include "file.vim"`, this is now cached both during one
 compilation run and between calls of `Riml.compile` and `Riml.compile_files`.
 In order to clear the cache, you must manually call
