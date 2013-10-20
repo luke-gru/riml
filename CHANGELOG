@@ -1,3 +1,40 @@
+0.3.5
+=====
+
+* Rollback all file changes if error occurs during compilation. For example,
+if a new file 'buffer.vim' was created from a `riml_source`, but then an error
+occurs further in the compilation process of another file, 'buffer.vim' will
+be deleted. If 'buffer.vim' existed previously, it will be restored to its
+previous state.
+
+`Riml.compile_files` is wrapped with file rollback capabilities now, but if,
+say, you're calling `Riml.compile_files` in your own script within a loop, you
+can make the whole loop transactional by wrapping it in a `Riml.with_file_rollback`
+block.
+
+ex:
+
+    filenames.each do |fname|
+      # this is transactional only within the compilation of __this__ file and
+      files that it sources.
+      Riml.compile_files fname
+    end
+
+vs:
+
+    # Now, if an error occurs, __all__ `filenames`, as well as files they
+    # source, will be reverted to their previous states.
+    # Note that the error is still raised.
+    Riml.with_file_rollback do
+      filenames.each do |fname|
+        Riml.compile_files fname
+      end
+    end
+
+* Cache SID in generated s:SID function to improve performance.
+See [https://github.com/luke-gru/riml/issues/24]
+
+
 0.3.4
 =====
 
