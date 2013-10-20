@@ -274,7 +274,7 @@ module Riml
         constructor.scope_modifier = node.scope_modifier
         # set up dictionary variable at top of function
         dict_name = node.constructor_obj_name
-        constructor.expressions.unshift(
+        constructor.expressions.nodes.unshift(
           AssignNode.new('=', GetVariableNode.new(nil, dict_name), DictionaryNode.new({}))
         )
 
@@ -285,7 +285,7 @@ module Riml
         PrivateFunctionCallToPassObjExplicitly.new(node, classes).rewrite_on_match
         SplatsToExecuteInCallingContext.new(node, classes).rewrite_on_match
 
-        constructor.expressions.push(
+        constructor.expressions.nodes.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
         )
         reestablish_parents(constructor)
@@ -537,7 +537,7 @@ module Riml
         def replace(node)
           def_node = node.to_def_node
           class_expressions = ast.expressions
-          class_expressions.insert_after(class_expressions.last, def_node)
+          class_expressions.insert_after(class_expressions.nodes.last, def_node)
           def_node.parent = class_expressions
           # to remove it
           node.parent = class_expressions
@@ -623,7 +623,7 @@ module Riml
               '!', nil, nil, "initialize", [], nil, Nodes.new([])
             )
           end
-          class_node.expressions.unshift(def_node)
+          class_node.expressions.nodes.unshift(def_node)
           reestablish_parents(class_node)
         end
 
@@ -848,7 +848,7 @@ module Riml
           def_node.parameters.delete_if(&DefNode::DEFAULT_PARAMS)
           def_node.parameters << SPLAT_LITERAL unless def_node.splat
         end
-        def_node.expressions.insert(insert_idx, if_expression)
+        def_node.expressions.nodes.insert(insert_idx, if_expression)
         reestablish_parents(def_node)
       end
 

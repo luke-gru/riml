@@ -29,22 +29,24 @@ module Riml
       "#{filename}:#{parser_info[:lineno]}"
     end
 
-    # catches "descendant_of_#{some_class}?" methods
-    # def descendant_of_call_node?
-    #   CallNode === self.parent_node
-    # end
-    DESCENDANT_OF_REGEX = /\Adescendant_of_(.*?)\?/
-    def method_missing(method, *args, &blk)
-      if method =~ DESCENDANT_OF_REGEX
-        parent_node_name = $1.split('_').map(&:capitalize).join
+    %w(
+    control_structure
+    call_node
+    object_instantiation_node
+    list_node
+    list_or_dict_get_node
+    operator_node
+    wrap_in_parens_node
+    sublist_node
+    dict_get_dot_node
+    dictionary_node
+    curly_brace_part
+    ).each do |node_name|
+      define_method "descendant_of_#{node_name}?" do
+        parent_node_name = node_name.split('_').map(&:capitalize).join
         parent_node = Riml.const_get parent_node_name
         parent_node === self.parent_node
-      else
-        super
       end
-    end
-    def respond_to?(method, include_private = false)
-      super || method =~ DESCENDANT_OF_REGEX
     end
   end
 
@@ -187,19 +189,6 @@ module Riml
     def concat(list_of_nodes)
       nodes.concat(list_of_nodes)
       self
-    end
-
-    # forward missing methods to `nodes` array
-    def method_missing(method, *args, &block)
-      if nodes.respond_to?(method)
-        nodes.send(method, *args, &block)
-      else
-        super
-      end
-    end
-
-    def respond_to?(method, include_private = false)
-      super || nodes.respond_to?(method, include_private)
     end
 
     def children
@@ -758,14 +747,6 @@ module Riml
         [expressions]
       end
       children.concat(default_param_nodes)
-    end
-
-    def method_missing(method, *args, &blk)
-      if children.respond_to?(method)
-        children.send(method, *args, &blk)
-      else
-        super
-      end
     end
   end
 
