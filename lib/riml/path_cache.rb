@@ -29,9 +29,9 @@ module Riml
       end
     end
 
-    def file(path, filename)
+    def file(path, basename)
       return nil unless @cache[path]
-      @cache[path][filename]
+      @cache[path][basename]
     end
 
     private

@@ -10,6 +10,7 @@ require 'riml/warning_buffer'
 require 'riml/include_cache'
 require 'riml/path_cache'
 require 'riml/rewritten_ast_cache'
+require 'riml/file_rollback'
 
 module Riml
 
@@ -106,26 +107,28 @@ module Riml
     # compile files using one thread per file, max 4 threads at once
     if filenames.size > 1
       threads = []
-      while filenames.any?
-        to_compile = filenames.shift(4)
-        to_compile.each do |fname|
-          _parser, _compiler = Parser.new, Compiler.new
-          _compiler.options = compiler.options.dup
-          _parser.options = parser.options.dup
-          threads << Thread.new do
-            f = File.open(fname)
-            # `do_compile` will close file handle
-            do_compile(f, _parser, _compiler)
+      with_file_rollback do
+        while filenames.any?
+          to_compile = filenames.shift(4)
+          to_compile.each do |fname|
+            _parser, _compiler = Parser.new, Compiler.new
+            _compiler.options = compiler.options.dup
+            _parser.options = parser.options.dup
+            threads << Thread.new do
+              f = File.open(fname)
+              # `do_compile` will close file handle
+              do_compile(f, _parser, _compiler)
+            end
           end
+          threads.each(&:join)
+          threads.clear
         end
-        threads.each(&:join)
-        threads.clear
       end
     elsif filenames.size == 1
       fname = filenames.first
       f = File.open(fname)
       # `do_compile` will close file handle
-      do_compile(f, parser, compiler)
+      with_file_rollback { do_compile(f, parser, compiler) }
     else
       raise ArgumentError, "need filenames to compile"
     end
@@ -184,6 +187,21 @@ module Riml
   end
   @rewritten_ast_cache = RewrittenASTCache.new
 
+  def self.clear_caches
+    @include_cache.clear
+    @path_cache.clear
+    @rewritten_ast_cache.clear
+  end
+
+  # if error is thrown, all files that were created will be rolled back
+  # to their previous state. If the file existed previously, it will be
+  # the same as it was. If the file didn't exist, it will be removed if
+  # it was created.
+  def self.with_file_rollback(&block)
+    FileRollback.guard(&block)
+  end
+
+  # turn warnings on/off
   class << self
     attr_accessor :warnings
   end
@@ -276,6 +294,7 @@ module Riml
     if output[-2..-1] == "\n\n"
       output.chomp!
     end
+    FileRollback.creating_file(full_path)
     File.open(full_path, 'w') do |f|
       f.write FILE_HEADER + output
     end

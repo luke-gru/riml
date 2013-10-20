@@ -11,9 +11,9 @@ module Riml
     ANCHORED_INTERPOLATION_REGEX = /\A#{INTERPOLATION_REGEX}/m
     INTERPOLATION_SPLIT_REGEX = /(\#\{.*?\})/m
 
-    attr_reader :tokens, :prev_token, :lineno, :chunk,
-      :current_indent, :invalid_keyword, :filename,
-      :parser_info
+    attr_reader :tokens, :prev_token, :chunk, :current_indent,
+      :invalid_keyword, :filename, :parser_info
+    attr_accessor :lineno
     # for REPL
     attr_accessor :ignore_indentation_check
 
@@ -139,7 +139,7 @@ module Riml
 
           @token_buf << [token_name.intern, identifier]
 
-        elsif BUILTIN_COMMANDS.include?(identifier) && !chunk[/\A#{Regexp.escape(identifier)}\(/]
+        elsif BUILTIN_COMMANDS.include?(identifier) && peek(identifier.size) != '('
           @token_buf << [:BUILTIN_COMMAND, identifier]
         elsif RIML_FILE_COMMANDS.include? identifier
           @token_buf << [:RIML_FILE_COMMAND, identifier]
@@ -330,7 +330,9 @@ module Riml
     end
 
     def tokenize_without_moving_pos(code)
-      Lexer.new(code).tokenize
+      Lexer.new(code, filename, false).tap do |l|
+        l.lineno = lineno
+      end.tokenize
     end
 
     def statement_modifier?
@@ -349,6 +351,10 @@ module Riml
 
     def more_code_to_tokenize?
       @i < @code.size
+    end
+
+    def peek(n = 1)
+      @chunk[n]
     end
   end
 end
