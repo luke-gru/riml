@@ -28,7 +28,7 @@ module Riml
     def rewrite(filename = nil, included = false)
       if filename && (rewritten_ast = Riml.rewritten_ast_cache[filename])
         rewrite_included_and_sourced_files!(filename)
-        rewritten_ast
+        return rewritten_ast
       end
       if @options && @options[:allow_undefined_global_classes] && !@classes.has_global_import?
         @classes.globbed_imports.unshift(ImportedClass.new('*'))
@@ -70,7 +70,7 @@ module Riml
     end
 
     def rewrite_on_match(node = ast)
-      Walker.walk_node(node, method(:do_rewrite_on_match), lambda { |_| recursive? })
+      Walker.walk_node(node, method(:do_rewrite_on_match), max_recursion_lvl)
     end
 
     def do_rewrite_on_match(node)
@@ -117,21 +117,20 @@ module Riml
     end
 
     def watch_for_class_pickup
-      before_class_names = classes.class_names
+      before_class_names = @classes.class_names
       ast = yield
-      after_class_names = classes.class_names
+      after_class_names = @classes.class_names
       diff_class_names = after_class_names - before_class_names
       class_diff = diff_class_names.inject({}) do |hash, class_name|
-        hash[class_name] = classes[class_name]
+        hash[class_name] = @classes[class_name]
         hash
       end
       # no classes were picked up, it could be that the cache was hit. Let's
       # register the cached classes for this ast, if there are any
       if class_diff.empty?
         real_diff = Riml.rewritten_ast_cache.fetch_classes_registered(ast)
-        return if real_diff.empty?
         real_diff.each do |k,v|
-          classes[k] = v unless classes.safe_fetch(k)
+          @classes[k] = v unless @classes.safe_fetch(k)
         end
       # new classes were picked up, let's save them with this ast as the key
       else
@@ -139,8 +138,9 @@ module Riml
       end
     end
 
-    def recursive?
-      true
+    # recurse until no more children
+    def max_recursion_lvl
+      -1
     end
 
     # Add SID function if this is the main file and it has defined classes, or
@@ -196,6 +196,10 @@ module Riml
         end
         node.remove
       end
+
+      def max_recursion_lvl
+        1
+      end
     end
 
     class RegisterDefinedClasses < AST_Rewriter
@@ -207,6 +211,10 @@ module Riml
         n = node.dup
         n.instance_variable_set("@registered_state", true)
         classes[node.full_name] = n
+      end
+
+      def max_recursion_lvl
+        1
       end
     end
 
@@ -257,8 +265,8 @@ module Riml
       def replace(node)
         classes[node.full_name] = node
 
-        RegisterPrivateFunctions.new(node, classes).rewrite_on_match
-        DefNodeToPrivateFunction.new(node, classes).rewrite_on_match
+        RegisterPrivateFunctions.new(node.expressions, classes).rewrite_on_match
+        DefNodeToPrivateFunction.new(node.expressions, classes).rewrite_on_match
         InsertInitializeMethod.new(node, classes).rewrite_on_match
         constructor = node.constructor
         constructor.name = node.constructor_name
@@ -283,13 +291,21 @@ module Riml
         reestablish_parents(constructor)
       end
 
+      def max_recursion_lvl
+        1
+      end
+
       class RegisterPrivateFunctions < AST_Rewriter
         def match?(node)
           node.instance_of?(DefNode) && node.name != 'initialize'
         end
 
         def replace(node)
-          ast.private_function_names << node.name
+          ast.parent.private_function_names << node.name
+        end
+
+        def max_recursion_lvl
+          1
         end
       end
 
@@ -468,7 +484,7 @@ module Riml
         end
 
         def replace(node)
-          class_node = ast
+          class_node = ast.parent
           class_name = class_node.name
           node.scope_modifier = 's:'
           node.original_name = node.name
@@ -480,6 +496,10 @@ module Riml
           self_to_obj_argument = SelfToObjArgumentInPrivateFunction.new(node, classes, class_node)
           self_to_obj_argument.rewrite_on_match
           reestablish_parents(node)
+        end
+
+        def max_recursion_lvl
+          1
         end
       end
 
@@ -559,6 +579,10 @@ module Riml
           constructor.expressions << extension
           extension.parent = constructor.expressions
         end
+
+        def max_recursion_lvl
+          2
+        end
       end
 
       class SelfToDictName < AST_Rewriter
@@ -611,8 +635,8 @@ module Riml
           classes.superclass(ast.full_name).imported?
         end
 
-        def recursive?
-          false
+        def max_recursion_lvl
+          1
         end
       end
 
@@ -668,8 +692,8 @@ module Riml
           end
         end
 
-        def recursive?
-          false
+        def max_recursion_lvl
+          1
         end
       end
 
@@ -841,6 +865,10 @@ module Riml
           ])
         )
       end
+
+      def max_recursion_lvl
+        3
+      end
     end
 
     class DeserializeVarAssignment < AST_Rewriter
@@ -882,6 +910,10 @@ module Riml
         new_node.scope_modifier = scope_modifier
         new_node.keywords = keywords
         node.replace_with(new_node)
+      end
+
+      def max_recursion_lvl
+        1
       end
     end
 

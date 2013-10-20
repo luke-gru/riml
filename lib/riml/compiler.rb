@@ -79,8 +79,7 @@ module Riml
           end
         end
         node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
-        node.force_newline = true
-        node.compiled_output << "endif"
+        node.compiled_output << "endif\n"
       end
     end
 
@@ -113,8 +112,7 @@ module Riml
         node.body.compiled_output.each_line do |line|
           node.compiled_output << node.indent + line
         end
-        node.force_newline = true
-        node.compiled_output << "endwhile"
+        node.compiled_output << "endwhile\n"
       end
     end
 

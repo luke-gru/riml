@@ -21,11 +21,11 @@ module Riml
     end
 
     def save_classes_registered(ast, class_diff)
-      @ast_classes_registered_cache[ast] = class_diff
+      @ast_classes_registered_cache[ast.object_id] = class_diff
     end
 
     def fetch_classes_registered(ast)
-      @ast_classes_registered_cache[ast] || {}
+      @ast_classes_registered_cache[ast.object_id] || {}
     end
   end
 end
