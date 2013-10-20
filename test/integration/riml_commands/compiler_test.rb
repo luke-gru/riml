@@ -245,9 +245,9 @@ RIML
         assert_equal expected, compile(riml)
         assert File.exists?(File.join(Riml.source_path.first, 'class_test_main.vim'))
         assert File.exists?(File.join(Riml.source_path.first, 'class_test.vim'))
-        assert_equal Riml::FILE_HEADER + File.read(File.join(Riml.source_path.first, 'class_test_main_expected.vim')),
+        assert_equal Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read(File.join(Riml.source_path.first, 'class_test_main_expected.vim')),
                      File.read(File.join(Riml.source_path.first, 'class_test_main.vim'))
-        assert_equal Riml::FILE_HEADER + File.read(File.join(Riml.source_path.first, 'class_test_expected.vim')),
+        assert_equal Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read(File.join(Riml.source_path.first, 'class_test_expected.vim')),
                      File.read(File.join(Riml.source_path.first, 'class_test.vim'))
       end
     end

@@ -8,7 +8,7 @@ module Riml
     include Riml::Constants
 
     attr_accessor :ast, :options
-    attr_reader :classes, :rewritten_included_and_sourced_files
+    attr_reader :classes
 
     def initialize(ast = nil, classes = nil)
       @ast = ast
@@ -85,8 +85,7 @@ module Riml
     # node in order to compile it on the spot.
     def rewrite_included_and_sourced_files!(filename)
       old_ast = ast
-      ast.children.each do |node|
-        next unless RimlFileCommandNode === node
+      ast.children.grep(RimlFileCommandNode).each do |node|
         action = node.name == 'riml_include' ? 'include' : 'source'
 
         node.each_existing_file! do |file, fullpath|
@@ -166,11 +165,21 @@ module Riml
       fchild = ast.nodes.first
       return false if DefNode === fchild && fchild.name == 'SID' && fchild.scope_modifier == 's:'
       fn = DefNode.new('!', nil, 's:', 'SID', [], nil, Nodes.new([
-          ReturnNode.new(CallNode.new(nil, 'matchstr', [
+          IfNode.new(
+            CallNode.new(nil, 'exists', [StringNode.new('s:SID_VALUE', :s)]),
+            Nodes.new([
+              ReturnNode.new(GetVariableNode.new('s:', 'SID_VALUE'))
+            ])
+          ),
+          AssignNode.new(
+            '=',
+            GetVariableNode.new('s:', 'SID_VALUE'),
+            CallNode.new(nil, 'matchstr', [
             CallNode.new(nil, 'expand', [StringNode.new('<sfile>', :s)]),
             StringNode.new('<SNR>\zs\d\+\ze_SID$', :s)
           ]
-          ))
+          )),
+          ReturnNode.new(GetVariableNode.new('s:', 'SID_VALUE'))
         ])
       )
       fn.parent = ast.nodes

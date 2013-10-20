@@ -1,6 +1,3 @@
-function! s:SID()
-  return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
-endfunction
 function! s:DogLocalConstructor(name)
   let dogLocalObj = {}
   let dogLocalObj.name = a:name
