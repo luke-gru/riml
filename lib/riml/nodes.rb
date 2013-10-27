@@ -773,13 +773,6 @@ module Riml
 
     alias function? function
 
-    def initialize_copy(source)
-      super
-      self.for_node_variable_names = for_node_variable_names.dup
-      self.argument_variable_names = argument_variable_names.dup
-      self.function = source.function
-    end
-
     def merge(other)
       dup.merge! other
     end

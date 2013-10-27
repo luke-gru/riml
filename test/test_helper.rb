@@ -93,12 +93,15 @@ EOS
 
     def parse(input, ast_rewriter = AST_Rewriter.new)
       Riml.parse(input, ast_rewriter)
+    ensure
+      Riml::Parser.ast_cache.clear
     end
 
     def compile(input, options = {:readable => false})
       Riml.compile(input, options)
     ensure
       Riml.rewritten_ast_cache.clear
+      Riml::Parser.ast_cache.clear
     end
 
     %w(source_path include_path).each do |path|
@@ -119,7 +122,10 @@ EOS
       file_names.each do |name|
         Riml.source_path.each do |path|
           full_path = File.join(path, name)
-          File.delete(full_path) if File.exists?(full_path)
+          if File.exists?(full_path)
+            File.delete(full_path)
+            break
+          end
         end
       end
     end
@@ -134,6 +140,12 @@ EOS
     end
 
   end
+end
+
+Riml::FileRollback.guard
+Riml::FileRollback.trap(:INT, :QUIT, :KILL) do
+  STDERR.print("rolling back files changes...\n")
+  exit 1
 end
 
 all_files_before = Dir.glob('**/*')

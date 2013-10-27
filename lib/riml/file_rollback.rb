@@ -13,14 +13,21 @@ module Riml
     # `&block` launches threads, and they compile files though.
     def self.guard(&block)
       @guarding += 1
-      block.call
+      if block
+        block.call
+      # to increase `@guarding` only, for use with FileRollback.trap()
+      else
+        return
+      end
     rescue
       rollback!
       raise
     ensure
-      @guarding -= 1
-      if @guarding == 0
-        clear
+      if block
+        @guarding -= 1
+        if @guarding == 0
+          clear
+        end
       end
     end
 

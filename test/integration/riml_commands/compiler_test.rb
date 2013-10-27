@@ -390,4 +390,14 @@ Viml
 
     assert_equal expected, compile(riml)
   end
+
+  test "`riml_include`s get reordered based on dependency resolution for classes" do
+    riml = <<Riml
+riml_include 'faster_car.riml' " inherits from car, gets included last
+riml_include 'car.riml' " gets included first
+Riml
+    with_riml_include_path(File.expand_path("../", __FILE__)) do
+      assert compile(riml)
+    end
+  end
 end

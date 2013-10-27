@@ -1,6 +1,7 @@
 require File.expand_path("../constants", __FILE__)
 require File.expand_path("../imported_class", __FILE__)
 require File.expand_path("../class_map", __FILE__)
+require File.expand_path("../class_dependency_graph", __FILE__)
 require File.expand_path("../walker", __FILE__)
 
 module Riml
@@ -8,9 +9,9 @@ module Riml
     include Riml::Constants
 
     attr_accessor :ast, :options
-    attr_reader :classes
+    attr_reader :classes, :rewritten_included_and_sourced_files
 
-    def initialize(ast = nil, classes = nil)
+    def initialize(ast = nil, classes = nil, class_dependency_graph = nil)
       @ast = ast
       @classes = classes || ClassMap.new
       # AST_Rewriter shares options with Parser. Parser set AST_Rewriter's
@@ -23,9 +24,15 @@ module Riml
       # ex: { nil => ["main.riml"], "main.riml" => ["lib1.riml", "lib2.riml"],
       # "lib1.riml" => [], "lib2.riml" => [] }
       @included_and_sourced_file_refs = Hash.new { |h, k| h[k] = [] }
+      @class_dependency_graph = class_dependency_graph || ClassDependencyGraph.new
+      @resolving_class_dependencies = nil
     end
 
     def rewrite(filename = nil, included = false)
+      if @resolving_class_dependencies != false
+        resolve_class_dependencies!(filename)
+        return if @resolving_class_dependencies == true
+      end
       if filename && (rewritten_ast = Riml.rewritten_ast_cache[filename])
         rewrite_included_and_sourced_files!(filename)
         return rewritten_ast
@@ -56,6 +63,109 @@ module Riml
         rewriter.rewrite_on_match
       end
       ast
+    end
+
+    def resolve_class_dependencies!(filename)
+      if @resolving_class_dependencies.nil?
+        start_resolving = @resolving_class_dependencies = true
+        @included_ASTs_by_include_file = {}
+      end
+      old_ast = ast
+      RegisterClassDependencies.new(ast, classes, @class_dependency_graph, filename).rewrite_on_match
+      ast.children.grep(RimlFileCommandNode).each do |node|
+        next unless node.name == 'riml_include'
+        node.each_existing_file! do |file, fullpath|
+          if filename && @included_and_sourced_file_refs[file].include?(filename)
+            msg = "#{filename.inspect} can't include #{file.inspect}, as " \
+                  " #{file.inspect} already included #{filename.inspect}"
+            raise IncludeFileLoop, msg
+          elsif filename == file
+            raise UserArgumentError, "#{file.inspect} can't include itself"
+          end
+          @included_and_sourced_file_refs[filename] << file
+          riml_src = File.read(fullpath)
+          Parser.new.tap { |p| p.options = @options }.parse(riml_src, self, file, true)
+          @included_ASTs_by_include_file[file] = Parser.ast_cache[file]
+        end
+      end
+    ensure
+      self.ast = old_ast
+      if start_resolving == true
+        @resolving_class_dependencies = false
+        @included_and_sourced_file_refs = Hash.new { |h,k| h[k] = [] }
+        reorder_includes_based_on_class_dependencies!
+      end
+    end
+
+    def reorder_includes_based_on_class_dependencies!
+      global_included_filename_order = @class_dependency_graph.filename_order
+      asts = [ast]
+      while (ast = asts.shift)
+        include_nodes =
+          ast.children.grep(RimlFileCommandNode).select do |n|
+            n.name == 'riml_include'
+          end
+        included_filenames = include_nodes.map { |n| n.arguments.map(&:value) }.flatten
+        new_order_filenames = global_included_filename_order & included_filenames
+        add_to_head = included_filenames - new_order_filenames
+        new_order_filenames = add_to_head + new_order_filenames
+        include_nodes.each do |node|
+          node.arguments.each do |arg|
+            if (included_file_ast = @included_ASTs_by_include_file[arg.value])
+              asts << included_file_ast
+            end
+            if new_order_filenames.first
+              arg.value = new_order_filenames.shift
+            else
+              # for now, just to be cautious
+              raise "Internal error in AST rewriting process. Please report bug!"
+            end
+          end
+        end
+      end
+    end
+
+    class RegisterClassDependencies < AST_Rewriter
+      def initialize(ast, classes, class_dependency_graph, filename)
+        super(ast, classes, class_dependency_graph)
+        @filename = filename
+      end
+
+      def match?(node)
+        ClassDefinitionNode === node || ObjectInstantiationNode === node
+      end
+
+      def replace(node)
+        if ClassDefinitionNode === node
+          @class_dependency_graph.class_defined(
+            @filename, class_node_full_name(node),
+            class_name_full_name(node.superclass_name)
+          )
+        else
+          @class_dependency_graph.class_encountered(
+            @filename,
+            class_node_full_name(node.call_node)
+          )
+        end
+      end
+
+      private
+
+      def class_node_full_name(node)
+        (
+         node.scope_modifier ||
+         ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER
+        ) + node.name
+      end
+
+      def class_name_full_name(class_name)
+        return nil if class_name.nil?
+        if class_name[1] == ':'
+          class_name
+        else
+          ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER + class_name
+        end
+      end
     end
 
     def establish_parents(node)

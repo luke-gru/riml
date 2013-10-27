@@ -567,32 +567,41 @@ end
     @options ||= {}
   end
 
+  def self.ast_cache
+    @ast_cache
+  end
+  @ast_cache = {}
+
   # parses tokens or code into output nodes
   def parse(object, ast_rewriter = Riml::AST_Rewriter.new, filename = nil, included = false)
-    if tokens?(object)
-      @tokens = object
-    elsif code?(object)
-      @lexer = Riml::Lexer.new(object, filename, true)
-    end
-
-    begin
-      ast = do_parse
-    rescue Racc::ParseError => e
-      raise unless @lexer
-      if @lexer.prev_token_is_keyword?
-        warning = "#{@lexer.invalid_keyword.inspect} is a keyword, and cannot " \
-          "be used as a variable name"
+    if (ast = self.class.ast_cache[filename])
+    else
+      if tokens?(object)
+        @tokens = object
+      elsif code?(object)
+        @lexer = Riml::Lexer.new(object, filename, true)
       end
-      error_msg = "#{e.message} at #{@lexer.filename}:#{@lexer.lineno}"
-      error_msg << "\n\n#{warning}" if warning
-      raise Riml::ParseError, error_msg
-    end
 
+      begin
+        ast = do_parse
+      rescue Racc::ParseError => e
+        raise unless @lexer
+        if @lexer.prev_token_is_keyword?
+          warning = "#{@lexer.invalid_keyword.inspect} is a keyword, and cannot " \
+            "be used as a variable name"
+        end
+        error_msg = "#{e.message} at #{@lexer.filename}:#{@lexer.lineno}"
+        error_msg << "\n\n#{warning}" if warning
+        raise Riml::ParseError, error_msg
+      end
+      self.class.ast_cache[filename] = ast if filename
+    end
     @ast_rewriter ||= ast_rewriter
     return ast unless @ast_rewriter
-    @ast_rewriter.ast = ast
+    @ast_rewriter.ast = ast.dup
     @ast_rewriter.options ||= options
     @ast_rewriter.rewrite(filename, included)
+    @ast_rewriter.ast
   end
 
   # get the next token from either the list of tokens provided, or
