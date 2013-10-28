@@ -3,10 +3,13 @@
 require 'tsort'
 
 module Riml
+  # Used for reordering `riml_include`s based on class dependencies.
   class ClassDependencyGraph
     include TSort
 
     attr_reader :definition_graph, :encountered_graph
+    # for checking imported classes
+    attr_accessor :classes
 
     # definition_graph:  { "faster_car.riml" => { "s:FasterCar" => "s:Car" }, "car.riml" => { "s:Car" => nil } }
     # encountered_graph: { "faster_car.riml" => ["s:FasterCar", "s:Car"], "car.riml" => ["s:Car"] }
@@ -45,6 +48,14 @@ module Riml
     def prepare_filename_graph!
       @filename_graph = {}
       @encountered_graph.each do |filename, encountered_classes|
+        # must be imported class or undefined class
+        if @definition_graph[filename].nil?
+          encountered_classes.each do |enc|
+            # raises Riml::ClassNotFound if not found
+            @classes[enc]
+          end
+          next
+        end
         defined_in_filename = @definition_graph[filename].keys
         dependent_by_superclass = @definition_graph[filename].values.compact - defined_in_filename
         dependent_by_use = encountered_classes - (defined_in_filename + dependent_by_superclass)

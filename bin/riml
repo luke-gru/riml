@@ -21,6 +21,7 @@ module Riml
       options.repl = false
       options.vi_readline = false
       options.allow_undefined_global_classes = DEFAULT_PARSE_OPTIONS[:allow_undefined_global_classes]
+      options.include_reordering = DEFAULT_PARSE_OPTIONS[:include_reordering]
       options.readable = DEFAULT_COMPILE_OPTIONS[:readable]
       options.output_dir = DEFAULT_COMPILE_FILES_OPTIONS[:output_dir]
 
@@ -59,6 +60,10 @@ module Riml
 
         opts.on("-a", "--allow-undef-global-classes", "Continue compilation when encountering undefined global class(es).") do
           options.allow_undefined_global_classes = true
+        end
+
+        opts.on("-n", "--no-include-reordering", "Turns off default feature of reordering `riml_include`s based on class dependencies.") do
+          options.include_reordering = false
         end
 
         opts.on("-o", "--output-dir DIR", "Output all .vim files in specified directory.") do |dir|
@@ -114,7 +119,8 @@ module Riml
         options = Options.parse(ARGV)
         compile_options = {
           :readable => options.readable,
-          :allow_undefined_global_classes => options.allow_undefined_global_classes
+          :allow_undefined_global_classes => options.allow_undefined_global_classes,
+          :include_reordering => options.include_reordering
         }
         compile_files_options = compile_options.merge(
           :output_dir => options.output_dir

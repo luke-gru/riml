@@ -25,24 +25,26 @@ module Riml
       # "lib1.riml" => [], "lib2.riml" => [] }
       @included_and_sourced_file_refs = Hash.new { |h, k| h[k] = [] }
       @class_dependency_graph = class_dependency_graph || ClassDependencyGraph.new
+      @class_dependency_graph.classes = @classes
       @resolving_class_dependencies = nil
     end
 
     def rewrite(filename = nil, included = false)
-      if @resolving_class_dependencies != false
-        resolve_class_dependencies!(filename)
-        return if @resolving_class_dependencies == true
-      end
       if filename && (rewritten_ast = Riml.rewritten_ast_cache[filename])
         rewrite_included_and_sourced_files!(filename)
         return rewritten_ast
       end
+      establish_parents(ast)
       if @options && @options[:allow_undefined_global_classes] && !@classes.has_global_import?
         @classes.globbed_imports.unshift(ImportedClass.new('*'))
+      else
+        class_imports = RegisterImportedClasses.new(ast, classes)
+        class_imports.rewrite_on_match
       end
-      establish_parents(ast)
-      class_imports = RegisterImportedClasses.new(ast, classes)
-      class_imports.rewrite_on_match
+      if resolve_class_dependencies?
+        resolve_class_dependencies!(filename)
+        return if @resolving_class_dependencies == true
+      end
       class_registry = RegisterDefinedClasses.new(ast, classes)
       class_registry.rewrite_on_match
       rewrite_included_and_sourced_files!(filename)
@@ -63,6 +65,11 @@ module Riml
         rewriter.rewrite_on_match
       end
       ast
+    end
+
+    def resolve_class_dependencies?
+      @resolving_class_dependencies = false if @options[:include_reordering] != true
+      @resolving_class_dependencies != false
     end
 
     def resolve_class_dependencies!(filename)
@@ -92,7 +99,7 @@ module Riml
       self.ast = old_ast
       if start_resolving == true
         @resolving_class_dependencies = false
-        @included_and_sourced_file_refs = Hash.new { |h,k| h[k] = [] }
+        @included_and_sourced_file_refs.clear
         reorder_includes_based_on_class_dependencies!
       end
     end

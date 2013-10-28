@@ -18,7 +18,10 @@ module Riml
   DEFAULT_COMPILE_FILES_OPTIONS = DEFAULT_COMPILE_OPTIONS.merge(
     :output_dir => nil
   )
-  DEFAULT_PARSE_OPTIONS = { :allow_undefined_global_classes => false }
+  DEFAULT_PARSE_OPTIONS = {
+    :allow_undefined_global_classes => false,
+    :include_reordering => true
+  }
 
   EXTRACT_PARSE_OPTIONS   = lambda { |k,_| DEFAULT_PARSE_OPTIONS.keys.include?(k.to_sym) }
   EXTRACT_COMPILE_OPTIONS = lambda { |k,_| DEFAULT_COMPILE_OPTIONS.keys.include?(k.to_sym) }
