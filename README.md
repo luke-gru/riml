@@ -1,10 +1,10 @@
 [![Build Status](https://secure.travis-ci.org/luke-gru/riml.png?branch=master)](https://travis-ci.org/luke-gru/riml)
 
-Riml, a relaxed Vimscript
+Riml, a relaxed Vim script
 ====================================
 
-Riml is a subset of Vimscript with some added features, and it compiles to
-plain Vimscript. Some of the added features include classes, string interpolation,
+Riml is a subset of Vim script with some added features, and it compiles to
+plain Vim script. Some of the added features include classes, string interpolation,
 heredocs, default case-sensitive string comparison, default parameters
 in functions, and other things programmers tend to take for granted.
 To see how Riml is compiled to VimL, just take a look at this README. The left
@@ -70,7 +70,7 @@ Notice in the last line of Riml there's string interpolation. This works
 in double-quoted strings and heredocs, which we'll encounter later.
 
 In Riml, you can choose to end any block with 'end', or with whatever you used
-to do in Vimscript ('endif', 'endfunction', etc...). Also, 'if' and 'unless' can
+to do in Vim script ('endif', 'endfunction', etc...). Also, 'if' and 'unless' can
 now be used as statement modifiers:
 
     callcount = 0 unless callcount?
@@ -260,9 +260,9 @@ global, this is not a problem. Simply:
     end
 
 If you look at the last line of Riml in the previous example, you'll see that
-it doesn't use Vimscript's builtin 'call' function for calling the 'translate'
+it doesn't use Vim script's builtin 'call' function for calling the 'translate'
 method on the translation object. Riml can figure out when 'call' is necessary,
-and will add it to the compiled Vimscript.
+and will add it to the compiled Vim script.
 
 ###Using 'super'
 
