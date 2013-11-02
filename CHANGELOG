@@ -1,3 +1,48 @@
+0.3.6
+=====
+
+* Change how `for` loop works in global scope. Use script-local variables
+instead of global variables.
+
+Before: (in global scope)
+
+    for var in range(2)
+      echo var
+    end
+
+compiled to
+
+    for var in range(2)
+      echo var
+    endfor
+
+and now compiles to
+
+    for s:var in range(2)
+      echo s:var
+    endfor
+
+See [https://github.com/luke-gru/riml/issues/27]
+
+* Allow `for` loops to loop over variables with explicit scope modifiers.
+
+    for s:var in range(2)
+      echo 'here'
+    end
+
+This now works as expected.
+
+Related to [https://github.com/luke-gru/riml/issues/27]
+
+* `riml_include` works much smarter now, resolving all class dependencies and
+reordering the included files so that you don't need to worry about having
+included files in a certain order.
+
+See [https://github.com/luke-gru/riml/issues/21]
+
+* Compiling Riml from commandline doesn't show stacktrace anymore if error
+occurs, only the error message.
+
 0.3.5
 =====
 
@@ -33,7 +78,6 @@ vs:
 
 * Cache SID in generated s:SID function to improve performance.
 See [https://github.com/luke-gru/riml/issues/24]
-
 
 0.3.4
 =====
@@ -97,8 +141,6 @@ See [https://github.com/luke-gru/riml/issues/18]
 `riml_include 'mylib'` will look first for 'mylib' in Riml.include_path,
 then if that file is not found it will look for 'mylib.riml'.
 See [https://github.com/luke-gru/riml/issues/6]
-
-*
 
 0.3.2
 =====
