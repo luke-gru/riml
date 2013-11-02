@@ -146,7 +146,7 @@ function! s:find_the_most_proper_rule_in_command_line_mode(nrules, char, cl_text
     if !(a:char ==# nrule._char)
       continue
     endif
-    if a:cl_text !~# substitute(nrule.at, '\\%#', s:UNTYPABLE_CHAR, 'g')
+    if cl_text !~# substitute(nrule.at, '\\%#', s:UNTYPABLE_CHAR, 'g')
       continue
     endif
     return nrule

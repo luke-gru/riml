@@ -40,6 +40,7 @@ rule
   Root:
     /* nothing */                        { result = make_node(val) { |_| Riml::Nodes.new([]) } }
   | Statements                           { result = val[0] }
+  | Terminator                           { result = make_node(val) { |_| Riml::Nodes.new([]) } }
   ;
 
   # any list of expressions
@@ -47,7 +48,6 @@ rule
     Statement                            { result = make_node(val) { |v| Riml::Nodes.new([ v[0] ]) } }
   | Statements Terminator Statement      { result = val[0] << val[2] }
   | Statements Terminator                { result = val[0] }
-  | Terminator                           { result = make_node(val) { |_| Riml::Nodes.new([]) } }
   | Terminator Statements                { result = make_node(val) { |v| Riml::Nodes.new(v[1]) } }
   ;
 
@@ -374,9 +374,13 @@ rule
 
   # retrieving the value of a variable
   VariableRetrieval:
-    Scope IDENTIFIER                               { result = make_node(val) { |v| Riml::GetVariableNode.new(v[0], v[1]) } }
+    SimpleVariableRetrieval                        { result = val[0] }
   | SPECIAL_VAR_PREFIX IDENTIFIER                  { result = make_node(val) { |v| Riml::GetSpecialVariableNode.new(v[0], v[1]) } }
   | ScopeModifierLiteral ListOrDictGetWithBrackets { result = make_node(val) { |v| Riml::GetVariableByScopeAndDictNameNode.new(v[0], v[1]) } }
+  ;
+
+  SimpleVariableRetrieval:
+    Scope IDENTIFIER                               { result = make_node(val) { |v| Riml::GetVariableNode.new(v[0], v[1]) } }
   ;
 
   AllVariableRetrieval:
@@ -489,9 +493,9 @@ rule
   ;
 
   For:
-    FOR IDENTIFIER IN Expression Block END     { result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) } }
-  | FOR List IN Expression Block END           { result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) } }
-  | FOR ListUnpack IN Expression Block END     { result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) } }
+    FOR SimpleVariableRetrieval IN Expression Block END     { result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) } }
+  | FOR List IN Expression Block END                        { result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) } }
+  | FOR ListUnpack IN Expression Block END                  { result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) } }
   ;
 
   Try:

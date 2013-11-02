@@ -777,12 +777,25 @@ module Riml
       dup.merge! other
     end
 
+    def merge_parent_function(other)
+      dup.merge_parent_function!(other)
+    end
+
     def merge!(other)
       unless other.is_a?(ScopeNode)
         raise ArgumentError, "other must be ScopeNode, is #{other.class}"
       end
       self.for_node_variable_names += other.for_node_variable_names
       self.argument_variable_names -= for_node_variable_names
+      self.function = other.function
+      self
+    end
+
+    def merge_parent_function!(other)
+      unless other.is_a?(ScopeNode)
+        raise ArgumentError, "other must be ScopeNode, is #{other.class}"
+      end
+      self.for_node_variable_names += other.for_node_variable_names
       self.function = other.function
       self
     end
@@ -902,12 +915,16 @@ module Riml
       if ListNode === variable
         variable.value.map(&:name)
       else
-        [variable]
+        [variable.name]
       end
     end
 
     def to_scope
-      ScopeNode.new.tap {|s| s.for_node_variable_names += for_node_variable_names}
+      ScopeNode.new.tap do |s|
+        s.for_node_variable_names += for_node_variable_names
+        s.argument_variable_names = (self.scope && self.scope.argument_variable_names)
+        s.function = (self.scope && self.scope.function) || nil
+      end
     end
 
     def children

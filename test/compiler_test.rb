@@ -535,15 +535,38 @@ Viml
     assert_equal expected, compile(riml).chomp
   end
 
-  test "for var in list block" do
+  test "for var in list block in global scope without explicit scope modifier" do
     riml = <<Riml
 for var in [1, 2, 3]
   echo var
 endfor
 echo "done"
 Riml
-    expected = riml
-    assert_equal expected, compile(riml).chomp
+
+    expected = <<Viml
+for s:var in [1, 2, 3]
+  echo s:var
+endfor
+echo "done"
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "for var in list block in global scope with explicit scope modifier" do
+    riml = <<Riml
+for s:var in [1, 2, 3]
+  echo s:var
+endfor
+echo "done"
+Riml
+
+    expected = <<Viml
+for s:var in [1, 2, 3]
+  echo s:var
+endfor
+echo "done"
+Viml
+    assert_equal expected, compile(riml)
   end
 
   test "for list in multi-list" do
@@ -553,8 +576,8 @@ for [lnum, col] in [[1, 3], [2, 8], [3, 0]]
 endfor
 Riml
     expected = <<Viml
-for [lnum, col] in [[1, 3], [2, 8], [3, 0]]
-  call s:Doit(lnum, col)
+for [s:lnum, s:col] in [[1, 3], [2, 8], [3, 0]]
+  call s:Doit(s:lnum, s:col)
 endfor
 Viml
 
@@ -572,14 +595,73 @@ endfor
 Riml
 
     expected = <<Viml
-for [i, j; rest] in s:listlist
-  call s:Doit(i, j)
-  if !empty(rest)
-    echo "remainder: " . string(rest)
+for [s:i, s:j; s:rest] in s:listlist
+  call s:Doit(s:i, s:j)
+  if !empty(s:rest)
+    echo "remainder: " . string(s:rest)
   endif
 endfor
 Viml
 
+    assert_equal expected, compile(riml)
+  end
+
+  test "for var in function scope without explicit scope modifier" do
+    riml = <<Riml
+def func
+  for num in range(7)
+    echo num
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:func()
+  for num in range(7)
+    echo num
+  endfor
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "for var in function scope with explicit scope modifier" do
+    riml = <<Riml
+def func
+  for s:num in range(7)
+    echo s:num
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:func()
+  for s:num in range(7)
+    echo s:num
+  endfor
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "for var in function scope with explicit scope modifier and shadowing outer local variable" do
+    riml = <<Riml
+def func
+  num = 1
+  for s:num in range(7)
+    echo num " should echo 1 always
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:func()
+  let num = 1
+  for s:num in range(7)
+    echo num
+  endfor
+endfunction
+Viml
     assert_equal expected, compile(riml)
   end
 
@@ -703,8 +785,8 @@ end
 Riml
 
     expected = <<Viml
-for var in range(1, 2, 3)
-  echo var
+for s:var in range(1, 2, 3)
+  echo s:var
 endfor
 Viml
 
@@ -2009,7 +2091,13 @@ for i in range(7)
 endfor
 Riml
 
-    assert_equal riml, compile(riml).chomp
+    expected = <<Viml
+for s:i in range(7)
+  let s:repl_{s:i} = ''
+endfor
+Viml
+
+    assert_equal expected, compile(riml)
   end
 
   test "nested ifs indent properly" do
