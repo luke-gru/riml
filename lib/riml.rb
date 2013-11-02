@@ -10,6 +10,7 @@ require 'riml/warning_buffer'
 require 'riml/include_cache'
 require 'riml/path_cache'
 require 'riml/rewritten_ast_cache'
+require 'riml/backtrace_filter'
 require 'riml/file_rollback'
 
 module Riml

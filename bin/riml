@@ -11,7 +11,7 @@ module Riml
   require 'ostruct'
 
   class Options
-    def self.parse(argv)
+    def self.parse(argv = ARGV)
       argv << '--help' if argv.size.zero?
 
       # defaults
@@ -25,7 +25,7 @@ module Riml
       options.readable = DEFAULT_COMPILE_OPTIONS[:readable]
       options.output_dir = DEFAULT_COMPILE_FILES_OPTIONS[:output_dir]
 
-      OptionParser.new do |opts|
+      opts_parser = OptionParser.new do |opts|
         opts.banner = "Usage: riml [options] [file1][,file2]..."
         opts.separator ""
         opts.separator "Specific options:"
@@ -91,8 +91,13 @@ module Riml
           puts opts
           exit
         end
-      end.parse!(argv)
+      end
 
+      begin
+        opts_parser.parse!(argv)
+      rescue OptionParser::ParseError => e
+        abort e.message
+      end
       options
     end
 
@@ -116,7 +121,7 @@ module Riml
   class Runner
     class << self
       def start
-        options = Options.parse(ARGV)
+        options = Options.parse
         compile_options = {
           :readable => options.readable,
           :allow_undefined_global_classes => options.allow_undefined_global_classes,
@@ -140,11 +145,14 @@ module Riml
           require 'riml/repl'
           Riml::Repl.new(options.vi_readline, compile_options).run
         else
-          ARGV.replace ['--help']
-          start
+          abort "Invalid arguments. See valid arguments with 'riml --help'"
         end
       end
     end
   end
-  Runner.start
+  begin
+    Runner.start
+  rescue RimlError => e
+    abort e.message
+  end
 end
