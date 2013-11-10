@@ -1,9 +1,13 @@
 require 'pathname'
 require 'fileutils'
 
+if RUBY_VERSION <= '1.9'
+  require 'thread'
+end
+
 require File.expand_path('../riml/environment', __FILE__)
-require 'riml/nodes'
 require 'riml/lexer'
+require 'riml/nodes'
 require 'riml/parser'
 require 'riml/compiler'
 require 'riml/warning_buffer'
@@ -43,8 +47,8 @@ module Riml
   end
 
   def self.compile(input, options = {})
-    parse_options = options.select(&EXTRACT_PARSE_OPTIONS)
-    compile_options = options.select(&EXTRACT_COMPILE_OPTIONS)
+    parse_options = Hash[options.select(&EXTRACT_PARSE_OPTIONS)]
+    compile_options = Hash[options.select(&EXTRACT_COMPILE_OPTIONS)]
     parser = Parser.new
     parser.options = DEFAULT_PARSE_OPTIONS.merge(parse_options)
     compiler = Compiler.new
@@ -98,8 +102,8 @@ module Riml
     # options
     if filenames.last.is_a?(Hash)
       options = filenames.pop
-      compile_options = options.select(&EXTRACT_COMPILE_FILES_OPTIONS)
-      parse_options = options.select(&EXTRACT_PARSE_OPTIONS)
+      compile_options = Hash[options.select(&EXTRACT_COMPILE_FILES_OPTIONS)]
+      parse_options = Hash[options.select(&EXTRACT_PARSE_OPTIONS)]
       compiler.options = DEFAULT_COMPILE_FILES_OPTIONS.merge(compile_options)
       parser.options = DEFAULT_PARSE_OPTIONS.merge(parse_options)
     else
@@ -232,7 +236,7 @@ module Riml
     return instance_variable_set("@#{name}", nil) if path.nil?
     path = path.split(':') if path.is_a?(String)
     path.each do |dir|
-      unless Dir.exists?(dir)
+      unless File.directory?(dir)
         raise UserArgumentError, "Error trying to set #{name.to_s}. " \
           "Directory #{dir.inspect} doesn't exist"
       end

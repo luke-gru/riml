@@ -9,7 +9,7 @@ module Riml
     include Riml::Constants
 
     attr_accessor :ast, :options
-    attr_reader :classes, :rewritten_included_and_sourced_files
+    attr_reader :classes
 
     def initialize(ast = nil, classes = nil, class_dependency_graph = nil)
       @ast = ast
@@ -31,16 +31,15 @@ module Riml
 
     def rewrite(filename = nil, included = false)
       if filename && (rewritten_ast = Riml.rewritten_ast_cache[filename])
-        rewrite_included_and_sourced_files!(filename)
         return rewritten_ast
       end
+
       establish_parents(ast)
       if @options && @options[:allow_undefined_global_classes] && !@classes.has_global_import?
         @classes.globbed_imports.unshift(ImportedClass.new('*'))
-      else
-        class_imports = RegisterImportedClasses.new(ast, classes)
-        class_imports.rewrite_on_match
       end
+      class_imports = RegisterImportedClasses.new(ast, classes)
+      class_imports.rewrite_on_match
       if resolve_class_dependencies?
         resolve_class_dependencies!(filename)
         return if @resolving_class_dependencies == true
@@ -65,6 +64,25 @@ module Riml
         rewriter.rewrite_on_match
       end
       ast
+    end
+
+    def establish_parents(node)
+      Walker.walk_node(node, method(:do_establish_parents))
+    end
+    alias reestablish_parents establish_parents
+
+    def do_establish_parents(node)
+      node.children.each do |child|
+        child.parent_node = node if child.respond_to?(:parent_node=)
+      end if node.respond_to?(:children)
+    end
+
+    def rewrite_on_match(node = ast)
+      Walker.walk_node(node, method(:do_rewrite_on_match), max_recursion_lvl)
+    end
+
+    def do_rewrite_on_match(node)
+      replace node if match?(node)
     end
 
     def resolve_class_dependencies?
@@ -167,31 +185,12 @@ module Riml
 
       def class_name_full_name(class_name)
         return nil if class_name.nil?
-        if class_name[1] == ':'
+        if class_name[1..1] == ':'
           class_name
         else
           ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER + class_name
         end
       end
-    end
-
-    def establish_parents(node)
-      Walker.walk_node(node, method(:do_establish_parents))
-    end
-    alias reestablish_parents establish_parents
-
-    def do_establish_parents(node)
-      node.children.each do |child|
-        child.parent_node = node if child.respond_to?(:parent_node=)
-      end if node.respond_to?(:children)
-    end
-
-    def rewrite_on_match(node = ast)
-      Walker.walk_node(node, method(:do_rewrite_on_match), max_recursion_lvl)
-    end
-
-    def do_rewrite_on_match(node)
-      replace node if match?(node)
     end
 
     # We need to rewrite the included/sourced files before anything else. This is in
@@ -697,9 +696,9 @@ module Riml
                         ]
                       ),
                       StringNode.new("_s:#{def_node.name}", :s)
-                    ],
+                    ]
                   )
-                ],
+                ]
               )
             )
           constructor.expressions << extension
@@ -910,9 +909,9 @@ module Riml
                       ]
                     ),
                     StringNode.new("_s:#{super_func_name}", :s)
-                  ],
+                  ]
                 )
-              ],
+              ]
             )
           )
           ast.constructor.expressions << assign_node
@@ -1043,5 +1042,5 @@ module Riml
       end
     end
 
-  end
+  end unless defined?(Riml::AST_Rewriter)
 end

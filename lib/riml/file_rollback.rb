@@ -34,8 +34,10 @@ module Riml
     def self.trap(*signals, &block)
       signals.each do |sig|
         Signal.trap(sig) do
-          rollback! if @guarding > 0
-          block.call if block
+          if @guarding > 0
+            rollback!
+            block.call if block
+          end
         end
       end
     end

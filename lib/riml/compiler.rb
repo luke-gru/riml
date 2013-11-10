@@ -31,7 +31,7 @@ module Riml
 
       def visit(node)
         output = compile(node)
-        output << "\n" if node.force_newline and output[-1] != "\n"
+        output << "\n" if node.force_newline and output[-1, 1] != "\n"
         propagate_up_tree(node, output)
       end
 
@@ -78,7 +78,7 @@ module Riml
             node.compiled_output << node.indent + line
           end
         end
-        node.compiled_output << "\n" unless node.compiled_output[-1] == "\n"
+        node.compiled_output << "\n" unless node.compiled_output[-1..-1] == "\n"
         node.compiled_output << "endif\n"
       end
     end

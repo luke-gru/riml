@@ -39,8 +39,8 @@ rule
 
   Root:
     /* nothing */                        { result = make_node(val) { |_| Riml::Nodes.new([]) } }
-  | Statements                           { result = val[0] }
   | Terminator                           { result = make_node(val) { |_| Riml::Nodes.new([]) } }
+  | Statements                           { result = val[0] }
   ;
 
   # any list of expressions
@@ -558,8 +558,8 @@ end
 ---- header
   require File.expand_path("../lexer", __FILE__)
   require File.expand_path("../nodes", __FILE__)
-  require File.expand_path("../ast_rewriter", __FILE__)
   require File.expand_path("../errors", __FILE__)
+  require File.expand_path("../ast_rewriter", __FILE__)
 ---- inner
   # This code will be put as-is in the parser class
 

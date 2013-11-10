@@ -1,3 +1,4 @@
+#encoding: utf-8
 require File.expand_path('../test_helper', __FILE__)
 
 module Riml
@@ -227,6 +228,21 @@ def change_destination(lines, range, opts)
 end
 Riml
     assert lex(riml)
+  end
+
+  test "multibyte characters" do
+    riml = <<Riml
+def failure_message_for_match(expected, actual)
+  return "expected person name to be “\#{expected}” but was “\#{self.result}”"
+end
+Riml
+
+    expected = [
+      [:DEF, "def"], [:IDENTIFIER, "failure_message_for_match"], ["(", "("], [:IDENTIFIER, "expected"], [",", ","], [:IDENTIFIER, "actual"], [")", ")"], [:NEWLINE,"\n"],
+        [:RETURN, "return"], [:STRING_D, "expected person name to be “"], [".", "."], [:IDENTIFIER, "expected"], [".", "."], [:STRING_D, "” but was “"], [".", "."], [:IDENTIFIER, "self"], [:DICT_VAL, "result"], [".", "."], [:STRING_D, "”"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
   end
 
 end

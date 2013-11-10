@@ -1,12 +1,15 @@
+if RUBY_VERSION <= '1.9'
+  require 'rubygems'
+end
 gem 'minitest'
-require 'minitest/unit'
+require 'minitest/autorun'
 require 'mocha/setup'
 
 $VERBOSE = 1
 require File.expand_path('../../lib/riml', __FILE__)
 
 module Riml
-  class TestCase < MiniTest::Unit::TestCase
+  class TestCase < MiniTest::Test
 
     # taken from activesupport/testing/declarative
     def self.test(name, &block)
@@ -20,33 +23,6 @@ module Riml
           flunk "No implementation provided for #{name}"
         end
       end
-    end
-
-    # `capture_subprocess_io` is available in new versions of MiniTest
-    MiniTest::Assertions.class_eval do
-      def capture_subprocess_io
-        require 'tempfile'
-
-        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
-
-        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
-        $stdout.reopen captured_stdout
-        $stderr.reopen captured_stderr
-
-        begin
-          yield
-
-          $stdout.rewind
-          $stderr.rewind
-
-          [captured_stdout.read, captured_stderr.read]
-        ensure
-          captured_stdout.unlink
-          captured_stderr.unlink
-          $stdout.reopen orig_stdout
-          $stderr.reopen orig_stderr
-        end
-      end unless instance_methods.include?(:capture_subprocess_io)
     end
 
     alias assert_equal_orig assert_equal
@@ -150,12 +126,10 @@ end
 
 all_files_before = Dir.glob('**/*')
 
-MiniTest::Unit.after_tests do
+MiniTest.after_run do
   all_files_after = Dir.glob('**/*')
   if all_files_after != all_files_before
     STDERR.puts "WARNING: test suite added/removed file(s). Diff: " \
       "#{all_files_after.to_set.difference(all_files_before.to_set).to_a}"
   end
 end
-
-MiniTest::Unit.autorun

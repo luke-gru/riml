@@ -572,7 +572,7 @@ module Riml
     end
 
     def question_existence?
-      name_with_question_mark[-1] == ??
+      name_with_question_mark[-1, 1] == '?'
     end
   end
 
@@ -673,7 +673,7 @@ module Riml
       end
     end
 
-    SPLAT = lambda {|arg| arg == Riml::Constants::SPLAT_LITERAL || arg[0] == "*"}
+    SPLAT = lambda {|arg| arg == Riml::Constants::SPLAT_LITERAL || arg.to_s[0, 1] == "*"}
     DEFAULT_PARAMS = lambda {|p| DefaultParamNode === p}
 
     def original_name
@@ -1057,7 +1057,7 @@ module Riml
     end
 
     def constructor_obj_name
-      name[0].downcase + name[1..-1] + "Obj"
+      name[0, 1].downcase + name[1..-1] + "Obj"
     end
 
     def private_function_names
@@ -1090,4 +1090,5 @@ module Riml
       [call_node]
     end
   end
-end
+# this guard condition is necessary for Ruby 1.8.7
+end unless defined?(Riml) && defined?(Riml::Nodes)

@@ -134,7 +134,7 @@ module Riml
           puts Riml.compile($stdin.read, compile_options)
         elsif options.compile_files.any?
           FileRollback.trap(:INT, :QUIT, :KILL) { print("\n"); exit 1 }
-          Riml.compile_files(*options.compile_files, compile_files_options)
+          Riml.compile_files(*(options.compile_files + [compile_files_options]))
         elsif options.check_syntax_files.any?
           files = options.check_syntax_files.uniq
           Riml.check_syntax_files(*files)

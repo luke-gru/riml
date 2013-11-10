@@ -1,3 +1,6 @@
+# encoding: utf-8
+
+require 'strscan'
 require File.expand_path('../constants', __FILE__)
 require File.expand_path('../errors', __FILE__)
 
@@ -11,23 +14,22 @@ module Riml
     ANCHORED_INTERPOLATION_REGEX = /\A#{INTERPOLATION_REGEX}/m
     INTERPOLATION_SPLIT_REGEX = /(\#\{.*?\})/m
 
-    attr_reader :tokens, :prev_token, :chunk, :current_indent,
+    attr_reader :tokens, :prev_token, :current_indent,
       :invalid_keyword, :filename, :parser_info
     attr_accessor :lineno
     # for REPL
     attr_accessor :ignore_indentation_check
 
     def initialize(code, filename = nil, parser_info = false)
-      @code = code
-      @code.chomp!
+      code = code
+      code.chomp!
+      @s = StringScanner.new(code)
       @filename = filename
       @parser_info = parser_info
       set_start_state!
     end
 
     def set_start_state!
-      # number of characters consumed
-      @i = 0
       # array of doubles and triples: [tokenname, tokenval, lineno_to_add(optional)]
       # ex: [[:NEWLINE, "\n"]] OR [[:NEWLINE, "\n", 1]]
       @token_buf = []
@@ -53,8 +55,8 @@ module Riml
     end
 
     def next_token
-      while @token_buf.empty? && more_code_to_tokenize?
-        tokenize_chunk(get_new_chunk)
+      while @token_buf.empty? && !@s.eos?
+        tokenize_chunk
       end
       if !@token_buf.empty?
         token = @token_buf.shift
@@ -74,55 +76,48 @@ module Riml
       nil
     end
 
-    def tokenize_chunk(chunk)
-      @chunk = chunk
+    def tokenize_chunk
       # deal with line continuations
-      if cont = chunk[/\A\r?\n*[ \t\f]*\\/m]
-        @i += cont.size
+      if cont = @s.scan(/\A\r?\n*[ \t\f]*\\/m)
         @lineno += cont.each_line.to_a.size - 1
         return
       end
 
       # all lines that start with ':' pass right through unmodified
-      if (prev_token.nil? || prev_token[0] == :NEWLINE) && (ex_literal = chunk[/\A[ \t\f]*:(.*)?$/])
-        @i += ex_literal.size
-        @token_buf << [:EX_LITERAL, $1]
+      if (prev_token.nil? || prev_token[0] == :NEWLINE) && @s.scan(/\A[ \t\f]*:(.*)?$/)
+        @token_buf << [:EX_LITERAL, @s[1]]
         return
       end
 
-      if splat_var = chunk[/\Aa:\d+/]
-        @i += splat_var.size
+      if splat_var = @s.scan(/\Aa:\d+/)
         @token_buf << [:SCOPE_MODIFIER, 'a:'] << [:IDENTIFIER, splat_var[2..-1]]
       # the 'n' scope modifier is added by riml
-      elsif scope_modifier = chunk[/\A([bwtglsavn]:)(\w|\{)/, 1]
-        @i += 2
-        @token_buf << [:SCOPE_MODIFIER, scope_modifier]
-      elsif scope_modifier_literal = chunk[/\A([bwtglsavn]:)/]
-        @i += scope_modifier_literal.size
+      elsif @s.check(/\A([bwtglsavn]:)(\w|\{)/)
+        @token_buf << [:SCOPE_MODIFIER, @s[1]]
+        @s.pos += 2
+      elsif scope_modifier_literal = @s.scan(/\A([bwtglsavn]:)/)
         @token_buf << [:SCOPE_MODIFIER_LITERAL, scope_modifier_literal]
-      elsif special_var_prefix = chunk[/\A(&(\w:)?(?!&)|\$|@)/]
+      elsif special_var_prefix = (!@s.check(/\A&(\w:)?&/) && @s.scan(/\A(&(\w:)?|\$|@)/))
         @token_buf << [:SPECIAL_VAR_PREFIX, special_var_prefix.strip]
-        @i += special_var_prefix.size
         if special_var_prefix == '@'
-          new_chunk = get_new_chunk
-          next_char = new_chunk[0]
+          next_char = @s.peek(1)
           if REGISTERS.include?(next_char)
             @token_buf << [:IDENTIFIER, next_char]
-            @i += 1
+            @s.getch
           end
         else
           @expecting_identifier = true
         end
-      elsif function_method = chunk[/\A(function)\(/, 1]
-        @token_buf << [:IDENTIFIER, function_method]
-        @i += function_method.size
-      elsif identifier = chunk[/\A[a-zA-Z_][\w#]*(\?|!)?/]
+      elsif @s.scan(/\A(function)\(/)
+        @token_buf << [:IDENTIFIER, @s[1]]
+        @s.pos -= 1
+      elsif identifier = @s.check(/\A[a-zA-Z_][\w#]*(\?|!)?/)
         # keyword identifiers
         if KEYWORDS.include?(identifier)
           if identifier.match(/\Afunction/)
             old_identifier = identifier.dup
             identifier.sub!(/function/, "def")
-            @i += (old_identifier.size - identifier.size)
+            @s.pos += (old_identifier.size - identifier.size)
           end
 
           if DEFINE_KEYWORDS.include?(identifier)
@@ -131,72 +126,63 @@ module Riml
 
           # strip '?' out of token names and replace '!' with '_bang'
           token_name = identifier.sub(/\?\Z/, "").sub(/!\Z/, "_bang").upcase
-          track_indent_level(chunk, identifier)
+          track_indent_level(identifier)
 
           if VIML_END_KEYWORDS.include?(identifier)
             token_name = :END
           end
 
-          @token_buf << [token_name.intern, identifier]
+          @token_buf << [token_name.to_sym, identifier]
 
-        elsif BUILTIN_COMMANDS.include?(identifier) && peek(identifier.size) != '('
+        elsif BUILTIN_COMMANDS.include?(identifier) && @s.peek(identifier.size + 1)[-1, 1] != '('
           @token_buf << [:BUILTIN_COMMAND, identifier]
         elsif RIML_FILE_COMMANDS.include? identifier
           @token_buf << [:RIML_FILE_COMMAND, identifier]
         elsif RIML_CLASS_COMMANDS.include? identifier
           @token_buf << [:RIML_CLASS_COMMAND, identifier]
         elsif VIML_COMMANDS.include?(identifier) && (prev_token.nil? || prev_token[0] == :NEWLINE)
-          @i += identifier.size
-          new_chunk = get_new_chunk
-          until_eol = new_chunk[/.*$/].to_s
+          @s.pos += identifier.size
+          until_eol = @s.scan(/.*$/).to_s
           @token_buf << [:EX_LITERAL, identifier << until_eol]
-          @i += until_eol.size
           return
         # method names and variable names
         else
           @token_buf << [:IDENTIFIER, identifier]
         end
 
-        @i += identifier.size
+        @s.pos += identifier.size
 
         parse_dict_vals!
 
-      elsif @in_function_declaration && (splat_param = chunk[/\A(\.{3}|\*[a-zA-Z_]\w*)/])
+      elsif @in_function_declaration && (splat_param = @s.scan(/\A(\.{3}|\*[a-zA-Z_]\w*)/))
         @token_buf << [:SPLAT_PARAM, splat_param]
-        @i += splat_param.size
-      elsif !@in_function_declaration && (splat_arg = chunk[/\A\*([bwtglsavn]:)?([a-zA-Z_]\w*|\d+)/])
+      elsif !@in_function_declaration && (splat_arg = @s.scan(/\A\*([bwtglsavn]:)?([a-zA-Z_]\w*|\d+)/))
         @token_buf << [:SPLAT_ARG, splat_arg]
-        @i += splat_arg.size
       # integer (octal)
-      elsif octal = chunk[/\A0[0-7]+/]
+      elsif octal = @s.scan(/\A0[0-7]+/)
         @token_buf << [:NUMBER, octal]
-        @i += octal.size
       # integer (hex)
-      elsif hex = chunk[/\A0[xX]\h+/]
+      elsif hex = @s.scan(/\A0[xX]\h+/)
         @token_buf << [:NUMBER, hex]
-        @i += hex.size
       # integer or float (decimal)
-      elsif decimal = chunk[/\A[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/]
+      elsif decimal = @s.scan(/\A[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/)
         @token_buf << [:NUMBER, decimal]
-        @i += decimal.size
-      elsif interpolation = chunk[ANCHORED_INTERPOLATION_REGEX]
+      elsif interpolation = @s.scan(ANCHORED_INTERPOLATION_REGEX)
         # "hey there, #{name}" = "hey there, " . name
         parts = interpolation[1...-1].split(INTERPOLATION_SPLIT_REGEX)
         handle_interpolation(*parts)
-        @i += interpolation.size
-      elsif (single_line_comment = chunk[SINGLE_LINE_COMMENT_REGEX]) && (prev_token.nil? || prev_token[0] == :NEWLINE)
-        @i += single_line_comment.size + 1 # consume next newline character
+      elsif (single_line_comment = @s.check(SINGLE_LINE_COMMENT_REGEX)) && (prev_token.nil? || prev_token[0] == :NEWLINE)
+        @s.pos += single_line_comment.size
+        @s.pos += 1 unless @s.eos? # consume newline
         @lineno += single_line_comment.each_line.to_a.size
-      elsif inline_comment = chunk[/\A[ \t\f]*"[^"]*?$/]
-        @i += inline_comment.size # inline comment, don't consume newline character
+      elsif inline_comment = @s.scan(/\A[ \t\f]*"[^"]*?$/)
         @lineno += inline_comment.each_line.to_a.size - 1
-      elsif string_double = chunk[/\A"(.*?)(?<!\\)"/, 1]
-        @token_buf << [:STRING_D, string_double]
-        @i += string_double.size + 2
-      elsif string_single = chunk[/\A'(([^']|'')*)'/, 1]
-        @token_buf << [:STRING_S, string_single]
-        @i += string_single.size + 2
-      elsif newlines = chunk[/\A([\r\n]+)/, 1]
+      # remove negative lookbehind
+      elsif (str = lex_string_double)
+        @token_buf << [:STRING_D, str]
+      elsif @s.scan(/\A'(([^']|'')*)'/)
+        @token_buf << [:STRING_S, @s[1]]
+      elsif newlines = @s.scan(/\A([\r\n]+)/)
         # push only 1 newline
         @token_buf << [:NEWLINE, "\n"] unless prev_token && prev_token[0] == :NEWLINE
 
@@ -210,14 +196,13 @@ module Riml
           @in_function_declaration = false
         end
 
-        @i += newlines.size
         @lineno += newlines.size
-      elsif heredoc_pattern = chunk[%r{\A<<(.+?)\r?\n}]
-        pattern = $1
-        @i += heredoc_pattern.size
-        new_chunk = get_new_chunk
-        heredoc_string = new_chunk[%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|m, 1]
-        @i += heredoc_string.size + pattern.size
+      # heredoc
+      elsif @s.scan(%r{\A<<(.+?)\r?\n})
+        pattern = @s[1]
+        @s.check(%r|(.+?\r?\n)(#{Regexp.escape(pattern)})|m)
+        heredoc_string = @s[1]
+        @s.pos += (pattern.size + heredoc_string.size)
         heredoc_string.chomp!
         if heredoc_string =~ INTERPOLATION_REGEX || %Q("#{heredoc_string}") =~ INTERPOLATION_REGEX
           parts = heredoc_string.split(INTERPOLATION_SPLIT_REGEX)
@@ -227,24 +212,21 @@ module Riml
         end
         @lineno += heredoc_string.each_line.to_a.size
       # operators of more than 1 char
-      elsif operator = chunk[OPERATOR_REGEX]
+      elsif operator = @s.scan(OPERATOR_REGEX)
         @token_buf << [operator, operator]
-        @i += operator.size
-      elsif regexp = chunk[%r{\A/.*?[^\\]/}]
+      elsif regexp = @s.scan(%r{\A/.*?[^\\]/})
         @token_buf << [:REGEXP, regexp]
-        @i += regexp.size
-      elsif whitespaces = chunk[/\A[ \t\f]+/]
-        @i += whitespaces.size
+      # whitespaces
+      elsif @s.scan(/\A[ \t\f]+/)
       # operators and tokens of single chars, one of: ( ) , . [ ] ! + - = < > /
       else
-        value = chunk[0, 1]
+        value = @s.getch
         if value == '|'
           @token_buf << [:NEWLINE, "\n"]
         else
           @token_buf << [value, value]
         end
-        @i += 1
-        if value == ']' || value == ')' && (chunk[1, 1] == '.' && chunk[3, 1] != ':')
+        if value == ']' || value == ')' && (@s.peek(1) == '.' && @s.peek(3) != ':')
           parse_dict_vals!
         end
       end
@@ -265,6 +247,27 @@ module Riml
 
     private
 
+    # regex with negative lookbehind we were using before: @s.scan(/\A"(.*?)(?<!\\)"/)
+    # This method is necessary to work with ruby-1.8.7 because the regular
+    # expression engine does not support negative lookbehind.
+    def lex_string_double
+      str = ''
+      regex = /\A"(.*?)"/
+      pos = @s.pos
+      while @s.scan(regex)
+        match = @s[1]
+        str << match
+        if match[-1, 1] == '\\'
+          str << '"'
+          regex = /\A(.*?)"/
+        else
+          return str
+        end
+      end
+      @s.pos = pos
+      nil
+    end
+
     def decorate_token(token)
       token << {
         :lineno => @lineno,
@@ -273,7 +276,7 @@ module Riml
       token
     end
 
-    def track_indent_level(chunk, identifier)
+    def track_indent_level(identifier)
       case identifier.to_sym
       when :def, :def!, :defm, :defm!, :while, :until, :for, :try, :class
         @current_indent += 2
@@ -289,12 +292,12 @@ module Riml
       end
     end
 
+    # dict.key OR dict.key.other_key
     def parse_dict_vals!
-      # dict.key OR dict.key.other_key
-      new_chunk = get_new_chunk
-      if vals = new_chunk[/\A\.([\w.]+)(?!:)/, 1]
+      # remove negative lookahead!
+      if @s.scan(/\A\.([\w.]+)(?!:)/)
+        vals = @s[1]
         parts = vals.split('.')
-        @i += vals.size + 1
         if @in_function_declaration
           @token_buf.last[1] << ".#{vals}"
         else
@@ -312,7 +315,7 @@ module Riml
 
     def handle_interpolation(*parts)
       parts.delete_if {|p| p.empty?}.each_with_index do |part, i|
-        if part[0..1] == '#{' && part[-1] == '}'
+        if part[0..1] == '#{' && part[-1, 1] == '}'
           interpolation_content = part[2...-1]
           @token_buf.concat tokenize_without_moving_pos(interpolation_content)
         else
@@ -336,25 +339,13 @@ module Riml
     end
 
     def statement_modifier?
-      old_i = @i
+      old_pos = @s.pos
       # backtrack until the beginning of the line
-      @i -= 1 while @code && @code[@i-1] !~ /\n|\r/ && !@code[@i-1].to_s.empty?
-      new_chunk = get_new_chunk
-      new_chunk.to_s[/\A(.+?)(if|unless).+?$/] && !$1.strip.empty?
+      @s.pos -= 1 until @s.bol?
+      @s.check(/\A(.+?)(if|unless).+?$/) && !@s[1].strip.empty?
     ensure
-      @i = old_i
+      @s.pos = old_pos
     end
 
-    def get_new_chunk
-      @code[@i..-1]
-    end
-
-    def more_code_to_tokenize?
-      @i < @code.size
-    end
-
-    def peek(n = 1)
-      @chunk[n]
-    end
-  end
+  end unless defined?(Riml::Lexer)
 end
