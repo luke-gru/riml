@@ -288,7 +288,7 @@ module Riml
     else
       # absolute path for filename sent from cmdline or from riml_sourced files,
       # output to that same directory if no --output-dir option is set
-      if fname[0] == File::SEPARATOR && !compiler.output_dir
+      if fname[0, 1] == File::SEPARATOR && !compiler.output_dir
         Pathname.new(fname).parent.to_s
       # relative path
       else

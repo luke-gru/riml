@@ -1,3 +1,7 @@
+if RUBY_VERSION < '1.9'
+  require 'rubygems'
+end
+
 require File.expand_path('../lib/riml/environment', __FILE__)
 require 'rake/testtask'
 require 'bundler/setup'
