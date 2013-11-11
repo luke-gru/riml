@@ -1,4 +1,4 @@
-if RUBY_VERSION <= '1.9'
+if RUBY_VERSION < '1.9'
   require 'rubygems'
 end
 gem 'minitest'
@@ -81,13 +81,13 @@ EOS
     end
 
     %w(source_path include_path).each do |path|
-      define_method "with_riml_#{path}" do |*new_paths, &block|
+      define_method "with_riml_#{path}" do |*new_paths|
         begin
           old_path = Riml.send(path)
-          Riml.send("#{path}=", new_paths)
-          block.call
+          Riml.send("#{path}=", new_paths, true)
+          yield if block_given?
         ensure
-          Riml.send("#{path}=", old_path)
+          Riml.send("#{path}=", old_path, true)
         end
       end
     end

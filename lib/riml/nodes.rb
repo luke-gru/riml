@@ -251,8 +251,14 @@ module Riml
   class DictionaryNode < LiteralNode
     include Walkable
 
+    def initialize(value)
+      super(value.to_a)
+    end
+
     def children
-      value.to_a.compact.inject([], :concat)
+      ret = []
+      value.compact.each { |(k, v)| ret << k << v }
+      ret
     end
   end
 

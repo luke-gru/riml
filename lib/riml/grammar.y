@@ -160,13 +160,15 @@ rule
   ;
 
   Dictionary:
-    DictionaryLiteral                     { result = make_node(val) { |v| Riml::DictionaryNode.new(v[0]) } }
+    DictionaryLiteral                     { result = make_node(val) { |v| Riml::DictionaryNode.new(v[0][0]) } }
   ;
 
-  # {'key': 'value', 'key': 'value'}
+  # {'key': 'value', 'key2': 'value2'}
+  # Save as [['key', 'value'], ['key2', 'value2']] because ruby-1.8.7 offers
+  # no guarantee for key-value pair ordering.
   DictionaryLiteral:
-    '{' DictItems '}'                     { result = Hash[val[1]] }
-  | '{' DictItems ',' '}'                 { result = Hash[val[1]] }
+    '{' DictItems '}'                     { result = [val[1]] }
+  | '{' DictItems ',' '}'                 { result = [val[1]] }
   ;
 
   # [[key, value], [key, value]]
@@ -590,8 +592,8 @@ end
         ast = do_parse
       rescue Racc::ParseError => e
         raise unless @lexer
-        if @lexer.prev_token_is_keyword?
-          warning = "#{@lexer.invalid_keyword.inspect} is a keyword, and cannot " \
+        if (invalid_token = @lexer.prev_token_is_keyword?)
+          warning = "#{invalid_token.inspect} is a keyword, and cannot " \
             "be used as a variable name"
         end
         error_msg = "#{e.message} at #{@lexer.filename}:#{@lexer.lineno}"

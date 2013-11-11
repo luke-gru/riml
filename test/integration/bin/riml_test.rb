@@ -63,8 +63,8 @@ class BinRimlTest < Riml::TestCase
       begin
         system "#{EXEC} -S #{riml_commands_dir} -c ../riml_commands/sourced1.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?(sourced1_vim_path)
-        assert File.exists?(sourced2_vim_path)
+        assert File.exists?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
+        assert File.exists?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
       ensure
         File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
         File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)
@@ -81,8 +81,8 @@ class BinRimlTest < Riml::TestCase
         ENV['RIML_SOURCE_PATH'] = riml_commands_dir
         system "#{EXEC} -c ../riml_commands/sourced1.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?(sourced1_vim_path)
-        assert File.exists?(sourced2_vim_path)
+        assert File.exists?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
+        assert File.exists?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
       ensure
         File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
         File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)

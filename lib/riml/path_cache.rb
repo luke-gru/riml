@@ -34,6 +34,10 @@ module Riml
       @cache[path][basename]
     end
 
+    def clear
+      @cache.clear
+    end
+
     private
 
     # returns array of strings (directory names in path)

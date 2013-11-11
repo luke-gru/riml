@@ -1,7 +1,7 @@
 require 'pathname'
 require 'fileutils'
 
-if RUBY_VERSION <= '1.9'
+if RUBY_VERSION < '1.9'
   require 'thread'
 end
 
@@ -199,6 +199,7 @@ module Riml
     @include_cache.clear
     @path_cache.clear
     @rewritten_ast_cache.clear
+    Parser.ast_cache.clear
   end
 
   # if error is thrown, all files that were created will be rolled back

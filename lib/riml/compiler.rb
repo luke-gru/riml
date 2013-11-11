@@ -169,20 +169,21 @@ module Riml
         when String
           StringNode === node ? string_surround(node) : node.value
         when Array
-          node.value.each {|n| n.parent_node = node}
-          '[' <<
-          node.value.map do |n|
-            n.accept(visitor_for_node(n))
-            n.compiled_output
-          end.join(', ') << ']'
-        when Hash
-          node.value.each {|k_n, v_n| k_n.parent_node, v_n.parent_node = node, node}
-          '{' <<
-          node.value.map do |k,v|
-            k.accept(visitor_for_node(k))
-            v.accept(visitor_for_node(v))
-            k.compiled_output << ': ' << v.compiled_output
-          end.join(', ') << '}'
+          if ListNode === node
+            node.value.each {|n| n.parent_node = node}
+            '[' <<
+            node.value.map do |n|
+              n.accept(visitor_for_node(n))
+              n.compiled_output
+            end.join(', ') << ']'
+          elsif DictionaryNode === node
+            '{' <<
+            node.value.map do |(k, v)|
+              k.accept(visitor_for_node(k))
+              v.accept(visitor_for_node(v))
+              k.compiled_output << ': ' << v.compiled_output
+            end.join(', ') << '}'
+          end
         end.to_s
 
         node.compiled_output = value

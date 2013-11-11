@@ -15,21 +15,16 @@ module Riml
     INTERPOLATION_SPLIT_REGEX = /(\#\{.*?\})/m
 
     attr_reader :tokens, :prev_token, :current_indent,
-      :invalid_keyword, :filename, :parser_info
+      :filename, :parser_info
     attr_accessor :lineno
     # for REPL
     attr_accessor :ignore_indentation_check
 
     def initialize(code, filename = nil, parser_info = false)
-      code = code
       code.chomp!
       @s = StringScanner.new(code)
-      @filename = filename
+      @filename = filename || COMPILED_STRING_LOCATION
       @parser_info = parser_info
-      set_start_state!
-    end
-
-    def set_start_state!
       # array of doubles and triples: [tokenname, tokenval, lineno_to_add(optional)]
       # ex: [[:NEWLINE, "\n"]] OR [[:NEWLINE, "\n", 1]]
       @token_buf = []
@@ -45,11 +40,9 @@ module Riml
       @indent_pending = false
       @dedent_pending = false
       @in_function_declaration = false
-      @invalid_keyword = nil
     end
 
     def tokenize
-      set_start_state!
       while next_token != nil; end
       @tokens
     end
@@ -162,7 +155,7 @@ module Riml
       elsif octal = @s.scan(/\A0[0-7]+/)
         @token_buf << [:NUMBER, octal]
       # integer (hex)
-      elsif hex = @s.scan(/\A0[xX]\h+/)
+      elsif hex = @s.scan(/\A0[xX][0-9a-fA-F]+/)
         @token_buf << [:NUMBER, hex]
       # integer or float (decimal)
       elsif decimal = @s.scan(/\A[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/)
@@ -233,13 +226,13 @@ module Riml
     end
 
     # Checks if any of previous n tokens are keywords.
-    # If any found, sets `@invalid_keyword` to the found token value.
+    # If any found, return the keyword, otherwise returns `false`.
     def prev_token_is_keyword?(n = 2)
       return false if n <= 0
       (1..n).each do |i|
         t = tokens[-i]
         if t && t[1] && KEYWORDS.include?(t[1])
-          return @invalid_keyword = t[1]
+          return t[1]
         end
       end
       false
