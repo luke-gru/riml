@@ -309,4 +309,5 @@ module Riml
     end
   end
 
-end
+# ruby-1.8.7 guard condition
+end unless defined?(Riml) && defined?(Riml::DEFAULT_COMPILE_OPTIONS)
