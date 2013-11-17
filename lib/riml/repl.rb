@@ -97,7 +97,7 @@ msg
     end
 
     def print_error(e)
-      puts "#{e.class}: #{e}"
+      puts e.verbose_message
     end
 
     def exit_repl

@@ -16,7 +16,7 @@ class SmartInputParserTest < Riml::TestCase
       error = e
     end
     assert error
-    assert error.message =~ /#{Regexp.escape(":#{lineno}")}\b/
+    assert error.verbose_message =~ /#{Regexp.escape(":#{lineno}")}\b/
   end
 
   test "complicated expression" do

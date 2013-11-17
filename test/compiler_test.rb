@@ -1859,7 +1859,7 @@ class FastJob < Job
 end
 Riml
 
-    assert_raises(Riml::UserFunctionNotFoundError) do
+    assert_raises(Riml::InvalidSuper) do
       compile(riml)
     end
   end

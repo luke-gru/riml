@@ -16,6 +16,6 @@ class PathogenParserTest < Riml::TestCase
       error = e
     end
     assert error
-    assert error.message =~ /#{Regexp.escape(":#{lineno}")}\b/
+    assert error.verbose_message =~ /#{Regexp.escape(":#{lineno}")}\b/
   end
 end

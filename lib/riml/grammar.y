@@ -160,15 +160,15 @@ rule
   ;
 
   Dictionary:
-    DictionaryLiteral                     { result = make_node(val) { |v| Riml::DictionaryNode.new(v[0][0]) } }
+    DictionaryLiteral                     { result = make_node(val) { |v| Riml::DictionaryNode.new(v[0]) } }
   ;
 
   # {'key': 'value', 'key2': 'value2'}
   # Save as [['key', 'value'], ['key2', 'value2']] because ruby-1.8.7 offers
   # no guarantee for key-value pair ordering.
   DictionaryLiteral:
-    '{' DictItems '}'                     { result = [val[1]] }
-  | '{' DictItems ',' '}'                 { result = [val[1]] }
+    '{' DictItems '}'                     { result = val[1] }
+  | '{' DictItems ',' '}'                 { result = val[1] }
   ;
 
   # [[key, value], [key, value]]
@@ -596,9 +596,10 @@ end
           warning = "#{invalid_token.inspect} is a keyword, and cannot " \
             "be used as a variable name"
         end
-        error_msg = "#{e.message} at #{@lexer.filename}:#{@lexer.lineno}"
-        error_msg << "\n\n#{warning}" if warning
-        raise Riml::ParseError, error_msg
+        error_msg = e.message
+        error_msg << "\nWARNING: #{warning}" if warning
+        error = Riml::ParseError.new(error_msg, @lexer.filename, @lexer.lineno)
+        raise error
       end
       self.class.ast_cache[filename] = ast if filename
     end
@@ -615,7 +616,9 @@ end
   def next_token
     return @tokens.shift unless @lexer
     token = @lexer.next_token
-    @current_parser_info = token.pop if token
+    if token && @lexer.parser_info
+      @current_parser_info = token.pop
+    end
     token
   end
 

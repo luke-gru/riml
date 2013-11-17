@@ -47,9 +47,10 @@ module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 566)
           warning = "#{invalid_token.inspect} is a keyword, and cannot " \
             "be used as a variable name"
         end
-        error_msg = "#{e.message} at #{@lexer.filename}:#{@lexer.lineno}"
-        error_msg << "\n\n#{warning}" if warning
-        raise Riml::ParseError, error_msg
+        error_msg = e.message
+        error_msg << "\nWARNING: #{warning}" if warning
+        error = Riml::ParseError.new(error_msg, @lexer.filename, @lexer.lineno)
+        raise error
       end
       self.class.ast_cache[filename] = ast if filename
     end
@@ -66,7 +67,9 @@ module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 566)
   def next_token
     return @tokens.shift unless @lexer
     token = @lexer.next_token
-    @current_parser_info = token.pop if token
+    if token && @lexer.parser_info
+      @current_parser_info = token.pop
+    end
     token
   end
 
@@ -1965,21 +1968,21 @@ module_eval(<<'.,.,', 'grammar.y', 158)
 
 module_eval(<<'.,.,', 'grammar.y', 162)
   def _reduce_72(val, _values, result)
-     result = make_node(val) { |v| Riml::DictionaryNode.new(v[0][0]) } 
+     result = make_node(val) { |v| Riml::DictionaryNode.new(v[0]) } 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 169)
   def _reduce_73(val, _values, result)
-     result = [val[1]] 
+     result = val[1] 
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'grammar.y', 170)
   def _reduce_74(val, _values, result)
-     result = [val[1]] 
+     result = val[1] 
     result
   end
 .,.,

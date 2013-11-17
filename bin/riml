@@ -20,6 +20,7 @@ module Riml
       options.check_syntax_files = []
       options.repl = false
       options.vi_readline = false
+      options.debug = false
       options.allow_undefined_global_classes = DEFAULT_PARSE_OPTIONS[:allow_undefined_global_classes]
       options.include_reordering = DEFAULT_PARSE_OPTIONS[:include_reordering]
       options.readable = DEFAULT_COMPILE_OPTIONS[:readable]
@@ -82,6 +83,10 @@ module Riml
           options.vi_readline = options.repl =  true
         end
 
+        opts.on("-D", "--debug", "Run in debug mode. Full stacktraces are shown on error.") do
+          options.debug = true
+        end
+
         opts.on_tail("-v", "--version", "Show riml version.") do
           puts VERSION.join('.')
           exit
@@ -130,6 +135,7 @@ module Riml
         compile_files_options = compile_options.merge(
           :output_dir => options.output_dir
         )
+        Riml.debug = options.debug
         if options.stdio
           puts Riml.compile($stdin.read, compile_options)
         elsif options.compile_files.any?
@@ -153,6 +159,10 @@ module Riml
   begin
     Runner.start
   rescue RimlError => e
-    abort e.message
+    if Riml.debug
+      raise
+    else
+      abort e.verbose_message
+    end
   end
 end

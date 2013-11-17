@@ -103,9 +103,11 @@ module Riml
           if filename && @included_and_sourced_file_refs[file].include?(filename)
             msg = "#{filename.inspect} can't include #{file.inspect}, as " \
                   " #{file.inspect} already included #{filename.inspect}"
-            raise IncludeFileLoop, msg
+            error = IncludeFileLoop.new(msg, node)
+            raise error
           elsif filename == file
-            raise UserArgumentError, "#{file.inspect} can't include itself"
+            error = UserArgumentError.new("#{file.inspect} can't include itself", node)
+            raise error
           end
           @included_and_sourced_file_refs[filename] << file
           riml_src = File.read(fullpath)
@@ -209,9 +211,11 @@ module Riml
             msg = "#{filename.inspect} can't #{action} #{file.inspect}, as " \
                   " #{file.inspect} already included/sourced #{filename.inspect}"
             # IncludeFileLoop/SourceFileLoop
-            raise Riml.const_get("#{action.capitalize}FileLoop"), msg
+            error = Riml.const_get("#{action.capitalize}FileLoop").new(msg, node)
+            raise error
           elsif filename == file
-            raise UserArgumentError, "#{file.inspect} can't #{action} itself"
+            error = UserArgumentError.new("#{file.inspect} can't #{action} itself", node)
+            raise error
           end
           @included_and_sourced_file_refs[filename] << file
           # recursively parse included files with this ast_rewriter in order
@@ -778,9 +782,10 @@ module Riml
 
         def replace(constructor)
           unless class_node.superclass?
-            # TODO: raise error instead of aborting
-            abort "class #{class_node.full_name.inspect} called super in its " \
+            error_msg "class #{class_node.full_name.inspect} called super in its " \
               " initialize function, but it has no superclass."
+            error = InvalidSuper.new(error_msg, constructor)
+            raise error
           end
 
           superclass = classes.superclass(class_node.full_name)
@@ -840,10 +845,11 @@ module Riml
           end
           superclass_function = superclass.find_function(func_scope, superclass_func_name(superclass))
           if superclass.nil? || !superclass_function
-            raise Riml::UserFunctionNotFoundError,
-              "super was called in class #{ast.full_name} in " \
+            error_msg = "super was called in class #{ast.full_name} in " \
               "function #{@function_node.original_name}, but there are no " \
               "functions with this name in that class's superclass hierarchy."
+            error = Riml::InvalidSuper.new(error_msg, node)
+            raise error
           end
           node_args = if node.arguments.empty? && !node.with_parens && superclass_function.splat
             [SplatNode.new('*a:000')]
@@ -963,7 +969,9 @@ module Riml
 
         while param = def_node.parameters[param_idx += 1]
           unless param == def_node.splat || DefaultParamNode === param
-            raise UserArgumentError, "can't have regular parameter after default parameter in function #{def_node.name.inspect}"
+            error_msg = "can't have regular parameter after default parameter in function #{def_node.name.inspect}"
+            error = UserArgumentError.new(error_msg, def_node)
+            raise error
           end
         end
 

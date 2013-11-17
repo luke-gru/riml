@@ -170,7 +170,6 @@ module Riml
         @lineno += single_line_comment.each_line.to_a.size
       elsif inline_comment = @s.scan(/\A[ \t\f]*"[^"]*?$/)
         @lineno += inline_comment.each_line.to_a.size - 1
-      # remove negative lookbehind
       elsif (str = lex_string_double)
         @token_buf << [:STRING_D, str]
       elsif @s.scan(/\A'(([^']|'')*)'/)
@@ -219,6 +218,11 @@ module Riml
         else
           @token_buf << [value, value]
         end
+        # if we encounter `funcCall().`, the next character must be treated as
+        # a dictionary retrieval operation, not a string concatenation
+        # operation.
+        # However, if we see `funcCall().l:localVar`, we know it must be a
+        # string concatenation operation.
         if value == ']' || value == ')' && (@s.peek(1) == '.' && @s.peek(3) != ':')
           parse_dict_vals!
         end
@@ -240,25 +244,33 @@ module Riml
 
     private
 
-    # regex with negative lookbehind we were using before: @s.scan(/\A"(.*?)(?<!\\)"/)
-    # This method is necessary to work with ruby-1.8.7 because the regular
-    # expression engine does not support negative lookbehind.
-    def lex_string_double
-      str = ''
-      regex = /\A"(.*?)"/
-      pos = @s.pos
-      while @s.scan(regex)
-        match = @s[1]
-        str << match
-        if match[-1, 1] == '\\'
-          str << '"'
-          regex = /\A(.*?)"/
-        else
-          return str
-        end
+    # we have negative lookbehind in regexp engine
+    if RUBY_VERSION >= '1.9'
+      # have to use string constructor, as parser would throw SyntaxError if
+      # RUBY_VERSION < '1.9'. Literal regexp is `/\A"(.*?)(?<!\\)"/`
+      STRING_DOUBLE_NEGATIVE_LOOKBEHIND_REGEX = Regexp.new('\A"(.*?)(?<!\\\\)"')
+      def lex_string_double
+        @s.scan(STRING_DOUBLE_NEGATIVE_LOOKBEHIND_REGEX) && @s[1]
       end
-      @s.pos = pos
-      nil
+    # we don't have negative lookbehind in regexp engine
+    else
+      def lex_string_double
+        str = ''
+        regex = /\A"(.*?)"/
+        pos = @s.pos
+        while @s.scan(regex)
+          match = @s[1]
+          str << match
+          if match[-1, 1] == '\\'
+            str << '"'
+            regex = /\A(.*?)"/
+          else
+            return str
+          end
+        end
+        @s.pos = pos
+        nil
+      end
     end
 
     def decorate_token(token)
@@ -285,9 +297,8 @@ module Riml
       end
     end
 
-    # dict.key OR dict.key.other_key
+    # `dict.key` or `dict.key.other_key`, etc.
     def parse_dict_vals!
-      # remove negative lookahead!
       if @s.scan(/\A\.([\w.]+)(?!:)/)
         vals = @s[1]
         parts = vals.split('.')
@@ -302,8 +313,15 @@ module Riml
     end
 
     def check_indentation
-      raise SyntaxError, "Missing #{(@current_indent / 2)} END identifier(s), " if @current_indent > 0
-      raise SyntaxError, "#{(@current_indent / 2).abs} too many END identifiers" if @current_indent < 0
+      if @current_indent > 0
+        error_msg = "Missing #{(@current_indent / 2)} END identifier(s)"
+        error = Riml::SyntaxError.new(error_msg, @filename, @lineno)
+        raise error
+      elsif @current_indent < 0
+        error_msg = "#{(@current_indent / 2).abs} too many END identifiers"
+        error = Riml::SyntaxError.new(error_msg, @filename, @lineno)
+        raise error
+      end
     end
 
     def handle_interpolation(*parts)
@@ -327,7 +345,7 @@ module Riml
 
     def tokenize_without_moving_pos(code)
       Lexer.new(code, filename, false).tap do |l|
-        l.lineno = lineno
+        l.lineno = @lineno
       end.tokenize
     end
 

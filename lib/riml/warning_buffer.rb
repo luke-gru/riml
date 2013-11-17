@@ -1,4 +1,6 @@
 module Riml
+  # Thread-safe output buffer. Used internally for all Riml warnings. Only
+  # one of these objects exists during compile.
   class WarningBuffer
     # This class acts as a singleton, so no instance-level mutexes are
     # required. This facilitates locking both class and instance

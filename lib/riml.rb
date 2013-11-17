@@ -210,11 +210,11 @@ module Riml
     FileRollback.guard(&block)
   end
 
-  # turn warnings on/off
   class << self
-    attr_accessor :warnings
+    attr_accessor :warnings, :debug
   end
   self.warnings = true
+  self.debug = false
 
   private
 

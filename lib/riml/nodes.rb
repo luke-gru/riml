@@ -23,7 +23,7 @@ module Riml
         n = n.parent
       end
       if n.nil?
-        return '<unknown>'
+        return Constants::UNKNOWN_LOCATION_INFO
       end
       filename = parser_info[:filename] || Constants::COMPILED_STRING_LOCATION
       "#{filename}:#{parser_info[:lineno]}"
@@ -407,7 +407,11 @@ module Riml
     def initialize(*)
       super
       if arguments.empty? || !arguments.all? { |arg| arg.is_a?(StringNode) }
-        raise Riml::UserArgumentError, "#{name.inspect} error: must pass string(s) (name of file(s))"
+        error = Riml::UserArgumentError.new(
+          "#{name.inspect} error: must pass string(s) (name of file(s))",
+          self
+        )
+        raise error
       end
     end
 
@@ -423,8 +427,10 @@ module Riml
           add_ext_to_filename(fname_given)
           files[fname_ext_added] = full_path
         else
-          raise Riml::FileNotFound, "#{fname_given.inspect} could not be found in " \
+          error_msg = "#{fname_given.inspect} could not be found in " \
             "Riml.#{name.sub('riml_', '')}_path (#{path_dirs.join(':').inspect})"
+          error = Riml::FileNotFound.new(error_msg, self)
+          raise error
         end
       end
       return files unless block_given?
@@ -471,9 +477,8 @@ module Riml
         # if '*' isn't a char in `class_name`, raise error
         if class_name.index('*').nil?
           msg = "* must be a character in class name '#{class_name}' if riml_import " \
-          "is given a string. Try\n`riml_import` #{class_name}` instead."
-          error = UserArgumentError.new(msg)
-          error.node = self
+          "is given a string. Try 'riml_import #{class_name}' instead."
+          error = UserArgumentError.new(msg, self)
           raise error
         end
       end
@@ -672,7 +677,9 @@ module Riml
       super
       # max number of arguments in viml
       if parameters.reject(&DEFAULT_PARAMS).size > 20
-        raise Riml::UserArgumentError, "can't have more than 20 parameters for #{full_name}"
+        error_msg = "can't have more than 20 parameters for function #{full_name}"
+        error = Riml::UserArgumentError.new(error_msg, self)
+        raise error
       end
       expressions.nodes.select { |node| DefNode === node}.each do |nested_func|
         nested_func.nested_within.unshift(self)
@@ -731,6 +738,7 @@ module Riml
 
     alias sid? sid
 
+    # FIXME: only detects top-level super nodes
     def super_node
       expressions.nodes.detect {|n| SuperNode === n}
     end

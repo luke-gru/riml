@@ -54,7 +54,7 @@ module Riml
     end
 
     def constructor_obj_name
-      @name[0..0].downcase + @name[1..-1] + "Obj"
+      @name[0, 1].downcase + @name[1..-1] + "Obj"
     end
 
     private

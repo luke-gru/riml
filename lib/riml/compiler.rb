@@ -44,7 +44,8 @@ module Riml
       def visitor_for_node(node, params={})
         Compiler.const_get("#{node.class.name.split('::').last}Visitor").new(params)
       rescue NameError
-        raise CompileError, "unexpected construct at #{node.location_info}"
+        error = CompileError.new('unexpected construct', node)
+        raise error
       end
 
       def root_node(node)
@@ -608,7 +609,8 @@ module Riml
           # riml_include has to be top-level
           unless node.parent == root_node(node)
             error_msg = %Q(riml_include error, has to be called at top-level)
-            raise IncludeNotTopLevel, error_msg
+            error = IncludeNotTopLevel.new(error_msg, node)
+            raise error
           end
           node.each_existing_file! do |basename, full_path|
             output = current_compiler(node).compile_include(basename, full_path)

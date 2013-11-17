@@ -51,8 +51,12 @@ module Riml
     ].flatten
 
     # For when showing source location (file:lineno) during error
-    # and no file was given
+    # and no file was given, only a string to compile.
+    # Ex: # Riml.compile(source_code) would raise an error like
+    # '<String>:14 riml_include must be top-level'
     COMPILED_STRING_LOCATION = '<String>'
+    # For when there is no location info associated with a node
+    UNKNOWN_LOCATION_INFO = '<unknown>'
 
     # :help function-list
     BUILTIN_FUNCTIONS =
