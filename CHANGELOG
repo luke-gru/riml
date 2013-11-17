@@ -1,3 +1,20 @@
+0.3.7
+=====
+
+* Now Ruby 1.8.7 compatible. No longer requires Ruby >= 1.9.2.
+
+* Make error messages give consistent messages across the board, giving
+a message along with file and line number information. Ex:
+
+    Riml::InvalidSuper
+    message: Class 'AppController' doesn't have a superclass.
+    location: /home/john/projects/riml_proj/lib/app_controller.riml:14
+
+No stacktrace is shown when using riml from the commandline. To enable a full
+stacktrace, use the new `--debug` commandline flag.
+
+* Various speed improvements, particularly to the lexer.
+
 0.3.6
 =====
 
