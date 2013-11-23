@@ -59,15 +59,18 @@ class BinRimlTest < Riml::TestCase
     riml_commands_dir = File.expand_path("../../riml_commands", __FILE__)
     sourced1_vim_path = './sourced1.vim'
     sourced2_vim_path = File.join(riml_commands_dir, 'sourced2.vim')
+    sourced2_bad_vim_path = './sourced2.vim'
     Dir.chdir(File.expand_path("../", __FILE__)) do
       begin
         system "#{EXEC} -S #{riml_commands_dir} -c ../riml_commands/sourced1.riml"
         assert_equal 0, $?.exitstatus
         assert File.exists?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
         assert File.exists?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
+        refute File.exists?(sourced2_bad_vim_path), "sourced2_bad_vim_path exists"
       ensure
         File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
         File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)
+        File.delete(sourced2_bad_vim_path) if File.exists?(sourced2_bad_vim_path)
       end
     end
   end
@@ -76,6 +79,7 @@ class BinRimlTest < Riml::TestCase
     riml_commands_dir = File.expand_path("../../riml_commands", __FILE__)
     sourced1_vim_path = './sourced1.vim'
     sourced2_vim_path = File.join(riml_commands_dir, 'sourced2.vim')
+    sourced2_bad_vim_path = './sourced2.vim'
     Dir.chdir(File.expand_path("../", __FILE__)) do
       begin
         ENV['RIML_SOURCE_PATH'] = riml_commands_dir
@@ -83,9 +87,11 @@ class BinRimlTest < Riml::TestCase
         assert_equal 0, $?.exitstatus
         assert File.exists?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
         assert File.exists?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
+        refute File.exists?(sourced2_bad_vim_path), "sourced2_bad_vim_path doesn't exist"
       ensure
         File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
         File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)
+        File.delete(sourced2_bad_vim_path) if File.exists?(sourced2_bad_vim_path)
         ENV['RIML_SOURCE_PATH'] = nil
       end
     end

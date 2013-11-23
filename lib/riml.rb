@@ -32,6 +32,9 @@ module Riml
   EXTRACT_COMPILE_OPTIONS = lambda { |k,_| DEFAULT_COMPILE_OPTIONS.keys.include?(k.to_sym) }
   EXTRACT_COMPILE_FILES_OPTIONS = lambda { |k,_| DEFAULT_COMPILE_FILES_OPTIONS.keys.include?(k.to_sym) }
 
+  FILENAME_OPTION_KEYS = [:commandline_filename, :sourced_filename]
+  EXTRACT_FILENAME_OPTIONS = lambda { |k,_| FILENAME_OPTION_KEYS.include?(k.to_sym) }
+
   # lex code (String) into tokens (Array)
   def self.lex(code)
     Lexer.new(code).tokenize
@@ -53,13 +56,14 @@ module Riml
     parser.options = DEFAULT_PARSE_OPTIONS.merge(parse_options)
     compiler = Compiler.new
     compiler.options = DEFAULT_COMPILE_OPTIONS.merge(compile_options)
-    do_compile(input, parser, compiler)
+    filename_options = Hash[options.select(&EXTRACT_FILENAME_OPTIONS)]
+    do_compile(input, parser, compiler, filename_options)
   end
 
   # compile AST (Nodes), tokens (Array), code (String) or object that returns
   # String from :read to output code (String). Writes file(s) if `input` is a
   # File.
-  def self.do_compile(input, parser = Parser.new, compiler = Compiler.new)
+  def self.do_compile(input, parser = Parser.new, compiler = Compiler.new, filename_options = {})
     if input.is_a?(Nodes)
       nodes = input
     elsif input.is_a?(String) || input.is_a?(Array)
@@ -73,17 +77,26 @@ module Riml
         "code (String) or respond_to?(:read), is #{input.inspect}"
     end
 
-    if compiler.parser == parser
-      compiling_cmdline_file = false
-    else
-      compiler.parser = parser
-      compiling_cmdline_file = true
+    compiler.parser = parser
+
+    # This is to avoid cases where the file we're compiling from the
+    # commandline gets recompiled but put in a different location because
+    # it's also sourced, and `Riml.source_path` is set to a non-default value.
+    if input.is_a?(File)
+      pathname = Pathname.new(input.path)
+      full_path =
+        if pathname.absolute?
+          pathname.to_s
+        else
+          File.expand_path(input.path, compiler.output_dir || Dir.getwd)
+        end
+      compiler.sourced_files_compiled << full_path
     end
 
     output = compiler.compile(nodes)
 
     if input.is_a?(File)
-      write_file(compiler, output, input.path, compiling_cmdline_file)
+      write_file(compiler, output, input.path, filename_options)
     else
       output
     end
@@ -125,7 +138,7 @@ module Riml
             threads << Thread.new do
               f = File.open(fname)
               # `do_compile` will close file handle
-              do_compile(f, _parser, _compiler)
+              do_compile(f, _parser, _compiler, :commandline_filename => fname)
             end
           end
           threads.each(&:join)
@@ -136,7 +149,7 @@ module Riml
       fname = filenames.first
       f = File.open(fname)
       # `do_compile` will close file handle
-      with_file_rollback { do_compile(f, parser, compiler) }
+      with_file_rollback { do_compile(f, parser, compiler, :commandline_filename => fname) }
     else
       raise ArgumentError, "need filenames to compile"
     end
@@ -268,10 +281,11 @@ module Riml
 
   # This is for when another file is sourced within a file we're compiling.
   def self.process_compile_queue!(compiler)
-    while full_path = compiler.compile_queue.shift
+    while paths = compiler.compile_queue.shift
+      basename, full_path = *paths
       unless compiler.sourced_files_compiled.include?(full_path)
         compiler.sourced_files_compiled << full_path
-        do_compile(File.open(full_path), compiler.parser, compiler)
+        do_compile(File.open(full_path), compiler.parser, compiler, :sourced_filename => basename)
       end
     end
   end
@@ -280,19 +294,30 @@ module Riml
   INCLUDE_COMMENT_FMT = File.read(File.expand_path("../riml/included.vim", __FILE__))
   GET_SID_FUNCTION_SRC = File.read(File.expand_path("../riml/get_sid_function.vim", __FILE__))
 
-  def self.write_file(compiler, output, fname, cmdline_file = true)
+  # Files are written following these rules:
+  # If a filename is given from the commandline,
+  #   1) if the filename is absolute, output it to the directory in which the file resides
+  #   2) if there's an `output_dir` given, output the file to that directory
+  #   3) otherwise, output it into pwd
+  # If a filename is sourced,
+  #   1) if the filename is absolute, output it to the directory in which the file resides
+  #   2) otherwise, output it to the directory in which the `riml` file is found, checking `Riml.source_path`
+  def self.write_file(compiler, output, full_path, filename_options = {})
+    fname = filename_options[:commandline_filename] || filename_options[:sourced_filename]
+    fname or raise ArgumentError, "must pass correct filename_options"
     # writing out a file that's compiled from cmdline, output into output_dir
-    output_dir = if cmdline_file
+    output_dir = if filename_options[:commandline_filename]
       compiler.output_dir || Dir.getwd
     # writing out a riml_source'd file
     else
-      # absolute path for filename sent from cmdline or from riml_sourced files,
+      # absolute path for filename sent from riml_sourced files,
       # output to that same directory if no --output-dir option is set
-      if fname[0, 1] == File::SEPARATOR && !compiler.output_dir
-        Pathname.new(fname).parent.to_s
-      # relative path
+      if full_path[0, 1] == File::SEPARATOR && !compiler.output_dir
+        Pathname.new(full_path).parent.to_s
+      # relative path, join it with output_dir
       else
-        File.join(compiler.output_dir || Dir.getwd, Pathname.new(fname).parent.to_s)
+        rel_dir = Pathname.new(full_path).parent.to_s
+        File.join(compiler.output_dir || Dir.getwd, rel_dir)
       end
     end
     basename_without_riml_ext = File.basename(fname).sub(/\.riml\Z/i, '')

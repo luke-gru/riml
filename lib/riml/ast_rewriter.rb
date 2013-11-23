@@ -187,7 +187,7 @@ module Riml
 
       def class_name_full_name(class_name)
         return nil if class_name.nil?
-        if class_name[1..1] == ':'
+        if class_name[1, 1] == ':'
           class_name
         else
           ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER + class_name

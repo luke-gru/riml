@@ -603,7 +603,7 @@ module Riml
         if node.name == 'riml_source'
           node.name = 'source'
           node.each_existing_file! do |basename, full_path|
-            current_compiler(node).compile_queue << full_path
+            current_compiler(node).compile_queue << [basename, full_path]
           end
         elsif node.name == 'riml_include'
           # riml_include has to be top-level
