@@ -48,19 +48,17 @@ module Riml
     def prepare_filename_graph!
       @filename_graph = {}
       @encountered_graph.each do |filename, encountered_classes|
-        # must be imported class or undefined class
-        if @definition_graph[filename].nil?
-          encountered_classes.each do |enc|
-            # raises Riml::ClassNotFound if not found
-            @classes[enc]
+        dependent_class_names =
+          if @definition_graph[filename].nil?
+            encountered_classes
+          else
+            class_names_defined_in_file = @definition_graph[filename].keys
+            # all superclass names that this file depends on
+            class_names_dependent_by_superclass = @definition_graph[filename].values.compact - class_names_defined_in_file
+            class_names_dependent_by_use = encountered_classes - class_names_defined_in_file
+            class_names_dependent_by_superclass + class_names_dependent_by_use
           end
-          next
-        end
-        defined_in_filename = @definition_graph[filename].keys
-        dependent_by_superclass = @definition_graph[filename].values.compact - defined_in_filename
-        dependent_by_use = encountered_classes - (defined_in_filename + dependent_by_superclass)
-        dependents = dependent_by_superclass + dependent_by_use
-        dependents.each do |dep|
+        dependent_class_names.each do |dep|
           dependent_definition_fname = @definition_graph.detect { |fname, hash| hash.has_key?(dep) }.first rescue nil
           if dependent_definition_fname
             @filename_graph[filename] ||= []
