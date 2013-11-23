@@ -4,6 +4,7 @@ end
 gem 'minitest'
 require 'minitest/autorun'
 require 'mocha/setup'
+require 'pathname'
 
 $VERBOSE = 1
 require File.expand_path('../../lib/riml', __FILE__)
@@ -73,29 +74,35 @@ EOS
       Riml::Parser.ast_cache.clear
     end
 
-    def compile(input, options = {:readable => false})
+    def compile(input, options = {:readable => false}, clear_caches = true)
       Riml.compile(input, options)
     ensure
-      Riml.rewritten_ast_cache.clear
-      Riml::Parser.ast_cache.clear
+      Riml.clear_caches if clear_caches
     end
 
     %w(source_path include_path).each do |path|
-      define_method "with_riml_#{path}" do |*new_paths|
-        begin
-          old_path = Riml.send(path)
-          Riml.send("#{path}=", new_paths, true)
-          yield if block_given?
-        ensure
-          Riml.send("#{path}=", old_path, true)
+      class_eval <<-RUBY, __FILE__, __LINE__ + 1
+        def with_riml_#{path}(*new_paths, &block)
+          begin
+            old_path = Riml.send("#{path}")
+            Riml.send("#{path}=", new_paths, true)
+            block.call if block
+          ensure
+            Riml.send("#{path}=", old_path, true)
+          end
         end
-      end
+      RUBY
     end
 
     def with_file_cleanup(*file_names)
       yield
     ensure
       file_names.each do |name|
+        pathname = Pathname.new(name)
+        if pathname.absolute?
+          File.delete(name) if File.exists?(name)
+          next
+        end
         Riml.source_path.each do |path|
           full_path = File.join(path, name)
           if File.exists?(full_path)

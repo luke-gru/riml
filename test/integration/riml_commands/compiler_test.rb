@@ -285,7 +285,7 @@ Riml
         cache.expects(:fetch).yields(true).with('file1.riml').once
         cache.expects(:fetch).yields(true).with('riml_include_lib.riml').once
         cache.expects(:fetch).yields(true).with('riml_include_lib2.riml').once
-        assert compile(riml)
+        assert compile(riml, {}, false)
       end
     end
   end
@@ -302,7 +302,7 @@ Riml
         cache.expects(:fetch).yields(true).with('riml_include_lib.riml').twice
         cache.expects(:fetch).yields(true).with('riml_include_lib2.riml').twice
         cache.expects(:clear).never
-        2.times { compile(riml) }
+        2.times { compile(riml, {}, false) }
       end
     end
   end
