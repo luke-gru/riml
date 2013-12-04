@@ -27,8 +27,8 @@ class BinRimlTest < Riml::TestCase
       with_file_cleanup('./pathogen.vim', './smartinput.vim') do
         system "#{EXEC} -c ../pathogen/pathogen.riml,../smartinput/smartinput.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?('./pathogen.vim')
-        assert File.exists?('./smartinput.vim')
+        assert File.exist?('./pathogen.vim')
+        assert File.exist?('./smartinput.vim')
       end
     end
   end
@@ -64,13 +64,13 @@ class BinRimlTest < Riml::TestCase
       begin
         system "#{EXEC} -S #{riml_commands_dir} -c ../riml_commands/sourced1.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
-        assert File.exists?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
-        refute File.exists?(sourced2_bad_vim_path), "sourced2_bad_vim_path exists"
+        assert File.exist?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
+        assert File.exist?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
+        refute File.exist?(sourced2_bad_vim_path), "sourced2_bad_vim_path exists"
       ensure
-        File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
-        File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)
-        File.delete(sourced2_bad_vim_path) if File.exists?(sourced2_bad_vim_path)
+        File.delete(sourced1_vim_path) if File.exist?(sourced1_vim_path)
+        File.delete(sourced2_vim_path) if File.exist?(sourced2_vim_path)
+        File.delete(sourced2_bad_vim_path) if File.exist?(sourced2_bad_vim_path)
       end
     end
   end
@@ -85,13 +85,13 @@ class BinRimlTest < Riml::TestCase
         ENV['RIML_SOURCE_PATH'] = riml_commands_dir
         system "#{EXEC} -c ../riml_commands/sourced1.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
-        assert File.exists?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
-        refute File.exists?(sourced2_bad_vim_path), "sourced2_bad_vim_path doesn't exist"
+        assert File.exist?(sourced1_vim_path), "sourced1_vim_path doesn't exist"
+        assert File.exist?(sourced2_vim_path), "sourced2_vim_path doesn't exist"
+        refute File.exist?(sourced2_bad_vim_path), "sourced2_bad_vim_path doesn't exist"
       ensure
-        File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
-        File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)
-        File.delete(sourced2_bad_vim_path) if File.exists?(sourced2_bad_vim_path)
+        File.delete(sourced1_vim_path) if File.exist?(sourced1_vim_path)
+        File.delete(sourced2_vim_path) if File.exist?(sourced2_vim_path)
+        File.delete(sourced2_bad_vim_path) if File.exist?(sourced2_bad_vim_path)
         ENV['RIML_SOURCE_PATH'] = nil
       end
     end
@@ -105,11 +105,11 @@ class BinRimlTest < Riml::TestCase
       begin
         system "#{EXEC} -I #{riml_commands_dir} -c ../riml_commands/riml_include_lib.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?(include1_vim_path)
-        refute File.exists?(include2_vim_path)
+        assert File.exist?(include1_vim_path)
+        refute File.exist?(include2_vim_path)
       ensure
-        File.delete(include1_vim_path) if File.exists?(include1_vim_path)
-        File.delete(include2_vim_path) if File.exists?(include2_vim_path)
+        File.delete(include1_vim_path) if File.exist?(include1_vim_path)
+        File.delete(include2_vim_path) if File.exist?(include2_vim_path)
       end
     end
   end
@@ -123,11 +123,11 @@ class BinRimlTest < Riml::TestCase
         ENV['RIML_INCLUDE_PATH'] = riml_commands_dir
         system "#{EXEC} -c ../riml_commands/riml_include_lib.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?(include1_vim_path)
-        refute File.exists?(include2_vim_path)
+        assert File.exist?(include1_vim_path)
+        refute File.exist?(include2_vim_path)
       ensure
-        File.delete(include1_vim_path) if File.exists?(include1_vim_path)
-        File.delete(include2_vim_path) if File.exists?(include2_vim_path)
+        File.delete(include1_vim_path) if File.exist?(include1_vim_path)
+        File.delete(include2_vim_path) if File.exist?(include2_vim_path)
         ENV['RIML_INCLUDE_PATH'] = nil
       end
     end
@@ -144,11 +144,11 @@ class BinRimlTest < Riml::TestCase
         end
         assert_equal 1, $?.exitstatus
         assert err =~ /error trying to set source_path/i
-        refute File.exists?(sourced1_vim_path)
-        refute File.exists?(sourced2_vim_path)
+        refute File.exist?(sourced1_vim_path)
+        refute File.exist?(sourced2_vim_path)
       ensure
-        File.delete(sourced1_vim_path) if File.exists?(sourced1_vim_path)
-        File.delete(sourced2_vim_path) if File.exists?(sourced2_vim_path)
+        File.delete(sourced1_vim_path) if File.exist?(sourced1_vim_path)
+        File.delete(sourced2_vim_path) if File.exist?(sourced2_vim_path)
       end
     end
   end
@@ -164,11 +164,11 @@ class BinRimlTest < Riml::TestCase
         end
         assert_equal 1, $?.exitstatus
         assert err =~ /error trying to set include_path/i
-        refute File.exists?(include1_vim_path)
-        refute File.exists?(include2_vim_path)
+        refute File.exist?(include1_vim_path)
+        refute File.exist?(include2_vim_path)
       ensure
-        File.delete(include1_vim_path) if File.exists?(include1_vim_path)
-        File.delete(include2_vim_path) if File.exists?(include2_vim_path)
+        File.delete(include1_vim_path) if File.exist?(include1_vim_path)
+        File.delete(include2_vim_path) if File.exist?(include2_vim_path)
       end
     end
   end
@@ -178,10 +178,10 @@ class BinRimlTest < Riml::TestCase
       begin
         system "#{EXEC} -c test_output_dir.riml -o newdir -S test_output_dir"
         assert_equal 0, $?.exitstatus
-        assert File.exists?('./newdir/test_output_dir.vim')
-        assert File.exists?('./newdir/test_output_dir/sourced.vim')
-        refute File.exists?('./test_output_dir.vim')
-        refute File.exists?('./test_output_dir/sourced.vim')
+        assert File.exist?('./newdir/test_output_dir.vim')
+        assert File.exist?('./newdir/test_output_dir/sourced.vim')
+        refute File.exist?('./test_output_dir.vim')
+        refute File.exist?('./test_output_dir/sourced.vim')
       ensure
         FileUtils.rm_r 'newdir' if File.directory?('newdir')
       end
@@ -193,9 +193,9 @@ class BinRimlTest < Riml::TestCase
       begin
         system "#{EXEC} --allow-undef-global-classes -c undefined_global_class.riml"
         assert_equal 0, $?.exitstatus
-        assert File.exists?('./undefined_global_class.vim')
+        assert File.exist?('./undefined_global_class.vim')
       ensure
-        File.delete('./undefined_global_class.vim') if File.exists?('./undefined_global_class.vim')
+        File.delete('./undefined_global_class.vim') if File.exist?('./undefined_global_class.vim')
       end
     end
   end

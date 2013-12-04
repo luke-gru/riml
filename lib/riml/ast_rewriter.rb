@@ -25,7 +25,6 @@ module Riml
       # "lib1.riml" => [], "lib2.riml" => [] }
       @included_and_sourced_file_refs = Hash.new { |h, k| h[k] = [] }
       @class_dependency_graph = class_dependency_graph || ClassDependencyGraph.new
-      @class_dependency_graph.classes = @classes
       @resolving_class_dependencies = nil
     end
 

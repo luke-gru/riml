@@ -33,7 +33,7 @@ Viml
         with_file_cleanup("file1.vim") do
           assert_equal expected, compile(riml)
           file1_vim = File.join(Riml.source_path.first, "file1.vim")
-          assert File.exists?(file1_vim)
+          assert File.exist?(file1_vim)
           assert_equal Riml::FILE_HEADER + File.read("./file1_expected.vim"), File.read(file1_vim)
         end
       end
@@ -67,7 +67,7 @@ Viml
       Dir.chdir(cwd) do
         with_file_cleanup("faster_car.vim") do
           assert_equal expected, compile(riml)
-          assert File.exists?("faster_car.vim")
+          assert File.exist?("faster_car.vim")
           assert_equal(
             Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read("faster_car_expected.vim"),
             File.read("faster_car.vim")
@@ -118,7 +118,7 @@ Viml
     with_riml_include_path(File.expand_path("../", __FILE__)) do
       assert_equal expected, compile(riml)
       faster_car_vim = File.join(Riml.include_path.first, "faster_car.vim")
-      refute File.exists?(faster_car_vim)
+      refute File.exist?(faster_car_vim)
     end
   end
 
@@ -215,8 +215,8 @@ RIML
     with_riml_source_path(File.expand_path("../", __FILE__)) do
       with_file_cleanup('sourced1.vim', 'sourced2.vim') do
         assert_equal expected, compile(riml)
-        assert File.exists?(File.join(Riml.source_path.first, 'sourced1.vim'))
-        assert File.exists?(File.join(Riml.source_path.first, 'sourced2.vim'))
+        assert File.exist?(File.join(Riml.source_path.first, 'sourced1.vim'))
+        assert File.exist?(File.join(Riml.source_path.first, 'sourced2.vim'))
       end
     end
   end
@@ -229,8 +229,8 @@ RIML
     with_riml_source_path(File.expand_path("../test_source_path", __FILE__), File.expand_path("../", __FILE__)) do
       with_file_cleanup('sourced2.vim', 'sourced1.vim') do
         assert_equal expected, compile(riml)
-        assert File.exists?(File.join(Riml.source_path.first, 'sourced2.vim')) # in test_source_path dir
-        assert File.exists?(File.join(Riml.source_path[1], 'sourced1.vim'))
+        assert File.exist?(File.join(Riml.source_path.first, 'sourced2.vim')) # in test_source_path dir
+        assert File.exist?(File.join(Riml.source_path[1], 'sourced1.vim'))
       end
     end
   end
@@ -243,8 +243,8 @@ RIML
     with_riml_source_path(File.expand_path("../", __FILE__)) do
       with_file_cleanup('class_test_main.vim', 'class_test.vim') do
         assert_equal expected, compile(riml)
-        assert File.exists?(File.join(Riml.source_path.first, 'class_test_main.vim'))
-        assert File.exists?(File.join(Riml.source_path.first, 'class_test.vim'))
+        assert File.exist?(File.join(Riml.source_path.first, 'class_test_main.vim'))
+        assert File.exist?(File.join(Riml.source_path.first, 'class_test.vim'))
         assert_equal Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read(File.join(Riml.source_path.first, 'class_test_main_expected.vim')),
                      File.read(File.join(Riml.source_path.first, 'class_test_main.vim'))
         assert_equal Riml::FILE_HEADER + Riml::GET_SID_FUNCTION_SRC + File.read(File.join(Riml.source_path.first, 'class_test_expected.vim')),
@@ -266,7 +266,7 @@ RIML
         riml = 'riml_source "file1"'
         expected = "source file1.vim\n"
         assert_equal expected, compile(riml)
-        assert File.exists?(File.join(Riml.source_path.first, 'file1.vim'))
+        assert File.exist?(File.join(Riml.source_path.first, 'file1.vim'))
       end
     end
   end
@@ -285,7 +285,7 @@ Riml
         cache.expects(:fetch).yields(true).with('file1.riml').once
         cache.expects(:fetch).yields(true).with('riml_include_lib.riml').once
         cache.expects(:fetch).yields(true).with('riml_include_lib2.riml').once
-        assert compile(riml, {}, false)
+        assert compile(riml)
       end
     end
   end
@@ -302,7 +302,7 @@ Riml
         cache.expects(:fetch).yields(true).with('riml_include_lib.riml').twice
         cache.expects(:fetch).yields(true).with('riml_include_lib2.riml').twice
         cache.expects(:clear).never
-        2.times { compile(riml, {}, false) }
+        2.times { compile(riml) }
       end
     end
   end

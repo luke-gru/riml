@@ -1,5 +1,4 @@
 # topological sorting module from stdlib
-# uses Tarjan's algorithm for strongly connected components
 require 'tsort'
 
 module Riml
@@ -8,14 +7,12 @@ module Riml
     include TSort
 
     attr_reader :definition_graph, :encountered_graph
-    # for checking imported classes
-    attr_accessor :classes
 
     # definition_graph:  { "faster_car.riml" => { "s:FasterCar" => "s:Car" }, "car.riml" => { "s:Car" => nil } }
     # encountered_graph: { "faster_car.riml" => ["s:FasterCar", "s:Car"], "car.riml" => ["s:Car"] }
-    def initialize(definition_graph = {}, encountered_graph = {})
-      @definition_graph = definition_graph
-      @encountered_graph = encountered_graph
+    def initialize
+      @definition_graph = {}
+      @encountered_graph = {}
       @filename_graph = nil
     end
 

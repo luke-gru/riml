@@ -1,9 +1,9 @@
 if RUBY_VERSION < '1.9'
-  require 'rubygems'
+  require 'rubygems' unless defined?(Gem)
 end
 gem 'minitest'
 require 'minitest/autorun'
-require 'mocha/setup'
+require 'mocha/setup' # TODO: use minitest/mock instead
 require 'pathname'
 
 $VERBOSE = 1
@@ -11,6 +11,10 @@ require File.expand_path('../../lib/riml', __FILE__)
 
 module Riml
   class TestCase < MiniTest::Test
+
+    def teardown
+      Riml.clear_caches
+    end
 
     # taken from activesupport/testing/declarative
     def self.test(name, &block)
@@ -74,10 +78,8 @@ EOS
       Riml::Parser.ast_cache.clear
     end
 
-    def compile(input, options = {:readable => false}, clear_caches = true)
+    def compile(input, options = {:readable => false})
       Riml.compile(input, options)
-    ensure
-      Riml.clear_caches if clear_caches
     end
 
     %w(source_path include_path).each do |path|
@@ -100,12 +102,12 @@ EOS
       file_names.each do |name|
         pathname = Pathname.new(name)
         if pathname.absolute?
-          File.delete(name) if File.exists?(name)
+          File.delete(name) if File.exist?(name)
           next
         end
         Riml.source_path.each do |path|
           full_path = File.join(path, name)
-          if File.exists?(full_path)
+          if File.exist?(full_path)
             File.delete(full_path)
             break
           end
