@@ -1,5 +1,6 @@
 require 'pathname'
 require 'fileutils'
+require 'ostruct'
 
 if RUBY_VERSION < '1.9'
   require 'thread'
@@ -229,6 +230,20 @@ module Riml
   self.warnings = true
   self.debug = false
 
+  # @return OpenStruct|nil
+  def self.config
+    @config
+  end
+
+  # possible values: OpenStruct|nil
+  def self.config=(config)
+    unless config.nil? || OpenStruct === config
+      raise ArgumentError, "config must be OpenStruct or NilClass, is #{config.class}"
+    end
+    @config = config
+  end
+  self.config = nil # avoid ivar warnings
+
   private
 
   def self.flush_warnings
@@ -259,8 +274,8 @@ module Riml
     cache_files_in_path(path, force_cache_bust)
     path
   end
-  self.source_path  = nil  # eliminate ivar warnings
-  self.include_path = nil  # eliminate ivar warnings
+  self.source_path  = nil  # avoid ivar warnings
+  self.include_path = nil  # avoid ivar warnings
 
   def self.cache_files_in_path(path, force_cache_bust = false)
     @path_cache[path] = nil if force_cache_bust

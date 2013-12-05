@@ -135,6 +135,7 @@ module Riml
         compile_files_options = compile_options.merge(
           :output_dir => options.output_dir
         )
+        Riml.config = options
         Riml.debug = options.debug
         if options.stdio
           puts Riml.compile($stdin.read, compile_options)

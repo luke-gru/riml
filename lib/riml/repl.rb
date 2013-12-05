@@ -4,6 +4,8 @@ rescue LoadError => e
   $stderr.puts e, "Readline is required to run repl."
   exit 1
 end
+
+require 'ostruct'
 require File.expand_path('../../riml', __FILE__)
 
 module Riml
@@ -13,12 +15,15 @@ module Riml
     private :parser, :compiler
 
     COMPILE_ON = %w(compile c)
-    RELOAD_ON = %w(reload r)
     EXIT_ON = %w(quit q)
+    EXECUTE_RIML_ON = %w(execute\ <<riml)
+    END_EXECUTE_RIML_ON = %w(riml)
 
     HELP_MSG = <<msg
 compile riml line(s):             #{COMPILE_ON.join(', ')}
-clear previous class definitions: #{RELOAD_ON.join(', ')}
+execute riml code:                execute \<\<riml
+                                    code goes here!
+                                  riml
 exit repl:                        #{EXIT_ON.join(', ')}
 msg
 
@@ -26,23 +31,32 @@ msg
       @indent_amount = 0
       @line = nil
       @compiler_options = DEFAULT_COMPILE_OPTIONS.merge(compile_options)
+      @in_execute_heredoc = false
+      Riml.config = OpenStruct.new if Riml.config.nil?
+      Riml.config.repl = true
       prepare_new_context
       Readline.vi_editing_mode if vi_readline
-      trap(:INT) { reset!; puts }
     end
 
     def run
+      trap(:INT) { reset!; puts }
       puts HELP_MSG, "\n"
       while @line = Readline.readline(current_indent, true)
         line.strip!
         next if line.empty?
         line_dc = line.downcase
-        if COMPILE_ON.include?(line_dc)
+        if @in_execute_heredoc && END_EXECUTE_RIML_ON.include?(line_dc)
+          riml = compile_unit
+          output = eval_riml(riml)
+          puts riml
+          puts "\n", "#=>", output
+          reset!
+        elsif !@in_execute_heredoc && EXECUTE_RIML_ON.include?(line_dc)
+          reset!
+          @in_execute_heredoc = true
+        elsif COMPILE_ON.include?(line_dc)
           next if current_compilation_unit.empty?
           compile_unit!
-        elsif RELOAD_ON.include?(line_dc)
-          reload!
-          puts "reloaded"
         elsif EXIT_ON.include?(line_dc)
           exit_repl
         else
@@ -78,7 +92,7 @@ msg
     end
 
     def compile_unit!
-      viml = Riml.do_compile(current_compilation_unit.join("\n"), parser, compiler).chomp
+      viml = compile_unit
       puts viml, "\n"
     rescue => e
       print_error(e)
@@ -87,12 +101,32 @@ msg
       reset!
     end
 
+    def compile_unit
+      Riml.do_compile(current_compilation_unit.join("\n"), parser, compiler).chomp
+    end
+
+    # TODO: Start only 1 vim process and use pipes to save time when using
+    # `execute <<riml` multiple times in the same repl session.
+    def eval_riml(riml)
+      require 'tempfile' unless defined?(Tempfile)
+      infile, outfile = Tempfile.new('in'), Tempfile.new('out')
+      riml = Riml::GET_SID_FUNCTION_SRC + "\n#{riml}"
+      infile.write("redir! > #{outfile.path}\n#{riml}\nredir END\nq!")
+      infile.close
+      system("vim -c \"source #{infile.path}\"")
+      outfile.read.sub(/\A\n/, '')
+    ensure
+      infile.close
+      outfile.close
+    end
+
     def current_compilation_unit
       @current_compilation_unit ||= []
     end
 
     def reset!
       @indent_amount = 0
+      @in_execute_heredoc = false
       current_compilation_unit.clear
     end
 

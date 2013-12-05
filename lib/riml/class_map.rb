@@ -34,7 +34,7 @@ module Riml
       if class_node = @map[key]
         if !class_node.instance_variable_get("@registered_state") &&
            !val.instance_variable_get("@registered_state")
-          raise ClassRedefinitionError, "can't redefine class #{key.inspect}."
+          class_redefinition!(key)
         end
       end
       @map[key] = val
@@ -67,6 +67,12 @@ module Riml
       unless key.is_a?(String)
         raise ArgumentError, "key must be name of class (String)"
       end
+    end
+
+    def class_redefinition!(key)
+      # allow class redefinitions in repl
+      return if Riml.config && Riml.config.repl
+      raise ClassRedefinitionError, "can't redefine class #{key.inspect}."
     end
 
   end
