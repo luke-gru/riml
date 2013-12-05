@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.files = Dir['README.md', 'LICENSE', 'version.rb', 'lib/**/*', 'Rakefile',
                 'CONTRIBUTING', 'CHANGELOG' 'Gemfile']
 
-  s.add_development_dependency('racc', '>= 1.4.9')
+  s.add_development_dependency('racc', '>= 1.4.10')
   s.add_development_dependency('rake', '~> 10.1.0')
   s.add_development_dependency('bundler', '~> 1.3')
   s.add_development_dependency('minitest', '>= 5.0.8')
