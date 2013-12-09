@@ -16,12 +16,12 @@ module Riml
 
     COMPILE_ON = %w(compile c)
     EXIT_ON = %w(quit q)
-    EXECUTE_RIML_ON = %w(execute\ <<riml)
-    END_EXECUTE_RIML_ON = %w(riml)
+    EVAL_RIML_ON = %w(eval\ <<riml)
+    END_EVAL_RIML_ON = %w(riml)
 
     HELP_MSG = <<msg
 compile riml line(s):             #{COMPILE_ON.join(', ')}
-execute riml code:                execute \<\<riml
+eval riml code:                   eval \<\<riml
                                     code goes here!
                                   riml
 exit repl:                        #{EXIT_ON.join(', ')}
@@ -31,7 +31,7 @@ msg
       @indent_amount = 0
       @line = nil
       @compiler_options = DEFAULT_COMPILE_OPTIONS.merge(compile_options)
-      @in_execute_heredoc = false
+      @in_eval_heredoc = false
       Riml.config = OpenStruct.new if Riml.config.nil?
       Riml.config.repl = true
       prepare_new_context
@@ -45,19 +45,24 @@ msg
         line.strip!
         next if line.empty?
         line_dc = line.downcase
-        if @in_execute_heredoc && END_EXECUTE_RIML_ON.include?(line_dc)
-          riml = compile_unit
-          output = eval_riml(riml)
-          puts riml
-          puts "\n", "#=>", output
+        if @in_eval_heredoc && END_EVAL_RIML_ON.include?(line_dc)
+          begin
+            riml = compile_unit! # raises errors
+            output = eval_riml(riml)
+            puts riml
+            output = "Blank vim output! Try echoing something." if output.strip.empty?
+            puts "\n", "#=>", output
+          rescue => e
+            handle_compile_error(e)
+          end
           reset!
-        elsif !@in_execute_heredoc && EXECUTE_RIML_ON.include?(line_dc)
+        elsif !@in_eval_heredoc && EVAL_RIML_ON.include?(line_dc)
           reset!
-          @in_execute_heredoc = true
-        elsif COMPILE_ON.include?(line_dc)
+          @in_eval_heredoc = true
+        elsif !@in_eval_heredoc && COMPILE_ON.include?(line_dc)
           next if current_compilation_unit.empty?
-          compile_unit!
-        elsif EXIT_ON.include?(line_dc)
+          compile_and_print_unit
+        elsif !@in_eval_heredoc && EXIT_ON.include?(line_dc)
           exit_repl
         else
           current_compilation_unit << line
@@ -91,30 +96,40 @@ msg
       ' ' * @indent_amount
     end
 
-    def compile_unit!
-      viml = compile_unit
+    # handles and swallows errors
+    def compile_and_print_unit
+      viml = compile_unit!
       puts viml, "\n"
     rescue => e
-      print_error(e)
-      reload!
+      handle_compile_error(e)
     ensure
       reset!
     end
 
-    def compile_unit
+    # raises errors
+    def compile_unit!
       Riml.do_compile(current_compilation_unit.join("\n"), parser, compiler).chomp
     end
 
     # TODO: Start only 1 vim process and use pipes to save time when using
-    # `execute <<riml` multiple times in the same repl session.
+    # `eval <<riml` multiple times in the same repl session.
     def eval_riml(riml)
       require 'tempfile' unless defined?(Tempfile)
-      infile, outfile = Tempfile.new('in'), Tempfile.new('out')
+      infile, outfile = Tempfile.new('riml_in'), Tempfile.new('vim_output')
       riml = Riml::GET_SID_FUNCTION_SRC + "\n#{riml}"
       infile.write("redir! > #{outfile.path}\n#{riml}\nredir END\nq!")
       infile.close
-      system("vim -c \"source #{infile.path}\"")
-      outfile.read.sub(/\A\n/, '')
+      system(%Q(vim -c "source #{infile.path}"))
+      raw = outfile.read.sub(/\A\n/, '')
+      # Since we don't show the generated SID function, we have to modify the
+      # error line numbers to account for it.
+      raw.gsub(/line\s+(\d+):/) do
+        "line #{$1.to_i - (Riml::GET_SID_FUNCTION_SRC.each_line.to_a.size + 2)}:"
+      end
+    rescue => e
+      print_error(e)
+      reload!
+      nil
     ensure
       infile.close
       outfile.close
@@ -126,8 +141,13 @@ msg
 
     def reset!
       @indent_amount = 0
-      @in_execute_heredoc = false
+      @in_eval_heredoc = false
       current_compilation_unit.clear
+    end
+
+    def handle_compile_error(e)
+      print_error(e)
+      reload!
     end
 
     def print_error(e)

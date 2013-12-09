@@ -53,8 +53,8 @@ module Riml
 
     def self.clear
       @m.synchronize do
-        @files_created = Set.new
         @previous_file_states.clear
+        @files_created.clear
       end
     end
 
@@ -63,6 +63,8 @@ module Riml
         @files_created.each do |path|
           rollback_file!(path)
         end
+        @previous_file_states.clear
+        @files_created.clear
       end
     end
 

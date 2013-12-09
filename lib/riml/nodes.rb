@@ -419,6 +419,9 @@ module Riml
     # Riml.source_path or Riml.include_path
     def each_existing_file!
       files = {}
+      # FIXME: This is a bit of a hack, making sure the include path or source
+      # path is properly cached in case `Riml.{include|source}_path` hasn't been
+      # called already
       path_dirs
       file_variants.each do |(fname_given, fname_ext_added)|
         if (full_path = Riml.path_cache.file(path_dirs, fname_given))
@@ -469,6 +472,7 @@ module Riml
     end
   end
 
+  # riml_import g:ClassName
   class RimlClassCommandNode < RimlCommandNode
     def initialize(*args)
       super
