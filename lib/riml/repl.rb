@@ -151,7 +151,11 @@ msg
     end
 
     def print_error(e)
-      puts e.verbose_message
+      if e.respond_to?(:verbose_message)
+        puts e.verbose_message
+      else
+        puts e.message
+      end
     end
 
     def exit_repl

@@ -270,8 +270,8 @@ rule
   ;
 
   ArgList:
-    /* nothing */                         { result = [] }
-  | ArgListWithoutNothing                 { result = val[0] }
+    /* nothing */                                  { result = [] }
+  | ArgListWithoutNothingWithSplat                 { result = val[0] }
   ;
 
   ArgListWithSplat:

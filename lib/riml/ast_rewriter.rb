@@ -57,7 +57,8 @@ module Riml
         CallToExplicitCall.new(ast, classes),
         DefaultParamToIfNode.new(ast, classes),
         DeserializeVarAssignment.new(ast, classes),
-        TopLevelDefMethodToDef.new(ast, classes)
+        TopLevelDefMethodToDef.new(ast, classes),
+        SplatsToExecuteInCallingContext.new(ast, classes)
       ]
       rewriters.each do |rewriter|
         rewriter.rewrite_on_match
@@ -437,151 +438,6 @@ module Riml
         end
       end
 
-      # Rewrite constructs like:
-      #
-      #   let animalObj = s:AnimalConstructor(*a:000)
-      #
-      # to:
-      #
-      #   let __riml_splat_list = a:000
-      #   let __riml_splat_size = len(__riml_splat_list)
-      #   let __riml_splat_str_vars = []
-      #   let __riml_splat_idx = 1
-      #   while __riml_splat_idx <=# __riml_splat_size
-      #     let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-      #     call add(__riml_splat_str_vars, __riml_splat_var_{__riml_splat_idx})
-      #     let __riml_splat_idx += 1
-      #   endwhile
-      #   execute 'let l:animalObj = s:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
-      #
-      # Basically, mimic Ruby's approach to expanding lists to their
-      # constituent argument parts with '*' in calling context.
-      # NOTE: currently only works with `super`.
-      class SplatsToExecuteInCallingContext < AST_Rewriter
-
-        def match?(node)
-          if SplatNode === node && CallNode === node.parent
-            @splat_node = node
-          end
-        end
-
-        def replace(node)
-          construct_splat_str_vars_node = build_construct_splat_str_vars_node
-          call_node_args =
-            CallNode.new(
-              nil,
-              'join',
-              [
-                GetVariableNode.new('n:', '__riml_splat_str_vars'),
-                StringNode.new(', ', :s)
-              ]
-            )
-          call_node = node.parent
-          node_to_execute = if AssignNode === call_node.parent
-            assign_node = call_node.parent
-            # This is necessary because this node is getting put into a new
-            # compiler where it's not wrapped in a function context, therefore
-            # variables will be script-local there unless their scope_modifier
-            # is set
-            assign_node.lhs.scope_modifier = 'l:'
-            assign_node
-          else
-            call_node
-          end
-          call_node.arguments.clear
-          compiler = Compiler.new
-          # have to dup node_to_execute here because, if not, its parent will
-          # get reset during this next compilation step
-          output = compiler.compile(Nodes.new([node_to_execute.dup]))
-          execute_string_node = StringNode.new(output.chomp[0..-2], :s)
-          execute_string_node.value.insert(0, 'call ') if CallNode === node_to_execute
-          execute_arg = BinaryOperatorNode.new(
-            '.',
-            [
-              execute_string_node,
-              BinaryOperatorNode.new(
-                '.',
-                [
-                  call_node_args,
-                  StringNode.new(')', :s)
-                ]
-              )
-            ]
-          )
-          execute_node = CallNode.new(nil, 'execute', [execute_arg])
-          establish_parents(execute_node)
-          node.remove
-          node_to_execute.replace_with(construct_splat_str_vars_node)
-          execute_node.parent = construct_splat_str_vars_node.parent
-          construct_splat_str_vars_node.parent.insert_after(construct_splat_str_vars_node, execute_node)
-        end
-
-        private
-
-        def build_construct_splat_str_vars_node
-          nodes = Nodes.new([])
-          splat_list_init = AssignNode.new(
-            '=',
-            GetVariableNode.new('n:', '__riml_splat_list'),
-            splat_value
-          )
-          splat_size = AssignNode.new(
-            '=',
-            GetVariableNode.new('n:', '__riml_splat_size'),
-            CallNode.new(nil, 'len', [GetVariableNode.new('n:', '__riml_splat_list')])
-          )
-          splat_string_vars_init = AssignNode.new(
-            '=',
-            GetVariableNode.new('n:', '__riml_splat_str_vars'),
-            ListNode.new([])
-          )
-          splat_list_idx_init = AssignNode.new(
-            '=',
-            GetVariableNode.new('n:', '__riml_splat_idx'),
-            NumberNode.new('1')
-          )
-          while_loop = WhileNode.new(
-            # condition
-            BinaryOperatorNode.new('<=', [GetVariableNode.new('n:', '__riml_splat_idx'), GetVariableNode.new('n:', '__riml_splat_size')]),
-            # body
-            Nodes.new([
-              AssignNode.new(
-                '=',
-                GetCurlyBraceNameNode.new('n:', CurlyBraceVariable.new([CurlyBracePart.new('__riml_splat_var_'), CurlyBraceVariable.new([CurlyBracePart.new(GetVariableNode.new('n:', '__riml_splat_idx'))])])),
-                CallNode.new(nil, 'get', [
-                  GetVariableNode.new('n:', '__riml_splat_list'),
-                  BinaryOperatorNode.new('-', [
-                    GetVariableNode.new('n:', '__riml_splat_idx'),
-                    NumberNode.new('1')
-                  ])
-                ])
-              ),
-              ExplicitCallNode.new(nil, 'add', [
-                GetVariableNode.new('n:', '__riml_splat_str_vars'),
-                BinaryOperatorNode.new('.', [StringNode.new('__riml_splat_var_', :s), GetVariableNode.new('n:', '__riml_splat_idx')])
-              ]),
-              AssignNode.new('+=', GetVariableNode.new('n:', '__riml_splat_idx'), NumberNode.new('1'))
-            ])
-          )
-          nodes << splat_list_init << splat_size << splat_string_vars_init <<
-            splat_list_idx_init << while_loop
-          establish_parents(nodes)
-          nodes
-        end
-
-        def splat_value
-          n = @splat_node
-          until DefNode === n || n.nil?
-            n = n.parent
-          end
-          @splat_node.value
-          #var_str_without_star = @splat_node.value[1..-1]
-          #var_without_star = GetVariableNode.new(nil, var_str_without_star)
-          #return var_without_star if n.nil? || !n.splat || (n.splat != @splat_node.value)
-          #GetVariableNode.new('a:', '000')
-        end
-      end
-
       class SelfToObjArgumentInPrivateFunction < AST_Rewriter
         def initialize(ast, classes, class_node)
           super(ast, classes)
@@ -865,7 +721,7 @@ module Riml
           # parameter to the function we're in) to the splat arg
           if @function_node.private_function?
             if (splat_node = node_args.detect { |arg| SplatNode === arg })
-              splat_node.value = WrapInParensNode.new(
+              splat_node.expression = WrapInParensNode.new(
                 BinaryOperatorNode.new(
                   '+',
                   [
@@ -876,7 +732,7 @@ module Riml
                   ]
                 )
               )
-              establish_parents(splat_node.value)
+              establish_parents(splat_node.expression)
             end
             # call s.ClassA_private_func(args)
             call_node_name = superclass_func_name(superclass)
@@ -935,6 +791,147 @@ module Riml
         end
       end
     end # ClassDefinitionToFunctions
+
+    # Rewrite constructs like:
+    #
+    #   let animalObj = s:AnimalConstructor(*a:000)
+    #
+    # to:
+    #
+    #   let __riml_splat_list = a:000
+    #   let __riml_splat_size = len(__riml_splat_list)
+    #   let __riml_splat_str_vars = []
+    #   let __riml_splat_idx = 1
+    #   while __riml_splat_idx <=# __riml_splat_size
+    #     let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+    #     call add(__riml_splat_str_vars, __riml_splat_var_{__riml_splat_idx})
+    #     let __riml_splat_idx += 1
+    #   endwhile
+    #   execute 'let s:animalObj = s:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
+    #
+    # Basically, mimic Ruby's approach to expanding lists to their
+    # constituent argument parts with '*' in calling context.
+    class SplatsToExecuteInCallingContext < AST_Rewriter
+
+      def match?(node)
+        if SplatNode === node && CallNode === node.parent
+          @splat_node = node
+        end
+      end
+
+      def replace(node)
+        construct_splat_str_vars_node = build_construct_splat_str_vars_node
+        call_node_args =
+          CallNode.new(
+            nil,
+            'join',
+            [
+              GetVariableNode.new('n:', '__riml_splat_str_vars'),
+              StringNode.new(', ', :s)
+            ]
+          )
+        call_node = node.parent
+        node_to_execute = if AssignNode === call_node.parent
+          assign_node = call_node.parent
+          n = call_node
+          until DefNode === n || n.nil?
+            n = n.parent
+          end
+          # This is necessary because this node is getting put into a new
+          # compiler where it not wrapped in a function context, therefore
+          # variables will be script-local there unless their scope_modifier
+          # is set
+          if n
+            assign_node.lhs.scope_modifier = 'l:' if assign_node.lhs.scope_modifier.nil?
+          end
+          assign_node
+        else
+          call_node
+        end
+        call_node.arguments.clear
+        compiler = Compiler.new
+        # have to dup node_to_execute here because, if not, its parent will
+        # get reset during this next compilation step
+        output = compiler.compile(Nodes.new([node_to_execute.dup]))
+        execute_string_node = StringNode.new(output.chomp[0..-2], :s)
+        if node_to_execute.instance_of?(CallNode)
+          execute_string_node.value.insert(0, 'call ')
+        end
+        execute_arg = BinaryOperatorNode.new(
+          '.',
+          [
+            execute_string_node,
+            BinaryOperatorNode.new(
+              '.',
+              [
+                call_node_args,
+                StringNode.new(')', :s)
+              ]
+            )
+          ]
+        )
+        execute_node = CallNode.new(nil, 'execute', [execute_arg])
+        establish_parents(execute_node)
+        node.remove
+        node_to_execute.replace_with(construct_splat_str_vars_node)
+        execute_node.parent = construct_splat_str_vars_node.parent
+        construct_splat_str_vars_node.parent.insert_after(construct_splat_str_vars_node, execute_node)
+      end
+
+      private
+
+      def build_construct_splat_str_vars_node
+        nodes = Nodes.new([])
+        splat_list_init = AssignNode.new(
+          '=',
+          GetVariableNode.new('n:', '__riml_splat_list'),
+          @splat_node.expression
+        )
+        splat_size = AssignNode.new(
+          '=',
+          GetVariableNode.new('n:', '__riml_splat_size'),
+          CallNode.new(nil, 'len', [GetVariableNode.new('n:', '__riml_splat_list')])
+        )
+        splat_string_vars_init = AssignNode.new(
+          '=',
+          GetVariableNode.new('n:', '__riml_splat_str_vars'),
+          ListNode.new([])
+        )
+        splat_list_idx_init = AssignNode.new(
+          '=',
+          GetVariableNode.new('n:', '__riml_splat_idx'),
+          NumberNode.new('1')
+        )
+        while_loop = WhileNode.new(
+          # condition
+          BinaryOperatorNode.new('<=', [GetVariableNode.new('n:', '__riml_splat_idx'), GetVariableNode.new('n:', '__riml_splat_size')]),
+          # body
+          Nodes.new([
+            AssignNode.new(
+              '=',
+              GetCurlyBraceNameNode.new('n:', CurlyBraceVariable.new([CurlyBracePart.new('__riml_splat_var_'), CurlyBraceVariable.new([CurlyBracePart.new(GetVariableNode.new('n:', '__riml_splat_idx'))])])),
+              CallNode.new(nil, 'get', [
+                GetVariableNode.new('n:', '__riml_splat_list'),
+                BinaryOperatorNode.new('-', [
+                  GetVariableNode.new('n:', '__riml_splat_idx'),
+                  NumberNode.new('1')
+                ])
+              ])
+            ),
+            ExplicitCallNode.new(nil, 'add', [
+              GetVariableNode.new('n:', '__riml_splat_str_vars'),
+              BinaryOperatorNode.new('.', [StringNode.new('__riml_splat_var_', :s), GetVariableNode.new('n:', '__riml_splat_idx')])
+            ]),
+            AssignNode.new('+=', GetVariableNode.new('n:', '__riml_splat_idx'), NumberNode.new('1'))
+          ])
+        )
+        nodes << splat_list_init << splat_size << splat_string_vars_init <<
+          splat_list_idx_init << while_loop
+        establish_parents(nodes)
+        nodes
+      end
+    end
+
 
     class ObjectInstantiationToCall < AST_Rewriter
       def match?(node)

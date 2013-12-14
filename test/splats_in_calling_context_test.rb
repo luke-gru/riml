@@ -340,5 +340,65 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "non-super function call" do
+    riml = <<Riml
+call some_func(*vars)
+Riml
+    expected = <<Viml
+let __riml_splat_list = s:vars
+let __riml_splat_size = len(__riml_splat_list)
+let __riml_splat_str_vars = []
+let __riml_splat_idx = 1
+while __riml_splat_idx <=# __riml_splat_size
+  let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+  call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
+  let __riml_splat_idx += 1
+endwhile
+execute 'call s:some_func(' . join(__riml_splat_str_vars, ', ') . ')'
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "non-super function call with assignment" do
+    riml = <<Riml
+a = some_func(*vars)
+Riml
+    expected = <<Viml
+let __riml_splat_list = s:vars
+let __riml_splat_size = len(__riml_splat_list)
+let __riml_splat_str_vars = []
+let __riml_splat_idx = 1
+while __riml_splat_idx <=# __riml_splat_size
+  let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+  call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
+  let __riml_splat_idx += 1
+endwhile
+execute 'let s:a = s:some_func(' . join(__riml_splat_str_vars, ', ') . ')'
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "non-super function call with assignment doesn't override assignment scope modifier if present" do
+    riml = <<Riml
+g:a = some_func(*vars)
+Riml
+    expected = <<Viml
+let __riml_splat_list = s:vars
+let __riml_splat_size = len(__riml_splat_list)
+let __riml_splat_str_vars = []
+let __riml_splat_idx = 1
+while __riml_splat_idx <=# __riml_splat_size
+  let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+  call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
+  let __riml_splat_idx += 1
+endwhile
+execute 'let g:a = s:some_func(' . join(__riml_splat_str_vars, ', ') . ')'
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

@@ -279,9 +279,10 @@ module Riml
     end
   end
 
-  # right now just used in splats in a calling context with super,
-  # such as `super(*args)` or `super(*a:000)`
-  class SplatNode < LiteralNode
+  # Used for splats in a calling context.
+  # Ex: `super(*args)`,  `super(*a:000)`, `someFunc(*(list + ['item']))`
+  class SplatNode < Struct.new(:expression)
+    include Visitable
     include Walkable
   end
 
