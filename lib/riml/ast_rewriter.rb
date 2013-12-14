@@ -574,10 +574,11 @@ module Riml
           until DefNode === n || n.nil?
             n = n.parent
           end
-          var_str_without_star = @splat_node.value[1..-1]
-          var_without_star = GetVariableNode.new(nil, var_str_without_star)
-          return var_without_star if n.nil? || !n.splat || (n.splat != @splat_node.value)
-          GetVariableNode.new('a:', '000')
+          @splat_node.value
+          #var_str_without_star = @splat_node.value[1..-1]
+          #var_without_star = GetVariableNode.new(nil, var_str_without_star)
+          #return var_without_star if n.nil? || !n.splat || (n.splat != @splat_node.value)
+          #GetVariableNode.new('a:', '000')
         end
       end
 
@@ -744,7 +745,7 @@ module Riml
           # initialize method taking *splat parameter and call super with it
           elsif class_node.superclass?
             def_node = DefNode.new(
-              '!', nil, nil, "initialize", ['...'], nil, Nodes.new([SuperNode.new([SplatNode.new('*a:000')], false)])
+              '!', nil, nil, "initialize", ['...'], nil, Nodes.new([SuperNode.new([SplatNode.new(GetVariableNode.new('a:', '000'))], false)])
             )
           else
             def_node = DefNode.new(
@@ -851,7 +852,7 @@ module Riml
             raise error
           end
           node_args = if node.arguments.empty? && !node.with_parens && superclass_function.splat
-            [SplatNode.new('*a:000')]
+            [SplatNode.new(GetVariableNode.new('a:', '000'))]
           else
             if @function_node.private_function?
               node.arguments.unshift GetVariableNode.new(nil, @function_node.parameters.first)
@@ -863,9 +864,19 @@ module Riml
           # private function, we have to add the explicit object (first
           # parameter to the function we're in) to the splat arg
           if @function_node.private_function?
-            if (splat_node = node_args.detect { |arg| SplatNode === arg }) &&
-              @function_node.splat == splat_node.value
-                splat_node.value = "*[a:#{@function_node.parameters.first}] + a:000"
+            if (splat_node = node_args.detect { |arg| SplatNode === arg })
+              splat_node.value = WrapInParensNode.new(
+                BinaryOperatorNode.new(
+                  '+',
+                  [
+                    ListNode.new([
+                      GetVariableNode.new('a:', @function_node.parameters.first)
+                    ]),
+                    GetVariableNode.new('a:', '000')
+                  ]
+                )
+              )
+              establish_parents(splat_node.value)
             end
             # call s.ClassA_private_func(args)
             call_node_name = superclass_func_name(superclass)

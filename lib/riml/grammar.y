@@ -280,10 +280,10 @@ rule
   ;
 
   ArgListWithoutNothingWithSplat:
-    Expression                                        { result = val }
-  | SPLAT_ARG                                         { result = [ make_node(val) { |v| Riml::SplatNode.new(v[0]) } ] }
-  | ArgListWithoutNothingWithSplat "," Expression     { result = val[0] << val[2] }
-  | ArgListWithoutNothingWithSplat "," SPLAT_ARG      { result = val[0] << make_node(val) { |v| Riml::SplatNode.new(v[2]) } }
+    Expression                                                   { result = val }
+  | SPLAT_ARG Expression                                         { result = [ make_node(val) { |v| Riml::SplatNode.new(v[1]) } ] }
+  | ArgListWithoutNothingWithSplat "," Expression                { result = val[0] << val[2] }
+  | ArgListWithoutNothingWithSplat "," SPLAT_ARG Expression      { result = val[0] << make_node(val) { |v| Riml::SplatNode.new(v[3]) } }
   ;
 
   ArgListWithoutNothing:

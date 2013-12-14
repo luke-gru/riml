@@ -277,8 +277,8 @@ function! s:DogConstructor(name, color)
   let dogObj.Animal_bark = function('<SNR>' . s:SID() . '_s:Animal_bark')
   return dogObj
 endfunction
-function! <SID>s:Dog_bark(...) dict
-  let __riml_splat_list = a:000
+function! <SID>s:Dog_bark(count, ...) dict
+  let __riml_splat_list = (a:000 + [a:count])
   let __riml_splat_size = len(__riml_splat_list)
   let __riml_splat_str_vars = []
   let __riml_splat_idx = 1
@@ -290,9 +290,9 @@ function! <SID>s:Dog_bark(...) dict
   execute 'call self.Animal_bark(' . join(__riml_splat_str_vars, ', ') . ')'
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
-call s:d.bark('woof!')
+call s:d.bark(2, 'arg1')
 Viml
-    skip 'splats only work with variables for now'
+
     assert_equal expected, compile(riml)
   end
 
@@ -325,7 +325,7 @@ function! s:BConstructor()
   return bObj
 endfunction
 function! s:B_private_func(bObj, ...)
-  let __riml_splat_list = [a:bObj] + a:000
+  let __riml_splat_list = ([a:bObj] + a:000)
   let __riml_splat_size = len(__riml_splat_list)
   let __riml_splat_str_vars = []
   let __riml_splat_idx = 1

@@ -17,11 +17,7 @@ end
 
 desc 'recreate lib/parser.rb from lib/grammar.y using racc'
 task :parser do
-  if RUBY_VERSION < '1.9'
-    STDERR.puts "There is a bug with racc and ruby < 1.9. This will be removed when the bug is fixed."
-  else
-    in_libdir { sh 'racc -o parser.rb grammar.y' }
-  end
+  in_libdir { sh 'racc -o parser.rb grammar.y' }
 end
 
 desc 'recreate lib/parser.rb with debug info from lib/grammar.y using racc'
