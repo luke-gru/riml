@@ -79,7 +79,7 @@ module Riml
             node.compiled_output << node.indent + line
           end
         end
-        node.compiled_output << "\n" unless node.compiled_output[-1..-1] == "\n"
+        node.compiled_output << "\n" unless node.compiled_output[-1, 1] == "\n"
         node.compiled_output << "endif\n"
       end
     end
@@ -508,7 +508,7 @@ module Riml
     class DrillDownVisitor < Visitor
       def walk_node!(node)
         node.each do |expr|
-          expr.accept(self) if expr.respond_to?(:accept)
+          expr.accept(self) if Visitable === expr
         end if node.respond_to?(:each)
       end
     end
@@ -553,7 +553,8 @@ module Riml
       end
 
       def compile_arguments(node)
-        node.compiled_output << if node.builtin_command?
+        builtin_cmd = node.builtin_command?
+        node.compiled_output << if builtin_cmd
           if node.arguments.any? then ' ' else '' end
         else
           '('
@@ -564,18 +565,9 @@ module Riml
           arg.accept(arg_visitor)
           node.compiled_output << ", " unless last_arg?(node.arguments, i)
         end
-        node.compiled_output << ")" unless node.builtin_command?
-        unless node.descendant_of_control_structure? ||
-               node.descendant_of_call_node? ||
-               node.descendant_of_object_instantiation_node? ||
-               node.descendant_of_list_node? ||
-               node.descendant_of_list_or_dict_get_node? ||
-               node.descendant_of_operator_node? ||
-               node.descendant_of_wrap_in_parens_node? ||
-               node.descendant_of_sublist_node? ||
-               node.descendant_of_dict_get_dot_node? ||
-               node.descendant_of_dictionary_node? ||
-               node.descendant_of_curly_brace_part?
+        node.compiled_output << ")" unless builtin_cmd
+        node_p = node.parent
+        if node_p.force_newline_if_child_call_node?
           node.force_newline = true
         end
       end

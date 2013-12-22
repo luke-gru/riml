@@ -13,19 +13,24 @@ module Riml
 
     def initialize(ast = nil, classes = nil, class_dependency_graph = nil)
       @ast = ast
-      @classes = classes || ClassMap.new
-      # AST_Rewriter shares options with Parser. Parser set AST_Rewriter's
-      # options before call to `rewrite`.
-      @options = nil
-      # Keeps track of filenames with their rewritten ASTs, to prevent rewriting
-      # the same AST more than once.
-      @rewritten_included_and_sourced_files = {}
-      # Keeps track of which filenames included/sourced which.
-      # ex: { nil => ["main.riml"], "main.riml" => ["lib1.riml", "lib2.riml"],
-      # "lib1.riml" => [], "lib2.riml" => [] }
-      @included_and_sourced_file_refs = Hash.new { |h, k| h[k] = [] }
-      @class_dependency_graph = class_dependency_graph || ClassDependencyGraph.new
-      @resolving_class_dependencies = nil
+      @classes = classes
+      @class_dependency_graph = class_dependency_graph
+      # only the top-most rewriter has these properties and defaults
+      if self.instance_of?(Riml::AST_Rewriter)
+        @classes ||= ClassMap.new
+        # AST_Rewriter shares options with Parser. Parser set AST_Rewriter's
+        # options before call to `rewrite`.
+        @options = nil
+        # Keeps track of filenames with their rewritten ASTs, to prevent rewriting
+        # the same AST more than once.
+        @rewritten_included_and_sourced_files = {}
+        # Keeps track of which filenames included/sourced which.
+        # ex: { nil => ["main.riml"], "main.riml" => ["lib1.riml", "lib2.riml"],
+        # "lib1.riml" => [], "lib2.riml" => [] }
+        @included_and_sourced_file_refs = Hash.new { |h, k| h[k] = [] }
+        @class_dependency_graph ||= ClassDependencyGraph.new
+        @resolving_class_dependencies = nil
+      end
     end
 
     def rewrite(filename = nil, included = false)
@@ -73,8 +78,8 @@ module Riml
 
     def do_establish_parents(node)
       node.children.each do |child|
-        child.parent_node = node if child.respond_to?(:parent_node=)
-      end if node.respond_to?(:children)
+        child.parent_node = node if Visitable === child
+      end if Visitable === node
     end
 
     def rewrite_on_match(node = ast)
@@ -1019,7 +1024,7 @@ module Riml
       def replace(node)
         orig_assign = node.dup
         assigns = []
-        while assign_node = (node.respond_to?(:rhs) && node.rhs)
+        while assign_node = (AssignNode === node && node.rhs)
           assigns.unshift([node.lhs, node.rhs])
           node = assign_node
         end

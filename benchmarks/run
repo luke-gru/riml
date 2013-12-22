@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# vim: syntax=ruby
+
+require File.expand_path('../../test/test_helper', __FILE__)
+require 'benchmark'
+
+puts "RUBY_VERSION: #{RUBY_VERSION}"
+puts "RUBY_PATCHLEVEL: #{RUBY_PATCHLEVEL}"
+begin
+  puts "system info: " + `uname -a`
+  puts "cpu info: " + File.readlines('/proc/cpuinfo').find { |line| line =~ /^\s*model name/i }
+rescue
+end
+
+module Riml
+
+  class Benchmarks < Riml::TestCase
+    self.i_suck_and_my_tests_are_order_dependent!
+
+    def bmbm(name, &block)
+      name = name.to_s.gsub('_', ' ').strip.sub('test', '')
+      Benchmark.bmbm do |b|
+        b.report(name) { block.call }
+      end
+    end
+  end
+
+  class IntegrationBenchmarks < Benchmarks
+    FUGITIVE_VIM_SRC = File.read(File.expand_path('../../test/integration/vim-fugitive/fugitive.riml', __FILE__))
+
+    test "1: lex fugitive.vim source (2600 lines)" do
+      bmbm(__method__) do
+        lex(FUGITIVE_VIM_SRC)
+      end
+    end
+
+    test "2: parse fugitive.vim source without rewriting (2600 lines)" do
+      bmbm(__method__) do
+        parse(FUGITIVE_VIM_SRC, nil)
+      end
+    end
+
+    test "3: parse fugitive.vim source with rewriting (2600 lines)" do
+      bmbm(__method__) do
+        parse(FUGITIVE_VIM_SRC)
+      end
+    end
+
+    test "4: compile fugitive.vim source (2600 lines)" do
+      bmbm(__method__) do
+        compile(FUGITIVE_VIM_SRC)
+      end
+    end
+  end
+
+end

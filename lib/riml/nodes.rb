@@ -17,6 +17,12 @@ module Riml
       @compiled_output ||= ''
     end
 
+    EMPTY_CHILDREN = []
+
+    def children
+      EMPTY_CHILDREN
+    end
+
     def location_info
       n = self
       while n != nil && !n.parser_info
@@ -29,24 +35,8 @@ module Riml
       "#{filename}:#{parser_info[:lineno]}"
     end
 
-    %w(
-    control_structure
-    call_node
-    object_instantiation_node
-    list_node
-    list_or_dict_get_node
-    operator_node
-    wrap_in_parens_node
-    sublist_node
-    dict_get_dot_node
-    dictionary_node
-    curly_brace_part
-    ).each do |node_name|
-      define_method "descendant_of_#{node_name}?" do
-        parent_node_name = node_name.split('_').map(&:capitalize).join
-        parent_node = Riml.const_get parent_node_name
-        parent_node === self.parent_node
-      end
+    def force_newline_if_child_call_node?
+      true
     end
   end
 
@@ -196,7 +186,11 @@ module Riml
     end
   end
 
-  class SublistNode < Nodes; end
+  class SublistNode < Nodes
+    def force_newline_if_child_call_node?
+      false
+    end
+  end
 
   # Literals are static values that have a Ruby representation, eg.: a string, number, list,
   # true, false, nil, etc.
@@ -237,6 +231,10 @@ module Riml
       new(val)
     end
 
+    def force_newline_if_child_call_node?
+      false
+    end
+
     def children
       value
     end
@@ -253,6 +251,10 @@ module Riml
 
     def initialize(value)
       super(value.to_a)
+    end
+
+    def force_newline_if_child_call_node?
+      false
     end
 
     def children
@@ -319,6 +321,10 @@ module Riml
     include Visitable
     include Walkable
 
+    def force_newline_if_child_call_node?
+      false
+    end
+
     def children
       [expression]
     end
@@ -381,6 +387,10 @@ module Riml
 
     def autoload?
       name.include?('#')
+    end
+
+    def force_newline_if_child_call_node?
+      false
     end
 
     def children
@@ -504,6 +514,10 @@ module Riml
   class OperatorNode < Struct.new(:operator, :operands)
     include Visitable
     include Walkable
+
+    def force_newline_if_child_call_node?
+      false
+    end
 
     def children
       operands
@@ -641,6 +655,10 @@ module Riml
 
     def nested?
       value.is_a?(Array) && value.detect {|part| part.is_a?(CurlyBracePart)}
+    end
+
+    def force_newline_if_child_call_node?
+      false
     end
 
     def children
@@ -834,6 +852,10 @@ module Riml
     include Indentable
     include Walkable
 
+    def force_newline_if_child_call_node?
+      false
+    end
+
     def children
       [condition, body]
     end
@@ -968,6 +990,9 @@ module Riml
   # dict.key
   # dict.key.key2
   class DictGetDotNode < DictGetNode
+    def force_newline_if_child_call_node?
+      false
+    end
   end
 
 
@@ -979,6 +1004,11 @@ module Riml
 
     alias list list_or_dict
     alias dict list_or_dict
+
+    def force_newline_if_child_call_node?
+      false
+    end
+
     def children
       [list_or_dict] + keys
     end
@@ -1104,6 +1134,10 @@ module Riml
   class ObjectInstantiationNode < Struct.new(:call_node)
     include Visitable
     include Walkable
+
+    def force_newline_if_child_call_node?
+      false
+    end
 
     def children
       [call_node]

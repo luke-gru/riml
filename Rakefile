@@ -15,6 +15,11 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList['test/**/*_test.rb'].to_a
 end
 
+desc 'Run benchmarks'
+task :bench => [:parser] do
+  load File.expand_path('../benchmarks/run', __FILE__)
+end
+
 desc 'recreate lib/parser.rb from lib/grammar.y using racc'
 task :parser do
   in_libdir { sh 'racc -o parser.rb grammar.y' }

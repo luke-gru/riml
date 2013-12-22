@@ -128,6 +128,8 @@ end
 import all global classes that it doesn't find. The same functionality can
 be achieved by doing:
 
+    riml_import '*'
+
 * Cache more heavily between calls to `Riml.compile_files`. Riml now caches
 Riml.include_path and Riml.source_path files globally, as well as
 rewritten ASTs.
@@ -220,7 +222,7 @@ And now compiles to:
 * of 'defm'). Now they are truly private to the class and cannot be accessed
 outside of it without using clever Vim trickery. Ex:
 
-    ; really bad implementation of Set#push
+    " really bad implementation of Set#push
     class Set
 
       def initialize(list)
@@ -228,7 +230,7 @@ outside of it without using clever Vim trickery. Ex:
       end
 
       defm push(elem)
-        ; NOTE: Set#includes is left out of this example
+        " NOTE: Set#includes is left out of this example
         add(self.internalList(), elem) unless self.includes(elem)
         return self.internalList()
       end

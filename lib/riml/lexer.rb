@@ -47,21 +47,22 @@ module Riml
       @tokens
     end
 
+    # TODO: fix this slow method
     def next_token
-      while @token_buf.empty? && !@s.eos?
+      while (buf_empty = @token_buf.empty?) && !@s.eos?
         tokenize_chunk
       end
-      if !@token_buf.empty?
+      if !buf_empty
         token = @token_buf.shift
         if token.size == 3
           @lineno += token.pop
         end
         if @parser_info
-          tokens << decorate_token(token)
+          @tokens << decorate_token(token)
           @prev_token = token.first(2)
           return token
         else
-          tokens << token
+          @tokens << token
           return @prev_token = token
         end
       end
@@ -279,7 +280,6 @@ module Riml
         :lineno => @lineno,
         :filename => @filename
       }
-      token
     end
 
     def track_indent_level(identifier)

@@ -129,16 +129,25 @@ end
 
 Riml::FileRollback.guard
 Riml::FileRollback.trap(:INT, :QUIT, :KILL) do
-  STDERR.print("rolling back files changes...\n")
+  STDERR.print("rolling back file changes...\n")
   exit 1
 end
 
 all_files_before = Dir.glob('**/*')
+
+#require 'ruby-prof'
+RubyProf.start if defined?(RubyProf)
 
 MiniTest.after_run do
   all_files_after = Dir.glob('**/*')
   if all_files_after != all_files_before
     STDERR.puts "WARNING: test suite added/removed file(s). Diff: " \
       "#{all_files_after.to_set.difference(all_files_before.to_set).to_a}"
+  end
+
+  if defined?(RubyProf)
+    result = RubyProf.stop
+    printer = RubyProf::FlatPrinter.new(result)
+    printer.print(STDOUT)
   end
 end
