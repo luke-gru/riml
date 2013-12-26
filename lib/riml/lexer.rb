@@ -282,6 +282,8 @@ module Riml
       }
     end
 
+    END_KEYWORDS_SYMBOLS = END_KEYWORDS.map(&:to_sym)
+
     def track_indent_level(identifier)
       case identifier.to_sym
       when :def, :def!, :defm, :defm!, :while, :until, :for, :try, :class
@@ -292,7 +294,7 @@ module Riml
           @current_indent += 2
           @indent_pending = true
         end
-      when *END_KEYWORDS.map(&:to_sym)
+      when *END_KEYWORDS_SYMBOLS
         @current_indent -= 2
         @dedent_pending = true
       end

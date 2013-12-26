@@ -31,14 +31,18 @@ module Riml
 
       def visit(node)
         output = compile(node)
-        output << "\n" if node.force_newline and output[-1, 1] != "\n"
+        if node.force_newline && output[-1, 1] != "\n"
+          output << "\n"
+        end
         propagate_up_tree(node, output)
       end
 
       protected
 
       def propagate_up_tree(node, output)
-        node.parent_node.compiled_output << output.to_s unless @propagate_up_tree == false || node.parent_node.nil?
+        unless @propagate_up_tree == false || node.parent_node.nil?
+          node.parent_node.compiled_output << output.to_s
+        end
       end
 
       def visitor_for_node(node, params={})
@@ -95,7 +99,7 @@ module Riml
         if_expr_visitor = visitor_for_node(node.if_expr)
         node.if_expr.accept(if_expr_visitor)
         node.compiled_output << ' : '
-        else_expr_visitor =  visitor_for_node(node.else_expr)
+        else_expr_visitor = visitor_for_node(node.else_expr)
         node.else_expr.accept(else_expr_visitor)
         node.compiled_output
       end
