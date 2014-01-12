@@ -831,7 +831,7 @@ module Riml
             nil,
             'join',
             [
-              GetVariableNode.new('n:', '__riml_splat_str_vars'),
+              GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_str_vars'),
               StringNode.new(', ', :s)
             ]
           )
@@ -846,8 +846,12 @@ module Riml
           # compiler where it not wrapped in a function context, therefore
           # variables will be script-local there unless their scope_modifier
           # is set
-          if n
-            assign_node.lhs.scope_modifier = 'l:' if assign_node.lhs.scope_modifier.nil?
+          if n && assign_node.lhs.scope_modifier.nil?
+            if global_scope?
+              assign_node.lhs.scope_modifier = 's:'
+            else
+              assign_node.lhs.scope_modifier = 'l:'
+            end
           end
           assign_node
         else
@@ -857,7 +861,7 @@ module Riml
         compiler = Compiler.new
         # have to dup node_to_execute here because, if not, its parent will
         # get reset during this next compilation step
-        output = compiler.compile(Nodes.new([node_to_execute.dup]))
+        output = compiler.compile(Nodes.new([node_to_execute.clone]))
         execute_string_node = StringNode.new(output.chomp[0..-2], :s)
         if node_to_execute.instance_of?(CallNode)
           execute_string_node.value.insert(0, 'call ')
@@ -889,51 +893,74 @@ module Riml
         nodes = Nodes.new([])
         splat_list_init = AssignNode.new(
           '=',
-          GetVariableNode.new('n:', '__riml_splat_list'),
+          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_list'),
           @splat_node.expression
         )
         splat_size = AssignNode.new(
           '=',
-          GetVariableNode.new('n:', '__riml_splat_size'),
-          CallNode.new(nil, 'len', [GetVariableNode.new('n:', '__riml_splat_list')])
+          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_size'),
+          CallNode.new(nil, 'len', [GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_list')])
         )
         splat_string_vars_init = AssignNode.new(
           '=',
-          GetVariableNode.new('n:', '__riml_splat_str_vars'),
+          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_str_vars'),
           ListNode.new([])
         )
         splat_list_idx_init = AssignNode.new(
           '=',
-          GetVariableNode.new('n:', '__riml_splat_idx'),
+          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'),
           NumberNode.new('1')
         )
         while_loop = WhileNode.new(
           # condition
-          BinaryOperatorNode.new('<=', [GetVariableNode.new('n:', '__riml_splat_idx'), GetVariableNode.new('n:', '__riml_splat_size')]),
+          BinaryOperatorNode.new('<=', [GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'), GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_size')]),
           # body
           Nodes.new([
             AssignNode.new(
               '=',
-              GetCurlyBraceNameNode.new('n:', CurlyBraceVariable.new([CurlyBracePart.new('__riml_splat_var_'), CurlyBraceVariable.new([CurlyBracePart.new(GetVariableNode.new('n:', '__riml_splat_idx'))])])),
+              GetCurlyBraceNameNode.new(tmp_var_modifier.dup, CurlyBraceVariable.new([CurlyBracePart.new('__riml_splat_var_'), CurlyBraceVariable.new([CurlyBracePart.new(GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'))])])),
               CallNode.new(nil, 'get', [
-                GetVariableNode.new('n:', '__riml_splat_list'),
+                GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_list'),
                 BinaryOperatorNode.new('-', [
-                  GetVariableNode.new('n:', '__riml_splat_idx'),
+                  GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'),
                   NumberNode.new('1')
                 ])
               ])
             ),
             ExplicitCallNode.new(nil, 'add', [
-              GetVariableNode.new('n:', '__riml_splat_str_vars'),
-              BinaryOperatorNode.new('.', [StringNode.new('__riml_splat_var_', :s), GetVariableNode.new('n:', '__riml_splat_idx')])
+              GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_str_vars'),
+              BinaryOperatorNode.new('.', [StringNode.new('__riml_splat_var_', :s), GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx')])
             ]),
-            AssignNode.new('+=', GetVariableNode.new('n:', '__riml_splat_idx'), NumberNode.new('1'))
+            AssignNode.new('+=', GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'), NumberNode.new('1'))
           ])
         )
         nodes << splat_list_init << splat_size << splat_string_vars_init <<
           splat_list_idx_init << while_loop
         establish_parents(nodes)
         nodes
+      end
+
+      def tmp_var_modifier
+        @tmp_var_modifier ||= begin
+          n = @splat_node
+          while n != nil && !(DefNode === n)
+            n = n.parent
+          end
+          # n is either `nil` or DefNode
+          if n.nil?
+            's:'
+          else
+            'n:'
+          end
+        end
+      end
+
+      def global_scope?
+        tmp_var_modifier == 's:'
+      end
+
+      def local_scope?
+        not global_scope?
       end
     end
 

@@ -123,12 +123,14 @@ module Riml
         attr = parent.members[idx]
         new_node.parent = parent
         parent.send("#{attr}=", new_node)
+        new_node
       else
         idx = index_by_children
         return unless idx
         new_node.parent = parent
         parent.children.insert(idx, new_node)
         parent.children.slice!(idx + 1)
+        new_node
       end
     end
   end
@@ -286,6 +288,10 @@ module Riml
   class SplatNode < Struct.new(:expression)
     include Visitable
     include Walkable
+
+    def children
+      [expression]
+    end
   end
 
   class SIDNode < LiteralNode

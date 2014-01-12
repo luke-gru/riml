@@ -1,10 +1,10 @@
 [![Build Status](https://secure.travis-ci.org/luke-gru/riml.png?branch=master)](https://travis-ci.org/luke-gru/riml)
 
-Riml, a relaxed Vim script
-====================================
+Riml, a relaxed VimL
+====================
 
-Riml is a subset of Vim script with some added features, and it compiles to
-plain Vim script. Some of the added features include classes, string interpolation,
+Riml is a subset of VimL with some added features, and it compiles to
+plain VimL. Some of the added features include classes, string interpolation,
 heredocs, default case-sensitive string comparison, default parameters
 in functions, and other things programmers tend to take for granted.
 To see how Riml is compiled to VimL, just take a look at this README. The left
@@ -19,7 +19,7 @@ Variables
       count += 1                    let s:count += 1
     end                           endwhile
 
-If you don't specify a scope modifier (or namespace in Vimspeak), it's script local (s:)
+If you don't specify a scope modifier (or 'namespace' in Vimspeak), it's script local (s:)
 by default in the global scope. Within a function, variables without scope modifiers are plain
 old local variables.
 
@@ -70,7 +70,7 @@ Notice in the last line of Riml there's string interpolation. This works
 in double-quoted strings and heredocs, which we'll encounter later.
 
 In Riml, you can choose to end any block with 'end', or with whatever you used
-to do in Vim script ('endif', 'endfunction', etc...). Also, 'if' and 'unless' can
+to do in VimL ('endif', 'endfunction', etc...). Also, 'if' and 'unless' can
 now be used as statement modifiers:
 
     callcount = 0 unless callcount?
@@ -82,15 +82,15 @@ Here, the compiled output is the same as the previous example's. Both 'if' and
 
 ###True and False
 
-    a = true                                      let a = 1
-    b = false                                     let b = 0
+    a = true                                      let s:a = 1
+    b = false                                     let s:b = 0
 
 Operators And Case Sensitivity
 ------------------------------
 
-    if "hi" == greeting                      if "hi" ==# s:greeting
-      echo greeting                            echo s:greeting
-    end                                      end
+    if "hi" == greeting                           if "hi" ==# s:greeting
+      echo greeting                                 echo s:greeting
+    end                                           end
 
 Comparisons compile to case-sensitive by default. To get case-insensitive
 comparisons, you have to explicitly use the form ending in '?' (ex: '==?').
@@ -101,7 +101,7 @@ cousin 'is#', and the same is true of 'isnot'.
 
 ###=== Operator
 
-Oh no, not another of THOSE operators! Well, this one is pretty sweet
+Oh no, not another of __those__ operators! Well, this one is pretty sweet
 actually. In VimL, automatic type conversion can be a pain. For example:
 
     echo 4 ==# "4"
@@ -116,7 +116,7 @@ regarding equality:
 The '===' operator wraps both operands in lists:
 
     echo 4 === "4"                        echo [4] ==# ["4"]
-
+    => 0
 
 Heredocs
 --------
@@ -126,8 +126,8 @@ Heredocs
     Hooray!
     EOS
 
-Riml heredocs must have the ending pattern ('EOS' in this case) start at the
-beginning of the line. Interpolated expressions are allowed in heredocs.
+Riml heredocs must have the ending pattern ('EOS' in this case, but can be anything) start
+at the beginning of the line. Interpolated expressions are allowed in heredocs.
 
 Functions
 ---------
@@ -137,15 +137,16 @@ Functions
       return @/                     return @/
     end                           endfunction
 
-When defining a function with no parameters, the parens after the function name are optional.
-
 Functions are by default prepended by 's:' unless explicitly prepended with a
 different scope modifier. Of course, you can use the old form ('function! Name()')
 for defining functions if you want, as Riml aims to be as compatible as possible
 with VimL. There are a few exceptions where Riml and VimL aren't compatible, and
 these differences are explained in the section 'Incompatibilities with VimL'.
 
-###Default Arguments
+When defining a function with no parameters and no keywords (such as 'dict' or 'abort'),
+the parens after the function name are optional.
+
+###Default Parameters
 
     def fillSearchPat(pat = getDefaultSearchPat())        function! s:fillSearchPat(...)
       @/ = pat                                              if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
@@ -158,13 +159,63 @@ these differences are explained in the section 'Incompatibilities with VimL'.
                                                           endfunction
 
 
-Default arguments must be the last arguments given to a function, but there can be more
-than one default argument. Also, a splat argument (... or \*argName) can come after default argument(s).
-Splats will be explained in the next section.
+Default parameters must be the last parameters given to a function, but there can be more
+than one default parameter. Also, a splat parameter (... or \*argName) can come after default parameters.
+Splats parameters and splat arguments will be explained in the next section.
 
 We can now call the function 'fillSearchPat' without any arguments and it will use the default
-argument. Also, if we pass the string 'rimldefault', it will use the default argument as well. This
-is useful if a function has many default arguments.
+parameter. Also, if we pass the string 'rimldefault', it will use the default parameter as well. This
+is useful if a function has many default parameters.
+
+###Splat Parameters
+
+A splat parameter is a formal parameter to a function starting with a '\*'. They must be the last
+parameters given to a function.
+
+    def my_echo(*words)                             function! s:my_echo(...)
+      echo words                                      echo a:000
+    end                                             endfunction
+    my_echo("hello", "world")                       call my_echo("hello", "world")
+
+    => ["hello", "world"]
+
+###Splat Arguments
+
+Splat arguments are splats used in a function call context. With the function `my_echo` defined in the
+previous section, here's an example at work:
+
+    words = ["hello", "world"]                      let s:words = ["hello", "world"]
+    echo 'without splat:'                           echo 'without splat:'
+    my_echo(words)                                  call my_echo(s:words)
+    echo 'with splat:'                              echo 'with splat:'
+    my_echo(*words)                                 let s:__riml_splat_list = s:words
+
+                                                    let s:__riml_splat_size = len(s:__riml_splat_list)
+                                                    let s:__riml_splat_str_vars = []
+                                                    let s:__riml_splat_idx = 1
+                                                    while s:__riml_splat_idx <=# s:__riml_splat_size
+                                                      let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
+                                                      call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
+                                                      let s:__riml_splat_idx += 1
+                                                    endwhile
+                                                    execute 'call s:my_echo(' . join(s:__riml_splat_str_vars, ', ') . ')'
+
+    => without splat:
+    => [["hello", "world"]]
+
+    => with splat:
+    => ["hello", "world"]
+
+The way to think about how splat arguments work is that the list variable that's
+splatted is broke into its constituent parts, just like in Ruby. So, `my_echo(*words)`
+is equivalent to `my_echo("hello", "world")` in this example. Notice how you can now
+pass the exact same arguments your function received to another function by splatting a
+parameter and passing it on to another function.
+
+    def some_func(*args)
+      other_func(*args) " passes same arguments along to other function.
+    end
+
 
 Classes
 -------
@@ -193,6 +244,10 @@ Classes
                                                          return self.otherData
                                                        endfunction
 
+In this basic example of a class, we see a \*splat variable. This is just a
+convenient way to refer to 'a:000' in the body of a function. Splat variables
+are optional parameters and get compiled to '...'.
+
 Classes can only be defined once, and cannot be reopened. Public member
 functions are defined with 'defm'. If you want to create a non-public function
 inside a class, use 'def'. To create an instance of this class, simply:
@@ -208,9 +263,6 @@ For example:
       ...
     end
 
-In this basic example of a class, we see a \*splat variable. This is just a
-convenient way to refer to 'a:000' in the body of a function. Splat variables
-are optional parameters and get compiled to '...'.
 
 ###Class Inheritance
 
@@ -251,6 +303,11 @@ instances use the initialize function from 'Translation', and new instances must
 be provided with an 'input' argument on creation. Basically, if a class doesn't
 provide an initialize function, it uses its superclass's.
 
+If you look at the last line of Riml in the previous example, you'll see that
+it doesn't use VimL's builtin 'call' function for calling the 'translate'
+method on the translation object. Riml can figure out when 'call' is necessary,
+and will add it to the compiled VimL.
+
 A base class and inheriting class can have different scope modifiers. For example, if you
 had a script-local base class and wanted to extend it but have the extending class be
 global, this is not a problem. Simply:
@@ -259,10 +316,6 @@ global, this is not a problem. Simply:
       ...
     end
 
-If you look at the last line of Riml in the previous example, you'll see that
-it doesn't use Vim script's builtin 'call' function for calling the 'translate'
-method on the translation object. Riml can figure out when 'call' is necessary,
-and will add it to the compiled Vim script.
 
 ###Using 'super'
 

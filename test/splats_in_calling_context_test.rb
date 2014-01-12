@@ -345,16 +345,16 @@ Viml
 call some_func(*vars)
 Riml
     expected = <<Viml
-let __riml_splat_list = s:vars
-let __riml_splat_size = len(__riml_splat_list)
-let __riml_splat_str_vars = []
-let __riml_splat_idx = 1
-while __riml_splat_idx <=# __riml_splat_size
-  let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-  call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-  let __riml_splat_idx += 1
+let s:__riml_splat_list = s:vars
+let s:__riml_splat_size = len(s:__riml_splat_list)
+let s:__riml_splat_str_vars = []
+let s:__riml_splat_idx = 1
+while s:__riml_splat_idx <=# s:__riml_splat_size
+  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
+  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
+  let s:__riml_splat_idx += 1
 endwhile
-execute 'call s:some_func(' . join(__riml_splat_str_vars, ', ') . ')'
+execute 'call s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
 Viml
 
     assert_equal expected, compile(riml)
@@ -365,16 +365,16 @@ Viml
 a = some_func(*vars)
 Riml
     expected = <<Viml
-let __riml_splat_list = s:vars
-let __riml_splat_size = len(__riml_splat_list)
-let __riml_splat_str_vars = []
-let __riml_splat_idx = 1
-while __riml_splat_idx <=# __riml_splat_size
-  let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-  call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-  let __riml_splat_idx += 1
+let s:__riml_splat_list = s:vars
+let s:__riml_splat_size = len(s:__riml_splat_list)
+let s:__riml_splat_str_vars = []
+let s:__riml_splat_idx = 1
+while s:__riml_splat_idx <=# s:__riml_splat_size
+  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
+  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
+  let s:__riml_splat_idx += 1
 endwhile
-execute 'let s:a = s:some_func(' . join(__riml_splat_str_vars, ', ') . ')'
+execute 'let s:a = s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
 Viml
 
     assert_equal expected, compile(riml)
@@ -385,18 +385,50 @@ Viml
 g:a = some_func(*vars)
 Riml
     expected = <<Viml
-let __riml_splat_list = s:vars
-let __riml_splat_size = len(__riml_splat_list)
-let __riml_splat_str_vars = []
-let __riml_splat_idx = 1
-while __riml_splat_idx <=# __riml_splat_size
-  let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-  call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-  let __riml_splat_idx += 1
+let s:__riml_splat_list = s:vars
+let s:__riml_splat_size = len(s:__riml_splat_list)
+let s:__riml_splat_str_vars = []
+let s:__riml_splat_idx = 1
+while s:__riml_splat_idx <=# s:__riml_splat_size
+  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
+  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
+  let s:__riml_splat_idx += 1
 endwhile
-execute 'let g:a = s:some_func(' . join(__riml_splat_str_vars, ', ') . ')'
+execute 'let g:a = s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
 Viml
 
+    assert_equal expected, compile(riml)
+  end
+
+  test "calling 2 functions with splats in same scope reuses same variable names" do
+    riml = <<Riml
+some_func(*vars)
+some_func(*vars)
+Riml
+    expected = <<Viml
+let s:__riml_splat_list = s:vars
+let s:__riml_splat_size = len(s:__riml_splat_list)
+let s:__riml_splat_str_vars = []
+let s:__riml_splat_idx = 1
+while s:__riml_splat_idx <=# s:__riml_splat_size
+  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
+  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
+  let s:__riml_splat_idx += 1
+endwhile
+execute 'call s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
+let s:__riml_splat_list = s:vars
+let s:__riml_splat_size = len(s:__riml_splat_list)
+let s:__riml_splat_str_vars = []
+let s:__riml_splat_idx = 1
+while s:__riml_splat_idx <=# s:__riml_splat_size
+  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
+  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
+  let s:__riml_splat_idx += 1
+endwhile
+execute 'call s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
+Viml
+
+    skip
     assert_equal expected, compile(riml)
   end
 
