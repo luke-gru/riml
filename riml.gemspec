@@ -4,7 +4,7 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.name        = 'riml'
   s.version     = Riml::VERSION.join('.')
-  s.summary     = 'Riml is a language that compiles into Vim script'
+  s.summary     = 'Riml is a language that compiles into VimL'
   s.description = <<-desc
   Riml is a subset of VimL with some added features, and it compiles to plain
   Vim script. Some of the added features include classes, string interpolation,

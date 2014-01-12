@@ -1,3 +1,13 @@
+0.3.9
+=====
+
+* Add splat arguments (splats in calling context). Works just like in Ruby. Example:
+
+    args = [arg1, arg2]
+    call do_func(*args) " same as `call do_func(arg1, arg2)`
+
+* Performance improvements to the AST Rewriter in Ruby < 2.0.0
+
 0.3.8
 =====
 
