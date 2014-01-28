@@ -65,7 +65,6 @@ abs
 acos
 add
 append
-append
 argc
 argidx
 argv

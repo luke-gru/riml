@@ -756,14 +756,6 @@ module Riml
       end
     end
 
-    class ObjectInstantiationNodeVisitor < Visitor
-      def compile(node)
-        node.call_node.parent_node = node
-        node.call_node.accept(visitor_for_node(node.call_node))
-        node.compiled_output
-      end
-    end
-
     # root node has access to compiler instance in order to append to
     # the compiler's `compile_queue`. This happens when another file is
     # sourced using `riml_source`.

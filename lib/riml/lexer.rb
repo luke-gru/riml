@@ -150,8 +150,8 @@ module Riml
 
       elsif @in_function_declaration && (splat_param = @s.scan(/\A(\.{3}|\*[a-zA-Z_]\w*)/))
         @token_buf << [:SPLAT_PARAM, splat_param]
-      # splat in calling context. ex: super(*args) or super(*(args + other_args))
-      elsif !@in_function_declaration && prev_token && prev_token[0] == '(' && @s.check(/\A\*(\w+|\()/)
+      # splat in calling context. ex: super(*args) or super(*(args + other_args)) or func('hey', *args)
+      elsif !@in_function_declaration && prev_token && @s.check(/\A\*(\w+|\()/)
         @token_buf << [:SPLAT_ARG, @s.getch]
       # integer (octal)
       elsif octal = @s.scan(/\A0[0-7]+/)

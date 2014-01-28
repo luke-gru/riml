@@ -245,5 +245,47 @@ Riml
     assert_equal expected, lex(riml)
   end
 
+  test "splat argument being the only argument to a function" do
+    riml = <<Riml
+class Foo
+  def initialize(*args)
+    echo args
+  end
+end
+
+def foo(*args)
+  let foo = new Foo(*args)
+end
+Riml
+
+    expected = [
+      [:CLASS, "class"], [:IDENTIFIER, "Foo"], [:NEWLINE, "\n"],
+        [:DEF, "def"], [:IDENTIFIER, "initialize"], ["(", "("], [:SPLAT_PARAM, "*args"], [")", ")"], [:NEWLINE, "\n"],
+          [:BUILTIN_COMMAND, "echo"], [:IDENTIFIER, "args"], [:NEWLINE, "\n"],
+        [:END, "end"], [:NEWLINE, "\n"],
+      [:END, "end"], [:NEWLINE, "\n"],
+
+      [:DEF, "def"], [:IDENTIFIER, "foo"], ["(", "("], [:SPLAT_PARAM, "*args"], [")", ")"], [:NEWLINE, "\n"],
+        [:LET, "let"], [:IDENTIFIER, "foo"], ["=", "="], [:NEW, "new"], [:IDENTIFIER, "Foo"], ["(", "("], [:SPLAT_ARG, "*"], [:IDENTIFIER, "args"], [")", ")"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+    assert_equal expected, lex(riml)
+  end
+
+  test "splat argument being the last argument to a function" do
+    riml = <<Riml
+def foo(*args)
+  let foo = new Foo('hello', *args)
+end
+Riml
+    expected = [
+      [:DEF, "def"], [:IDENTIFIER, "foo"], ["(", "("], [:SPLAT_PARAM, "*args"], [")", ")"], [:NEWLINE, "\n"],
+        [:LET, "let"], [:IDENTIFIER, "foo"], ["=", "="], [:NEW, "new"], [:IDENTIFIER, "Foo"], ["(", "("], [:STRING_S, "hello"], [',', ','], [:SPLAT_ARG, "*"], [:IDENTIFIER, "args"], [")", ")"], [:NEWLINE, "\n"],
+      [:END, "end"]
+    ]
+
+    assert_equal expected, lex(riml)
+  end
+
 end
 end

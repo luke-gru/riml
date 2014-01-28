@@ -34,16 +34,7 @@ function! s:AnimalConstructor(name, color)
 endfunction
 function! s:DogConstructor(...)
   let dogObj = {}
-  let __riml_splat_list = a:000
-  let __riml_splat_size = len(__riml_splat_list)
-  let __riml_splat_str_vars = []
-  let __riml_splat_idx = 1
-  while __riml_splat_idx <=# __riml_splat_size
-    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-    let __riml_splat_idx += 1
-  endwhile
-  execute 'let l:animalObj = s:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
+  let animalObj = call('s:AnimalConstructor', a:000)
   call extend(dogObj, animalObj)
   let dogObj.bark = function('<SNR>' . s:SID() . '_s:Dog_bark')
   return dogObj
@@ -94,16 +85,7 @@ endfunction
 function! s:DogConstructor(...)
   let dogObj = {}
   let splat_args = a:000
-  let __riml_splat_list = splat_args
-  let __riml_splat_size = len(__riml_splat_list)
-  let __riml_splat_str_vars = []
-  let __riml_splat_idx = 1
-  while __riml_splat_idx <=# __riml_splat_size
-    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-    let __riml_splat_idx += 1
-  endwhile
-  execute 'let l:animalObj = s:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
+  let animalObj = call('s:AnimalConstructor', splat_args)
   call extend(dogObj, animalObj)
   let dogObj.bark = function('<SNR>' . s:SID() . '_s:Dog_bark')
   return dogObj
@@ -160,16 +142,7 @@ function! s:DogConstructor(name, color)
   return dogObj
 endfunction
 function! <SID>s:Dog_bark(...) dict
-  let __riml_splat_list = a:000
-  let __riml_splat_size = len(__riml_splat_list)
-  let __riml_splat_str_vars = []
-  let __riml_splat_idx = 1
-  while __riml_splat_idx <=# __riml_splat_size
-    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-    let __riml_splat_idx += 1
-  endwhile
-  execute 'call self.Animal_bark(' . join(__riml_splat_str_vars, ', ') . ')'
+  call call('Animal_bark', a:000, self)
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
 call s:d.bark('woof!')
@@ -219,16 +192,7 @@ function! s:DogConstructor(name, color)
   return dogObj
 endfunction
 function! <SID>s:Dog_bark(...) dict
-  let __riml_splat_list = a:000
-  let __riml_splat_size = len(__riml_splat_list)
-  let __riml_splat_str_vars = []
-  let __riml_splat_idx = 1
-  while __riml_splat_idx <=# __riml_splat_size
-    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-    let __riml_splat_idx += 1
-  endwhile
-  execute 'call self.Animal_bark(' . join(__riml_splat_str_vars, ', ') . ')'
+  call call('Animal_bark', a:000, self)
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
 call s:d.bark('woof!')
@@ -278,16 +242,7 @@ function! s:DogConstructor(name, color)
   return dogObj
 endfunction
 function! <SID>s:Dog_bark(count, ...) dict
-  let __riml_splat_list = (a:000 + [a:count])
-  let __riml_splat_size = len(__riml_splat_list)
-  let __riml_splat_str_vars = []
-  let __riml_splat_idx = 1
-  while __riml_splat_idx <=# __riml_splat_size
-    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-    let __riml_splat_idx += 1
-  endwhile
-  execute 'call self.Animal_bark(' . join(__riml_splat_str_vars, ', ') . ')'
+  call call('Animal_bark', (args + [count]), self)
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
 call s:d.bark(2, 'arg1')
@@ -325,16 +280,7 @@ function! s:BConstructor()
   return bObj
 endfunction
 function! s:B_private_func(bObj, ...)
-  let __riml_splat_list = ([a:bObj] + a:000)
-  let __riml_splat_size = len(__riml_splat_list)
-  let __riml_splat_str_vars = []
-  let __riml_splat_idx = 1
-  while __riml_splat_idx <=# __riml_splat_size
-    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
-    let __riml_splat_idx += 1
-  endwhile
-  execute 'call s:A_private_func(' . join(__riml_splat_str_vars, ', ') . ')'
+  call call('s:A_private_func', [a:bObj] + a:000)
 endfunction
 Viml
     assert_equal expected, compile(riml)
@@ -345,16 +291,7 @@ Viml
 call some_func(*vars)
 Riml
     expected = <<Viml
-let s:__riml_splat_list = s:vars
-let s:__riml_splat_size = len(s:__riml_splat_list)
-let s:__riml_splat_str_vars = []
-let s:__riml_splat_idx = 1
-while s:__riml_splat_idx <=# s:__riml_splat_size
-  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
-  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
-  let s:__riml_splat_idx += 1
-endwhile
-execute 'call s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
+call call('s:some_func', vars)
 Viml
 
     assert_equal expected, compile(riml)
@@ -365,16 +302,7 @@ Viml
 a = some_func(*vars)
 Riml
     expected = <<Viml
-let s:__riml_splat_list = s:vars
-let s:__riml_splat_size = len(s:__riml_splat_list)
-let s:__riml_splat_str_vars = []
-let s:__riml_splat_idx = 1
-while s:__riml_splat_idx <=# s:__riml_splat_size
-  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
-  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
-  let s:__riml_splat_idx += 1
-endwhile
-execute 'let s:a = s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
+let s:a = call('s:some_func', vars)
 Viml
 
     assert_equal expected, compile(riml)
@@ -385,16 +313,7 @@ Viml
 g:a = some_func(*vars)
 Riml
     expected = <<Viml
-let s:__riml_splat_list = s:vars
-let s:__riml_splat_size = len(s:__riml_splat_list)
-let s:__riml_splat_str_vars = []
-let s:__riml_splat_idx = 1
-while s:__riml_splat_idx <=# s:__riml_splat_size
-  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
-  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
-  let s:__riml_splat_idx += 1
-endwhile
-execute 'let g:a = s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
+let g:a = call('s:some_func', vars)
 Viml
 
     assert_equal expected, compile(riml)
@@ -406,29 +325,10 @@ some_func(*vars)
 some_func(*vars)
 Riml
     expected = <<Viml
-let s:__riml_splat_list = s:vars
-let s:__riml_splat_size = len(s:__riml_splat_list)
-let s:__riml_splat_str_vars = []
-let s:__riml_splat_idx = 1
-while s:__riml_splat_idx <=# s:__riml_splat_size
-  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
-  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
-  let s:__riml_splat_idx += 1
-endwhile
-execute 'call s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
-let s:__riml_splat_list = s:vars
-let s:__riml_splat_size = len(s:__riml_splat_list)
-let s:__riml_splat_str_vars = []
-let s:__riml_splat_idx = 1
-while s:__riml_splat_idx <=# s:__riml_splat_size
-  let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
-  call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
-  let s:__riml_splat_idx += 1
-endwhile
-execute 'call s:some_func(' . join(s:__riml_splat_str_vars, ', ') . ')'
+call call('s:some_func', vars)
+call call('s:some_func', vars)
 Viml
 
-    skip
     assert_equal expected, compile(riml)
   end
 

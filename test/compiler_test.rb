@@ -2685,5 +2685,71 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  # issue: https://github.com/luke-gru/riml/issues/31
+  # default param node wasn't being visited by DefaultParamToIfNodeVisitor
+  test "default parameter to function inside class" do
+    riml = <<Riml
+class MyClass
+  def bar(foo = {})
+  end
+end
+Riml
+    expected = <<Viml
+function! s:MyClassConstructor()
+  let myClassObj = {}
+  return myClassObj
+endfunction
+function! s:MyClass_bar(myClassObj, ...)
+  if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
+    let foo = remove(a:000, 0)
+  else
+    let foo = {}
+  endif
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  # issue: https://github.com/luke-gru/riml/issues/31
+  # execute node wasn't present
+  test "issue 31: splat node in calling context" do
+    riml = <<Riml
+class Foo
+end
+
+def foo#boo(*args)
+  let foo = new Foo(*args)
+end
+Riml
+
+    expected = <<Viml
+function! foo#boo(...)
+  let __riml_splat_list = a:000
+  let __riml_splat_size = len(__riml_splat_list)
+  let __riml_splat_str_vars = []
+  let __riml_splat_idx = 1
+  while __riml_splat_idx <=# __riml_splat_size
+    let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
+    call add(__riml_splat_str_vars, '__riml_splat_var_' . __riml_splat_idx)
+    let __riml_splat_idx += 1
+  endwhile
+  execute 'let l:foo = s:FooConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
+endfunction
+Viml
+  end
+
+  test "splat in calling context with other arguments" do
+    riml = <<Riml
+def foo(*args)
+  let foo = new Foo('hello', ['lol'], 'omg', *args)
+end
+Riml
+    expected = <<Viml
+function! s:foo(...)
+  let foo = call('s:FooConstructor', ['hello'] + [['lol']] + ['omg'] + a:000)
+endfunction
+Viml
+  end
+
 end
 end

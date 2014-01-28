@@ -803,165 +803,36 @@ module Riml
     #
     # to:
     #
-    #   let __riml_splat_list = a:000
-    #   let __riml_splat_size = len(__riml_splat_list)
-    #   let __riml_splat_str_vars = []
-    #   let __riml_splat_idx = 1
-    #   while __riml_splat_idx <=# __riml_splat_size
-    #     let __riml_splat_var_{__riml_splat_idx} = get(__riml_splat_list, __riml_splat_idx - 1)
-    #     call add(__riml_splat_str_vars, __riml_splat_var_{__riml_splat_idx})
-    #     let __riml_splat_idx += 1
-    #   endwhile
-    #   execute 'let s:animalObj = s:AnimalConstructor(' . join(__riml_splat_str_vars, ', ') . ')'
+    #   let animalObj = call('s:AnimalConstructor', a:000)
     #
     # Basically, mimic Ruby's approach to expanding lists to their
     # constituent argument parts with '*' in calling context.
     class SplatsToExecuteInCallingContext < AST_Rewriter
 
       def match?(node)
-        if SplatNode === node && CallNode === node.parent
-          @splat_node = node
-        end
+        SplatNode === node && CallNode === node.parent
       end
 
       def replace(node)
-        construct_splat_str_vars_node = build_construct_splat_str_vars_node
-        call_node_args =
-          CallNode.new(
-            nil,
-            'join',
-            [
-              GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_str_vars'),
-              StringNode.new(', ', :s)
-            ]
-          )
         call_node = node.parent
-        node_to_execute = if AssignNode === call_node.parent
-          assign_node = call_node.parent
-          n = call_node
-          until DefNode === n || n.nil?
-            n = n.parent
+        full_function_name = call_node.full_name
+        call_node.scope_modifier = ''
+        call_node.name = 'call'
+        other_args = call_node.arguments.delete_if { |arg| SplatNode === arg }
+        call_node.arguments = []
+        call_node.arguments << StringNode.new(full_function_name, :s)
+        if other_args.any?
+          tail = GetVariableNode.new('a:', '000')
+          other_args.reverse_each do |arg|
+            tail = BinaryOperatorNode.new('+', [ListNode.new([arg]), tail])
           end
-          # This is necessary because this node is getting put into a new
-          # compiler where it not wrapped in a function context, therefore
-          # variables will be script-local there unless their scope_modifier
-          # is set
-          if n && assign_node.lhs.scope_modifier.nil?
-            if global_scope?
-              assign_node.lhs.scope_modifier = 's:'
-            else
-              assign_node.lhs.scope_modifier = 'l:'
-            end
-          end
-          assign_node
+          call_node.arguments << tail
         else
-          call_node
+          call_node.arguments << GetVariableNode.new('a:', '000')
         end
-        call_node.arguments.clear
-        compiler = Compiler.new
-        # have to dup node_to_execute here because, if not, its parent will
-        # get reset during this next compilation step
-        output = compiler.compile(Nodes.new([node_to_execute.clone]))
-        execute_string_node = StringNode.new(output.chomp[0..-2], :s)
-        if node_to_execute.instance_of?(CallNode)
-          execute_string_node.value.insert(0, 'call ')
-        end
-        execute_arg = BinaryOperatorNode.new(
-          '.',
-          [
-            execute_string_node,
-            BinaryOperatorNode.new(
-              '.',
-              [
-                call_node_args,
-                StringNode.new(')', :s)
-              ]
-            )
-          ]
-        )
-        execute_node = CallNode.new(nil, 'execute', [execute_arg])
-        establish_parents(execute_node)
-        node.remove
-        node_to_execute.replace_with(construct_splat_str_vars_node)
-        execute_node.parent = construct_splat_str_vars_node.parent
-        construct_splat_str_vars_node.parent.insert_after(construct_splat_str_vars_node, execute_node)
+        establish_parents(call_node)
       end
 
-      private
-
-      def build_construct_splat_str_vars_node
-        nodes = Nodes.new([])
-        splat_list_init = AssignNode.new(
-          '=',
-          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_list'),
-          @splat_node.expression
-        )
-        splat_size = AssignNode.new(
-          '=',
-          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_size'),
-          CallNode.new(nil, 'len', [GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_list')])
-        )
-        splat_string_vars_init = AssignNode.new(
-          '=',
-          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_str_vars'),
-          ListNode.new([])
-        )
-        splat_list_idx_init = AssignNode.new(
-          '=',
-          GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'),
-          NumberNode.new('1')
-        )
-        while_loop = WhileNode.new(
-          # condition
-          BinaryOperatorNode.new('<=', [GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'), GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_size')]),
-          # body
-          Nodes.new([
-            AssignNode.new(
-              '=',
-              GetCurlyBraceNameNode.new(tmp_var_modifier.dup, CurlyBraceVariable.new([CurlyBracePart.new('__riml_splat_var_'), CurlyBraceVariable.new([CurlyBracePart.new(GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'))])])),
-              CallNode.new(nil, 'get', [
-                GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_list'),
-                BinaryOperatorNode.new('-', [
-                  GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'),
-                  NumberNode.new('1')
-                ])
-              ])
-            ),
-            ExplicitCallNode.new(nil, 'add', [
-              GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_str_vars'),
-              BinaryOperatorNode.new('.', [StringNode.new('__riml_splat_var_', :s), GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx')])
-            ]),
-            AssignNode.new('+=', GetVariableNode.new(tmp_var_modifier.dup, '__riml_splat_idx'), NumberNode.new('1'))
-          ])
-        )
-        nodes << splat_list_init << splat_size << splat_string_vars_init <<
-          splat_list_idx_init << while_loop
-        establish_parents(nodes)
-        nodes
-      end
-
-      def tmp_var_modifier
-        @tmp_var_modifier ||= begin
-          n = @splat_node
-          while n != nil && !(DefNode === n)
-            n = n.parent
-          end
-          # n is either `nil` or DefNode
-          if n.nil?
-            's:'
-          else
-            'n:'
-          end
-        end
-      end
-
-      def global_scope?
-        tmp_var_modifier == 's:'
-      end
-
-      def local_scope?
-        not global_scope?
-      end
     end
 
 
@@ -978,6 +849,7 @@ module Riml
         call_node = node.call_node
         call_node.name = class_node.constructor_name
         call_node.scope_modifier = class_node.constructor.scope_modifier
+        node.replace_with(call_node)
       end
     end
 
@@ -1036,10 +908,6 @@ module Riml
           ]))
           ])
         )
-      end
-
-      def max_recursion_lvl
-        3
       end
     end
 
