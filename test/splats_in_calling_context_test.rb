@@ -2,7 +2,7 @@ require File.expand_path('../test_helper', __FILE__)
 
 module Riml
 class SplatsInCallingContextTest < Riml::TestCase
-  test "splat in calling context in initialize function using splat param with call to `super`" do
+  test "explicit splat in base class inside initialize using super with splat arg" do
     riml = <<Riml
 class Animal
   def initialize(name, color)
@@ -52,7 +52,7 @@ Viml
     end
   end
 
-  test "splat in calling context in initialize function without using splat param with call to `super`" do
+  test "explicit splat in base class inside initialize using super with variable arg" do
     riml = <<Riml
 class Animal
   def initialize(name, color)
@@ -100,7 +100,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "splat in calling context in non-initialize function using splat param with call to `super`" do
+  test "explicit splat in base class inside member function using super with splat arg" do
     riml = <<Riml
 class Animal
   def initialize(name, color)
@@ -142,7 +142,7 @@ function! s:DogConstructor(name, color)
   return dogObj
 endfunction
 function! <SID>s:Dog_bark(...) dict
-  call call('Animal_bark', a:000, self)
+  call call('<SNR>' . s:SID() . '_s:Animal_bark', a:000, self)
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
 call s:d.bark('woof!')
@@ -150,7 +150,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "implicit splat in calling context in non-initialize function with call to `super`" do
+  test "implicit splat in base class inside member function using super" do
     riml = <<Riml
 class Animal
   def initialize(name, color)
@@ -192,7 +192,7 @@ function! s:DogConstructor(name, color)
   return dogObj
 endfunction
 function! <SID>s:Dog_bark(...) dict
-  call call('Animal_bark', a:000, self)
+  call call('<SNR>' . s:SID() . '_s:Animal_bark', a:000, self)
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
 call s:d.bark('woof!')
@@ -200,7 +200,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "explicit splat with non-variable splat expression" do
+  test "explicit splat in base class inside member function using super with splatted expression (splat_arg at beg of expr list)" do
     riml = <<Riml
 class Animal
   def initialize(name, color)
@@ -242,7 +242,7 @@ function! s:DogConstructor(name, color)
   return dogObj
 endfunction
 function! <SID>s:Dog_bark(count, ...) dict
-  call call('Animal_bark', (args + [count]), self)
+  call call('<SNR>' . s:SID() . '_s:Animal_bark', (a:000 + [a:count]), self)
 endfunction
 let s:d = s:DogConstructor('otis', 'golden')
 call s:d.bark(2, 'arg1')
@@ -251,7 +251,7 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "splat in calling context in private function with call to `super`" do
+  test "explicit splat in base class inside private function using super with splat arg" do
     riml = <<Riml
 class A
   def private_func(*args)
@@ -286,47 +286,129 @@ Viml
     assert_equal expected, compile(riml)
   end
 
-  test "non-super function call" do
+  test "implicit splat in base class inside private function using super" do
+    riml = <<Riml
+class A
+  def private_func(*args)
+    echo args
+  end
+end
+
+class B < A
+  def private_func(*args)
+    super
+  end
+end
+Riml
+    expected = <<Viml
+function! s:AConstructor()
+  let aObj = {}
+  return aObj
+endfunction
+function! s:A_private_func(aObj, ...)
+  echo a:000
+endfunction
+function! s:BConstructor()
+  let bObj = {}
+  let aObj = s:AConstructor()
+  call extend(bObj, aObj)
+  return bObj
+endfunction
+function! s:B_private_func(bObj, ...)
+  call call('s:A_private_func', [a:bObj] + a:000)
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "explicit splat in base class inside private function using expression with splat arg at end of expr list" do
+    riml = <<Riml
+class A
+  def private_func(*args)
+    echo args
+  end
+end
+
+class B < A
+  def private_func(*args)
+    super(*(['first_arg'] + args))
+  end
+end
+Riml
+    expected = <<Viml
+function! s:AConstructor()
+  let aObj = {}
+  return aObj
+endfunction
+function! s:A_private_func(aObj, ...)
+  echo a:000
+endfunction
+function! s:BConstructor()
+  let bObj = {}
+  let aObj = s:AConstructor()
+  call extend(bObj, aObj)
+  return bObj
+endfunction
+function! s:B_private_func(bObj, ...)
+  call call('s:A_private_func', [a:bObj] + (['first_arg'] + a:000))
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "explicit splat in base class inside private function using expression with splat arg at beg of expr list" do
+    riml = <<Riml
+class A
+  def private_func(*args)
+    echo args
+  end
+end
+
+class B < A
+  def private_func(*args)
+    super(*(args + ['first_arg']))
+  end
+end
+Riml
+    expected = <<Viml
+function! s:AConstructor()
+  let aObj = {}
+  return aObj
+endfunction
+function! s:A_private_func(aObj, ...)
+  echo a:000
+endfunction
+function! s:BConstructor()
+  let bObj = {}
+  let aObj = s:AConstructor()
+  call extend(bObj, aObj)
+  return bObj
+endfunction
+function! s:B_private_func(bObj, ...)
+  call call('s:A_private_func', [a:bObj] + (a:000 + ['first_arg']))
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "splat with variable" do
     riml = <<Riml
 call some_func(*vars)
 Riml
     expected = <<Viml
-call call('s:some_func', vars)
+call call('s:some_func', s:vars)
 Viml
 
     assert_equal expected, compile(riml)
   end
 
-  test "non-super function call with assignment" do
+  test "splat with variable in assignment expression" do
     riml = <<Riml
 a = some_func(*vars)
 Riml
     expected = <<Viml
-let s:a = call('s:some_func', vars)
-Viml
-
-    assert_equal expected, compile(riml)
-  end
-
-  test "non-super function call with assignment doesn't override assignment scope modifier if present" do
-    riml = <<Riml
-g:a = some_func(*vars)
-Riml
-    expected = <<Viml
-let g:a = call('s:some_func', vars)
-Viml
-
-    assert_equal expected, compile(riml)
-  end
-
-  test "calling 2 functions with splats in same scope reuses same variable names" do
-    riml = <<Riml
-some_func(*vars)
-some_func(*vars)
-Riml
-    expected = <<Viml
-call call('s:some_func', vars)
-call call('s:some_func', vars)
+let s:a = call('s:some_func', s:vars)
 Viml
 
     assert_equal expected, compile(riml)

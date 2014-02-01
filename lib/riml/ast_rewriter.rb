@@ -63,7 +63,7 @@ module Riml
         DefaultParamToIfNode.new(ast, classes),
         DeserializeVarAssignment.new(ast, classes),
         TopLevelDefMethodToDef.new(ast, classes),
-        SplatsToExecuteInCallingContext.new(ast, classes)
+        SplatsToCallFunctionInCallingContext.new(ast, classes)
       ]
       rewriters.each do |rewriter|
         rewriter.rewrite_on_match
@@ -417,7 +417,7 @@ module Riml
         SelfToDictName.new(dict_name).rewrite_on_match(constructor)
         SuperToSuperclassFunction.new(node, classes).rewrite_on_match
         PrivateFunctionCallToPassObjExplicitly.new(node, classes).rewrite_on_match
-        SplatsToExecuteInCallingContext.new(node, classes).rewrite_on_match
+        SplatsToCallFunctionInCallingContext.new(node, classes).rewrite_on_match
 
         constructor.expressions.nodes.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
@@ -726,20 +726,11 @@ module Riml
           # parameter to the function we're in) to the splat arg
           if @function_node.private_function?
             if (splat_node = node_args.detect { |arg| SplatNode === arg })
-              splat_node.expression = WrapInParensNode.new(
-                BinaryOperatorNode.new(
-                  '+',
-                  [
-                    ListNode.new([
-                      GetVariableNode.new('a:', @function_node.parameters.first)
-                    ]),
-                    GetVariableNode.new('a:', '000')
-                  ]
-                )
-              )
+              self_var = GetVariableNode.new('a:', @function_node.parameters.first)
+              splat_node.expression = BinaryOperatorNode.new('+', [ListNode.wrap(self_var), splat_node.expression])
               establish_parents(splat_node.expression)
             end
-            # call s.ClassA_private_func(args)
+            # call s:ClassA_private_func(args)
             call_node_name = superclass_func_name(superclass)
           else
             # call self.ClassA_public_func(args)
@@ -754,6 +745,7 @@ module Riml
             node_args
           )
 
+          call_node.super_call = true
           node.replace_with(call_node)
           # private functions are NOT extended in constructor function
           unless @function_node.private_function?
@@ -807,7 +799,7 @@ module Riml
     #
     # Basically, mimic Ruby's approach to expanding lists to their
     # constituent argument parts with '*' in calling context.
-    class SplatsToExecuteInCallingContext < AST_Rewriter
+    class SplatsToCallFunctionInCallingContext < AST_Rewriter
 
       def match?(node)
         SplatNode === node && CallNode === node.parent
@@ -815,24 +807,28 @@ module Riml
 
       def replace(node)
         call_node = node.parent
-        full_function_name = call_node.full_name
+        is_method_call = call_node.method_call?
+        function_name_expr = if is_method_call && call_node.super_call?
+          BinaryOperatorNode.new('.', [
+            BinaryOperatorNode.new('.', [
+              StringNode.new('<SNR>', :s), CallNode.new('s:', 'SID', [])
+            ]),
+            StringNode.new("_s:#{call_node.name.keys.last}", :s)
+          ])
+        else
+          call_node.scope_modifier = 's:' if call_node.scope_modifier.nil?
+          StringNode.new(call_node.full_name, :s)
+        end
         call_node.scope_modifier = ''
         call_node.name = 'call'
-        other_args = call_node.arguments.delete_if { |arg| SplatNode === arg }
         call_node.arguments = []
-        call_node.arguments << StringNode.new(full_function_name, :s)
-        if other_args.any?
-          tail = GetVariableNode.new('a:', '000')
-          other_args.reverse_each do |arg|
-            tail = BinaryOperatorNode.new('+', [ListNode.new([arg]), tail])
-          end
-          call_node.arguments << tail
-        else
-          call_node.arguments << GetVariableNode.new('a:', '000')
+        call_node.arguments << function_name_expr
+        call_node.arguments << node.expression
+        if is_method_call
+          call_node.arguments << GetVariableNode.new(nil, 'self')
         end
-        establish_parents(call_node)
+        reestablish_parents(call_node)
       end
-
     end
 
 

@@ -1,9 +1,12 @@
 require File.expand_path('../constants', __FILE__)
 require File.expand_path('../errors', __FILE__)
+require File.expand_path('../walkable', __FILE__)
 require 'set'
 
 module Riml
   module Visitable
+    include Walkable
+
     def accept(visitor)
       visitor.visit(self)
     end
@@ -40,101 +43,6 @@ module Riml
     end
   end
 
-  module Walkable
-    include Enumerable
-
-    def each(&block)
-      children.each(&block)
-    end
-    alias walk each
-
-    def previous
-      idx = index_by_member
-      if idx && parent.members[idx - 1]
-        attr = parent.members[idx - 1]
-        return send(attr)
-      else
-        idx = index_by_children
-        return unless idx
-        parent.children.fetch(idx - 1)
-      end
-    end
-
-    def child_previous_to(node)
-      node.previous
-    end
-
-    def insert_before(node, new_node)
-      idx = children.find_index(node)
-      return unless idx
-      children.insert(idx - 1, new_node)
-    end
-
-    def next
-      idx = index_by_member
-      if idx && parent.members[idx + 1]
-        attr = parent.members[idx + 1]
-        return parent.send(attr)
-      else
-        idx = index_by_children
-        return unless idx
-        parent.children.fetch(idx + 1)
-      end
-    end
-
-    def child_after(node)
-      node.next
-    end
-
-    def insert_after(node, new_node)
-      idx = children.find_index(node)
-      return unless idx
-      children.insert(idx + 1, new_node)
-    end
-
-    def index_by_member
-      attrs = parent.members
-      attrs.each_with_index do |attr, i|
-        if parent.send(attr) == self
-          return i
-        end
-      end
-      nil
-    end
-
-    def index_by_children
-      parent.children.find_index(self)
-    end
-
-    def remove
-      idx = index_by_member
-      if idx
-        attr = parent.members[idx]
-        parent.send("#{attr}=", nil)
-      else
-        idx = index_by_children
-        parent.children.slice!(idx) if idx
-      end
-    end
-
-    def replace_with(new_node)
-      idx = index_by_member
-      if idx
-        attr = parent.members[idx]
-        new_node.parent = parent
-        parent.send("#{attr}=", new_node)
-        new_node
-      else
-        idx = index_by_children
-        return unless idx
-        new_node.parent = parent
-        parent.children.insert(idx, new_node)
-        parent.children.slice!(idx + 1)
-        new_node
-      end
-    end
-  end
-
   module Indentable
     def indent
       @indent ||= ' ' * 2
@@ -167,7 +75,6 @@ module Riml
   # Collection of nodes each one representing an expression.
   class Nodes < Struct.new(:nodes)
     include Visitable
-    include Walkable
 
     def <<(node)
       nodes << node
@@ -212,7 +119,6 @@ module Riml
 
   class StringLiteralConcatNode < Struct.new(:string_nodes)
     include Visitable
-    include Walkable
 
     def initialize(*string_nodes)
       super(string_nodes)
@@ -227,7 +133,6 @@ module Riml
   class RegexpNode < LiteralNode; end
 
   class ListNode < LiteralNode
-    include Walkable
     def self.wrap(value)
       val = Array === value ? value : [value]
       new(val)
@@ -249,7 +154,6 @@ module Riml
   end
 
   class DictionaryNode < LiteralNode
-    include Walkable
 
     def initialize(value)
       super(value.to_a)
@@ -287,7 +191,6 @@ module Riml
   # Ex: `super(*args)`,  `super(*a:000)`, `someFunc(*(list + ['item']))`
   class SplatNode < Struct.new(:expression)
     include Visitable
-    include Walkable
 
     def children
       [expression]
@@ -316,7 +219,6 @@ module Riml
 
   class ReturnNode < Struct.new(:expression)
     include Visitable
-    include Walkable
 
     def children
       [expression]
@@ -325,7 +227,6 @@ module Riml
 
   class WrapInParensNode < Struct.new(:expression)
     include Visitable
-    include Walkable
 
     def force_newline_if_child_call_node?
       false
@@ -360,7 +261,8 @@ module Riml
     include Riml::Constants
     include Visitable
     include FullyNameable
-    include Walkable
+
+    attr_accessor :super_call
 
     ALL_BUILTIN_FUNCTIONS = BUILTIN_FUNCTIONS + BUILTIN_COMMANDS
     ALL_BUILTIN_COMMANDS  = BUILTIN_COMMANDS  + RIML_COMMANDS + VIML_COMMANDS
@@ -390,6 +292,14 @@ module Riml
       return true  if parent.instance_of?(Nodes)
       false
     end
+
+    def method_call?
+      name.is_a?(DictGetDotNode) &&
+        name.dict.name == 'self' &&
+        name.dict.scope_modifier.nil?
+    end
+
+    alias super_call? super_call
 
     def autoload?
       name.include?('#')
@@ -519,7 +429,6 @@ module Riml
 
   class OperatorNode < Struct.new(:operator, :operands)
     include Visitable
-    include Walkable
 
     def force_newline_if_child_call_node?
       false
@@ -575,7 +484,6 @@ module Riml
   # let s:var = 4
   class AssignNode < Struct.new(:operator, :lhs, :rhs)
     include Visitable
-    include Walkable
 
     def children
       [lhs, rhs]
@@ -584,7 +492,6 @@ module Riml
 
   class MultiAssignNode < Struct.new(:assigns)
     include Visitable
-    include Walkable
 
     def children
       assigns
@@ -618,6 +525,10 @@ module Riml
     include Visitable
     include FullyNameable
     include QuestionVariableExistence
+
+    def arguments_variable?
+      scope_modifier == 'a:' && name == '000'
+    end
   end
 
   # &autoindent
@@ -629,7 +540,6 @@ module Riml
 
   class GetCurlyBraceNameNode < Struct.new(:scope_modifier, :variable)
     include Visitable
-    include Walkable
 
     def children
       [variable]
@@ -638,7 +548,6 @@ module Riml
 
   class CurlyBraceVariable < Struct.new(:parts)
     include Visitable
-    include Walkable
 
     def <<(part)
       parts << part
@@ -652,7 +561,6 @@ module Riml
 
   class CurlyBracePart < Struct.new(:value)
     include Visitable
-    include Walkable
 
     def interpolated?
       GetVariableNode === value || GetSpecialVariableNode === value ||
@@ -680,7 +588,6 @@ module Riml
 
   class UnletVariableNode < Struct.new(:bang, :variables)
     include Visitable
-    include Walkable
 
     def <<(variable)
       variables << variable
@@ -697,7 +604,6 @@ module Riml
     include Visitable
     include Indentable
     include FullyNameable
-    include Walkable
 
     attr_accessor :private_function
     alias private_function? private_function
@@ -783,6 +689,12 @@ module Riml
       parameters.select(&DEFAULT_PARAMS)
     end
 
+    def is_splat_arg?(node)
+      splat = splat()
+      return false unless splat
+      GetVariableNode === node && node.scope_modifier.nil? && node.name == splat[1..-1]
+    end
+
     def children
       children = if sid?
         [sid, expressions]
@@ -795,7 +707,6 @@ module Riml
 
   class DefaultParamNode < Struct.new(:parameter, :expression)
     include Visitable
-    include Walkable
 
     def children
       [parameter, expression]
@@ -856,7 +767,6 @@ module Riml
   class ControlStructure < Struct.new(:condition, :body)
     include Visitable
     include Indentable
-    include Walkable
 
     def force_newline_if_child_call_node?
       false
@@ -894,7 +804,6 @@ module Riml
 
   class ElseNode < Struct.new(:expressions)
     include Visitable
-    include Walkable
     alias body expressions
 
     def <<(expr)
@@ -917,7 +826,6 @@ module Riml
 
   class ElseifNode < ControlStructure
     include Visitable
-    include Walkable
     alias expressions body
 
     def <<(expr)
@@ -950,7 +858,6 @@ module Riml
   class ForNode < Struct.new(:variable, :in_expression, :expressions)
     include Visitable
     include Indentable
-    include Walkable
 
     alias for_variable variable
 
@@ -981,7 +888,6 @@ module Riml
 
   class DictGetNode < Struct.new(:dict, :keys)
     include Visitable
-    include Walkable
 
     def children
       [dict] + keys
@@ -1006,7 +912,6 @@ module Riml
   # function()[identifier]
   class ListOrDictGetNode < Struct.new(:list_or_dict, :keys)
     include Visitable
-    include Walkable
 
     alias list list_or_dict
     alias dict list_or_dict
@@ -1022,7 +927,6 @@ module Riml
 
   class GetVariableByScopeAndDictNameNode < Struct.new(:scope_modifier, :keys)
     include Visitable
-    include Walkable
 
     def children
       [scope_modifier] + keys
@@ -1032,7 +936,6 @@ module Riml
   class TryNode < Struct.new(:try_block, :catch_nodes, :finally_block)
     include Visitable
     include Indentable
-    include Walkable
 
     def children
       [try_block] + catch_nodes.to_a + [finally_block].compact
@@ -1041,7 +944,6 @@ module Riml
 
   class CatchNode < Struct.new(:regexp, :expressions)
     include Visitable
-    include Walkable
     include NotNestedUnder
 
     def children
@@ -1052,7 +954,6 @@ module Riml
 
   class ClassDefinitionNode < Struct.new(:scope_modifier, :name, :superclass_name, :expressions)
     include Visitable
-    include Walkable
 
     FUNCTIONS = lambda {|expr| DefNode === expr}
     DEFAULT_SCOPE_MODIFIER = 's:'
@@ -1126,7 +1027,6 @@ module Riml
 
   class SuperNode < Struct.new(:arguments, :with_parens)
     include Visitable
-    include Walkable
 
     def use_all_arguments?
       arguments.empty? && !with_parens
@@ -1139,7 +1039,6 @@ module Riml
 
   class ObjectInstantiationNode < Struct.new(:call_node)
     include Visitable
-    include Walkable
 
     def force_newline_if_child_call_node?
       false
