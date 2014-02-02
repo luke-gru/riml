@@ -46,9 +46,10 @@ module Riml
       end
 
       def visitor_for_node(node, params={})
-        Compiler.const_get("#{node.class.name.split('::').last}Visitor").new(params)
+        class_name = "#{node.class.name.split('::').last}Visitor"
+        Compiler.const_get(class_name).new(params)
       rescue NameError
-        error = CompileError.new('unexpected construct', node)
+        error = CompileError.new("unexpected construct: #{class_name}", node)
         raise error
       end
 

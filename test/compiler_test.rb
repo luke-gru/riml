@@ -2776,5 +2776,32 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "object instantiation inside call node" do
+    riml = <<Riml
+class g:ConfigureBufferCommand
+end
+defm load_commands()
+  c = self.container
+  r = c.lookup('registry')
+
+  r.add(new g:ConfigureBufferCommand(c))
+end
+Riml
+
+    expected = <<Viml
+function! g:ConfigureBufferCommandConstructor()
+  let configureBufferCommandObj = {}
+  return configureBufferCommandObj
+endfunction
+function! s:load_commands()
+  let c = self.container
+  let r = c.lookup('registry')
+  call r.add(g:ConfigureBufferCommandConstructor(c))
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

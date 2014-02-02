@@ -874,7 +874,13 @@ module Riml
         call_node = node.call_node
         call_node.name = class_node.constructor_name
         call_node.scope_modifier = class_node.constructor.scope_modifier
-        node.replace_with(call_node)
+        # FIXME: `replace_with` doesn't take into account this scenario!
+        if CallNode === node.parent && node.parent.arguments.include?(node)
+          idx = node.parent.arguments.index(node)
+          node.parent.arguments[idx] = call_node
+        else
+          node.replace_with(call_node)
+        end
       end
     end
 
