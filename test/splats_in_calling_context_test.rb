@@ -414,5 +414,47 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "passing on splatted arguments to constructor function with 's:' scope modifier" do
+    riml = <<Riml
+class Foo
+end
+def foo(*args)
+  let foo = new Foo(*args)
+end
+Riml
+
+    expected = <<Viml
+function! s:FooConstructor()
+  let fooObj = {}
+  return fooObj
+endfunction
+function! s:foo(...)
+  let foo = call('s:FooConstructor', a:000)
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "passing on splatted arguments to constructor function with 'g:' scope modifier" do
+    riml = <<Riml
+class g:Foo
+end
+def foo(*args)
+  let foo = new g:Foo(*args)
+end
+Riml
+
+    expected = <<Viml
+function! g:FooConstructor()
+  let fooObj = {}
+  return fooObj
+endfunction
+function! s:foo(...)
+  let foo = call('g:FooConstructor', a:000)
+endfunction
+Viml
+    assert_equal expected, compile(riml)
+  end
+
 end
 end

@@ -294,7 +294,7 @@ module Riml
     end
 
     def method_call?
-      name.is_a?(DictGetDotNode) &&
+      name.instance_of?(DictGetDotNode) &&
         name.dict.name == 'self' &&
         name.dict.scope_modifier.nil?
     end

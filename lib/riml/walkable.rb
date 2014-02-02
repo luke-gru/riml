@@ -93,23 +93,5 @@ module Riml
       end
     end
 
-    def deep_find(&block)
-      ret = children.find(&block)
-      if ret
-        return ret
-      else
-        children.each do |child|
-          ret = child.deep_find(&block)
-          return ret if ret
-        end
-      end
-    end
-
-    def deep_remove(&block)
-      ret = deep_find(&block)
-      if ret
-        ret.remove
-      end
-    end
   end
 end

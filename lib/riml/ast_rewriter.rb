@@ -414,10 +414,11 @@ module Riml
 
         InitializeSuperToObjectExtension.new(constructor, classes, node).rewrite_on_match
         ExtendObjectWithMethods.new(node, classes).rewrite_on_match
-        SelfToDictName.new(dict_name).rewrite_on_match(constructor)
+        SelfToDictNameInAssignments.new(dict_name).rewrite_on_match(constructor)
         SuperToSuperclassFunction.new(node, classes).rewrite_on_match
         PrivateFunctionCallToPassObjExplicitly.new(node, classes).rewrite_on_match
         SplatsToCallFunctionInCallingContext.new(node, classes).rewrite_on_match
+        SelfToDictName.new(dict_name).rewrite_on_match(constructor)
 
         constructor.expressions.nodes.push(
           ReturnNode.new(GetVariableNode.new(nil, dict_name))
@@ -495,8 +496,11 @@ module Riml
 
       class PrivateFunctionCallToPassObjExplicitly < AST_Rewriter
         def match?(node)
-          CallNode === node && DictGetDotNode === node.name && node.name.dict.scope_modifier.nil? &&
-            node.name.dict.name == 'self' && (node.name.keys & ast.private_function_names).size == 1
+          CallNode === node && node.name.instance_of?(DictGetDotNode) &&
+            !node.name.dict.is_a?(ListOrDictGetNode) &&
+            node.name.dict.scope_modifier.nil? &&
+            node.name.dict.name == 'self' &&
+            (node.name.keys & ast.private_function_names).size == 1
         end
 
         def replace(node)
@@ -575,7 +579,12 @@ module Riml
         end
       end
 
-      class SelfToDictName < AST_Rewriter
+      # if inside 'Foo' class,
+      # transforms:
+      #   self.something = 1
+      # to:
+      #   fooObj.something = 1
+      class SelfToDictNameInAssignments < AST_Rewriter
         attr_reader :dict_name
         def initialize(dict_name)
           @dict_name = dict_name
@@ -586,7 +595,27 @@ module Riml
         end
 
         def replace(node)
-          node.lhs.dict.name = dict_name
+          node.lhs.dict.name = @dict_name
+        end
+      end
+
+      # if inside 'Foo' class,
+      # transforms:
+      #   extend(self, {})
+      # to:
+      #   extend(fooObj, {})
+      class SelfToDictName < AST_Rewriter
+        attr_reader :dict_name
+        def initialize(dict_name)
+          @dict_name = dict_name
+        end
+
+        def match?(node)
+          GetVariableNode === node && node.name == "self" && node.scope_modifier.nil?
+        end
+
+        def replace(node)
+          node.name = @dict_name
         end
       end
 
@@ -883,19 +912,26 @@ module Riml
         end
 
         if_expression = construct_if_expression(node)
+        if insert_idx.zero?
+          def_node.expressions.nodes.unshift(construct_copy_splat_var_assignment)
+          SplatVarToCopiedSplatVar.new(def_node, classes).rewrite_on_match
+        end
 
         if last_default_param == node
           def_node.parameters.delete_if(&DefNode::DEFAULT_PARAMS)
           def_node.parameters << SPLAT_LITERAL unless def_node.splat
         end
-        def_node.expressions.nodes.insert(insert_idx, if_expression)
+        def_node.expressions.nodes.insert(insert_idx + 1, if_expression)
         reestablish_parents(def_node)
       end
 
+      private
+
       def construct_if_expression(node)
-        get_splat_node = CallNode.new(nil, 'get', [ GetVariableNode.new('a:', '000'), NumberNode.new(0), StringNode.new('rimldefault', :s) ])
-        condition_node = BinaryOperatorNode.new('!=#', [ get_splat_node, StringNode.new('rimldefault', :s) ])
-        remove_from_splat_node = CallNode.new(nil, 'remove', [ GetVariableNode.new('a:', '000'), NumberNode.new(0) ])
+        condition_node = UnaryOperatorNode.new('!', [
+          CallNode.new(nil, 'empty', [ GetVariableNode.new('', '__splat_var_cpy') ])
+        ])
+        remove_from_splat_node = CallNode.new(nil, 'remove', [ GetVariableNode.new('', '__splat_var_cpy'), NumberNode.new(0) ])
         IfNode.new(condition_node,
           Nodes.new([
             AssignNode.new('=', GetVariableNode.new(nil, node.parameter), remove_from_splat_node),
@@ -905,6 +941,28 @@ module Riml
           ])
         )
       end
+
+      def construct_copy_splat_var_assignment
+        AssignNode.new('=', GetVariableNode.new('', '__splat_var_cpy'), CallNode.new('', 'copy', [GetVariableNode.new('a:', '000')]))
+      end
+
+      # rewrites a:000 or args (if function used *args parameter name) to:
+      #   __splat_var_cpy
+      class SplatVarToCopiedSplatVar < AST_Rewriter
+        def initialize(def_node, classes)
+          super(def_node, classes)
+        end
+
+        def match?(node)
+          GetVariableNode === node &&
+            ( (node.name == '000' && node.scope_modifier.nil?) || ast.is_splat_arg?(node) )
+        end
+
+        def replace(node)
+          node.name = '__splat_var_cpy'
+        end
+      end
+
     end
 
     class DeserializeVarAssignment < AST_Rewriter
