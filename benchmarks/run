@@ -8,7 +8,9 @@ puts "RUBY_VERSION: #{RUBY_VERSION}"
 puts "RUBY_PATCHLEVEL: #{RUBY_PATCHLEVEL}"
 begin
   puts "system info: " + `uname -a`
-  puts "cpu info: " + File.readlines('/proc/cpuinfo').find { |line| line =~ /^\s*model name/i }
+  puts("cpu info: " + File.readlines('/proc/cpuinfo').find do |line|
+    line =~ /^\s*model name/i
+  end.to_s.sub(/\s*model name\s*:?/i, ''))
 rescue
 end
 

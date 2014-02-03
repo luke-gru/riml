@@ -20,7 +20,7 @@ module Riml
       @compiled_output ||= ''
     end
 
-    EMPTY_CHILDREN = []
+    EMPTY_CHILDREN = [].freeze
 
     def children
       EMPTY_CHILDREN
