@@ -149,9 +149,10 @@ the parens after the function name are optional.
 ###Default Parameters
 
     def fillSearchPat(pat = getDefaultSearchPat())        function! s:fillSearchPat(...)
-      @/ = pat                                              if get(a:000, 0, 'rimldefault') !=# 'rimldefault'
-      return @/                                               let pat = remove(a:000, 0)
-    end                                                     else
+      @/ = pat                                              let __splat_var_cpy = a:000
+      return @/                                             if !empty(__splat_var_cpy)
+    end                                                       let pat = remove(__splat_var_cpy, 0)
+                                                            else
                                                               let pat = s:getDefaultSearchPat()
                                                             endif
                                                             @/ = pat
@@ -164,13 +165,12 @@ than one default parameter. Also, a splat parameter (... or \*argName) can come 
 Splats parameters and splat arguments will be explained in the next section.
 
 We can now call the function 'fillSearchPat' without any arguments and it will use the default
-parameter. Also, if we pass the string 'rimldefault', it will use the default parameter as well. This
-is useful if a function has many default parameters.
+parameter.
 
 ###Splat Parameters
 
-A splat parameter is a formal parameter to a function starting with a '\*'. They must be the last
-parameters given to a function.
+A splat parameter is a formal parameter to a function starting with a '\*'. It must be the last
+parameter given to a function.
 
     def my_echo(*words)                             function! s:my_echo(...)
       echo words                                      echo a:000
@@ -188,17 +188,7 @@ previous section, here's an example at work:
     echo 'without splat:'                           echo 'without splat:'
     my_echo(words)                                  call my_echo(s:words)
     echo 'with splat:'                              echo 'with splat:'
-    my_echo(*words)                                 let s:__riml_splat_list = s:words
-
-                                                    let s:__riml_splat_size = len(s:__riml_splat_list)
-                                                    let s:__riml_splat_str_vars = []
-                                                    let s:__riml_splat_idx = 1
-                                                    while s:__riml_splat_idx <=# s:__riml_splat_size
-                                                      let s:__riml_splat_var_{s:__riml_splat_idx} = get(s:__riml_splat_list, s:__riml_splat_idx - 1)
-                                                      call add(s:__riml_splat_str_vars, '__riml_splat_var_' . s:__riml_splat_idx)
-                                                      let s:__riml_splat_idx += 1
-                                                    endwhile
-                                                    execute 'call s:my_echo(' . join(s:__riml_splat_str_vars, ', ') . ')'
+    my_echo(*words)                                 call call('my_echo', s:words)
 
     => without splat:
     => [["hello", "world"]]
@@ -223,7 +213,11 @@ Classes
 ###Basic Class
 
                                                        function! s:SID()
-                                                         return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
+                                                         if exists('s:SID_VALUE')
+                                                           return s:SID_VALUE
+                                                         endif
+                                                         let s:SID_VALUE = matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
+                                                         return s:SID_VALUE
                                                        endfunction
 
     class MyClass                                      function! s:MyClassConstructor(data, otherData, ...)
@@ -263,12 +257,13 @@ For example:
       ...
     end
 
+In any one Riml-generated VimL file, there is at most 1 generated `s:SID()` function.
+This generated function will be omitted in the rest of this README for brevity, but
+every Riml file that has a class with a member function will have this code in the
+compiled output.
+
 
 ###Class Inheritance
-
-                                                       function! s:SID()
-                                                         return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
-                                                       endfunction
 
     class Translation                                  function! s:TranslationConstructor(input)
       def initialize(input)                              let translationObj = {}
@@ -318,10 +313,6 @@ global, this is not a problem. Simply:
 
 
 ###Using 'super'
-
-                                                          function! s:SID()
-                                                            return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
-                                                          endfunction
 
     class Car                                             function! s:CarConstructor(make, model, color)
       def initialize(make, model, color)                    let carObj = {}
@@ -436,6 +427,15 @@ Since riml\_include acts as a sort of preprocessor, it *cannot* be issued
 inside of a conditional, function, or anything dynamic. It must be at the
 top-level (non-nested).
 
+Also, if you are included lots of files, you don't have to worry about multiple-inclusion,
+or which file should be included before which, because during the compile phase the class
+dependencies are resolved and the inclusions are re-ordered based on this info. It's easiest
+to include all the dependencies you need to include for each file without worrying about
+repetitions or ordering.
+
+Take a look at <https://github.com/dsawardekar/portkey/blob/develop/lib/includes/portkey_inc.riml>
+to see how you can treat a list of inclusions as a kind of header file that other files include.
+
 Incompatibilities with VimL
 ---------------------------
 
@@ -507,3 +507,15 @@ of constructs which are legal Riml but not mentioned in any of the examples:
 * autoloadable variables and functions (:h autoload)
 * let unpack (:h let-unpack)
 * Much more!
+
+Tools
+-----
+
+* [vim-riml](https://github.com/luke-gru/vim-riml) - Syntax highlighting and automatic indentation for Riml files.
+
+Projects Using Riml
+-------------------
+
+* [Speckle](https://github.com/dsawardekar/speckle) - Test your Riml scripts BDD-style with automatic compiling and a commandline vim test runner!
+* [Portkey](https://github.com/dsawardekar/portkey) - Library that makes it easy to write scripts to move between files in any kind of structured project.
+* [Ember.vim](https://github.com/dsawardekar/ember.vim) - Ember.js plugin that is to Ember.js as vim-rails is to Rails.
