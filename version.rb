@@ -1,4 +1,4 @@
 module Riml
-  # release date: Jan. 12, 2014
-  VERSION = [0,3,9]
+  # release date: Feb 2, 2014
+  VERSION = [0,4,0]
 end

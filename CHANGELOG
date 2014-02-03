@@ -1,3 +1,15 @@
+0.4.0
+=====
+
+* Improve the generated VimL code for Riml splat arguments in calling context
+(credit to github.com/dsawardekar for idea).
+
+* Fix multiple bugs listed here: https://github.com/luke-gru/riml/issues/31
+
+* Fix implementation of default arguments. Previously, the generated code
+would try to remove an item from the immutable `a:000`, leading to a vim
+runtime error. Now, `a:000` is copied (credit to github.com/tek for idea).
+
 0.3.9
 =====
 
