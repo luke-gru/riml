@@ -50,6 +50,8 @@ module Riml
       '@'
     ].flatten
 
+    VALID_FUNCTION_NAME_REGEX = /\A\w[\w#.]*?[\w]\Z/
+
     # For when showing source location (file:lineno) during error
     # and no file was given, only a string to compile.
     # Ex: # Riml.compile(source_code) would raise an error like

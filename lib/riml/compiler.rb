@@ -466,6 +466,12 @@ module Riml
       end
 
       def compile(node)
+        if GetCurlyBraceNameNode === node.name
+          raise_if_defined_on_dictionary!(node)
+        end
+        unless node.valid_function_name?
+          raise InvalidMethodDefinition.new("Invalid function name '#{node.name}'")
+        end
         set_modifier(node)
         bang = node.bang
         params = process_parameters!(node)
@@ -488,7 +494,7 @@ module Riml
           end
         end
         node.compiled_output = declaration << body << "endfunction\n"
-        if current_compiler(node).readable
+        if current_compiler(node).readable && !node.nested_function?
           node.compiled_output << "\n"
         else
           node.compiled_output
@@ -505,6 +511,21 @@ module Riml
         splat = node.splat
         return node.parameters unless splat
         node.parameters.map {|p| p == splat ? '...' : p}
+      end
+
+      # In VimL, it's an error to define a curly-brace-named function on a
+      # dictionary.
+      # ex:
+      #  function! dict.method_{methodName}()
+      #  endfunction
+      def raise_if_defined_on_dictionary!(node)
+        if node.name.variable.parts[0].value =~ /\./
+          raise InvalidMethodDefinition.new(
+            "It's invalid in Riml (and VimL) to define a curly-brace named method " \
+            "on a dictionary",
+            node.name
+          )
+        end
       end
     end
 
@@ -532,7 +553,11 @@ module Riml
         if node.scope && !@nested_function
           node.scope = node.scope.merge @scope
         elsif node.scope
-          node.scope = @scope.merge_parent_function(node.scope)
+          if @nested_function
+            node.scope = @scope
+          else
+            node.scope = @scope.merge_parent_function(node.scope)
+          end
         else
           node.scope = @scope
         end

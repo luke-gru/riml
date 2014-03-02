@@ -48,6 +48,7 @@ module Riml
   end
 
   CompileError = Class.new(RimlError)
+  InvalidMethodDefinition = Class.new(RimlError)
 
   FileNotFound = Class.new(RimlError)
   IncludeFileLoop = Class.new(RimlError)

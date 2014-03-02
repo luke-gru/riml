@@ -133,6 +133,14 @@ module Riml
   class RegexpNode < LiteralNode; end
 
   class ListNode < LiteralNode
+
+    def initialize(ary)
+      unless Array === ary
+        raise ArgumentError, "#{self.class} expects an Array, got: #{ary.class}"
+      end
+      super
+    end
+
     def self.wrap(value)
       val = Array === value ? value : [value]
       new(val)
@@ -442,6 +450,22 @@ module Riml
   class BinaryOperatorNode < OperatorNode
     include Riml::Constants
 
+    # string together multiple expressions using binary operators with `operand`
+    # ex:
+    #   BinaryOperatorNode.string_together('.', 'hello', ' world', '!')])
+    # returns
+    #   BinaryOperatorNode.new('+', 'hello', BinaryOperatorNode.new('+', ' world', ''))
+    #
+    # @param operand String
+    # @param expressions Array
+    # @returns BinaryOperatorNode
+    def self.string_together(operand, expressions)
+      tail = new(operand, [expressions[0], expressions[1]])
+      expressions[2..-1].inject(tail) do |expr, memo|
+        new(operand, [expr, memo])
+      end
+    end
+
     def operand1() operands[0] end
     def operand1=(val) operands[0] = val end
 
@@ -671,6 +695,14 @@ module Riml
       name.include?('#')
     end
 
+    def valid_function_name?
+      if name.is_a?(String)
+        name =~ Constants::VALID_FUNCTION_NAME_REGEX
+      else
+        true # FIXME
+      end
+    end
+
     alias sid? sid
 
     # FIXME: only detects top-level super nodes
@@ -696,12 +728,15 @@ module Riml
     end
 
     def children
-      children = if sid?
-        [sid, expressions]
-      else
-        [expressions]
+      ret = []
+      if sid?
+        ret << sid
       end
-      children.concat(default_param_nodes)
+      unless name.is_a?(String)
+        ret << name
+      end
+      ret.concat(default_param_nodes)
+      ret << expressions
     end
   end
 
@@ -749,8 +784,9 @@ module Riml
       unless other.is_a?(ScopeNode)
         raise ArgumentError, "other must be ScopeNode, is #{other.class}"
       end
-      self.for_node_variable_names += other.for_node_variable_names
       self.function = other.function
+      self.argument_variable_names = other.argument_variable_names
+      self.for_node_variable_names = other.for_node_variable_names
       self
     end
   end

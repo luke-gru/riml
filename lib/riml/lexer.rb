@@ -146,6 +146,15 @@ module Riml
 
         @s.pos += identifier.size
 
+        # This is a fix for the following:
+        #   def dict.{function_name}()
+        #   end
+        # Even though this is an error in VimL as well as RimL, it's easier
+        # to generate a better error message further on in the process.
+        if @in_function_declaration && @s.peek(2) == '.{'
+          @token_buf[-1][-1] << @s.getch
+        end
+
         parse_dict_vals!
 
       elsif @in_function_declaration && (splat_param = @s.scan(/\A(\.{3}|\*[a-zA-Z_]\w*)/))

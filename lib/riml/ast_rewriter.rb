@@ -744,9 +744,6 @@ module Riml
           node_args = if node.arguments.empty? && !node.with_parens && superclass_function.splat
             [SplatNode.new(GetVariableNode.new('a:', '000'))]
           else
-            if @function_node.private_function?
-              node.arguments.unshift GetVariableNode.new(nil, @function_node.parameters.first)
-            end
             node.arguments
           end
           # check if SplatNode is in node_args. If it is, check if the splat
@@ -828,6 +825,20 @@ module Riml
     #
     # Basically, mimic Ruby's approach to expanding lists to their
     # constituent argument parts with '*' in calling context.
+    #
+    # The call is not always a constructor, it can be any call with a splat in it.
+    #
+    # Example:
+    #
+    #    def called(method_name, *args)
+    #      self.helper.called(method_name, *args)
+    #    end
+    #
+    #  to:
+    #
+    #  function! s:called(method_name, ...)
+    #    call call('called', [method_name] + a:000, self.helper)
+    #  endfunction
     class SplatsToCallFunctionInCallingContext < AST_Rewriter
 
       def match?(node)
@@ -846,16 +857,32 @@ module Riml
           ])
         else
           call_node.scope_modifier = 's:' if call_node.scope_modifier.nil?
-          StringNode.new(call_node.full_name, :s)
+          if DictGetDotNode === call_node.name
+            StringNode.new(call_node.name.keys.last, :s)
+          else
+            StringNode.new(call_node.full_name, :s)
+          end
         end
         call_node.scope_modifier = ''
-        call_node.name = 'call'
-        call_node.arguments = []
+        old_call_args = call_node.arguments[0...-1] # get rid of SplatNode in arguments
+        call_node.arguments.clear
         call_node.arguments << function_name_expr
-        call_node.arguments << node.expression
-        if is_method_call
-          call_node.arguments << GetVariableNode.new(nil, 'self')
+
+        # have to enclose them in lists and add them together with the splat arg
+        if old_call_args.any?
+          old_call_args.map! { |arg| ListNode.new([arg]) }
+          args = BinaryOperatorNode.string_together('+', old_call_args + [node.expression])
+          call_node.arguments << args
+        else
+          call_node.arguments << node.expression
         end
+
+        if is_method_call
+          keys = call_node.name.keys[0...-1]
+          dict_obj_str = (['self'] + keys).join('.')
+          call_node.arguments << GetVariableNode.new(nil, dict_obj_str)
+        end
+        call_node.name = 'call'
         reestablish_parents(call_node)
       end
     end

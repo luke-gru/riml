@@ -2,6 +2,7 @@ require File.expand_path('../test_helper', __FILE__)
 
 module Riml
 class SplatsInCallingContextTest < Riml::TestCase
+
   test "explicit splat in base class inside initialize using super with splat arg" do
     riml = <<Riml
 class Animal
@@ -409,6 +410,22 @@ a = some_func(*vars)
 Riml
     expected = <<Viml
 let s:a = call('s:some_func', s:vars)
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
+  test "splat in dictionary call with multiple key access before function call" do
+    riml = <<Riml
+def called(method_name, *args)
+  self.helper.called(method_name, *args)
+end
+Riml
+
+    expected = <<Viml
+function! s:called(method_name, ...)
+  call call('called', [a:method_name] + a:000, self.helper)
+endfunction
 Viml
 
     assert_equal expected, compile(riml)

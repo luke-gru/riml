@@ -1198,6 +1198,53 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "define dictionary method with curly-brace name raises InvalidMethodDefinition" do
+    riml = <<Riml
+myDict = {'msg': 'hey'}
+funcName = 'echoMsg'
+def myDict.{funcName}()
+  echo self.msg
+end
+Riml
+
+    assert_raises(Riml::InvalidMethodDefinition) do
+      compile(riml)
+    end
+  end
+
+  test "curly brace name function that is nested within another function uses proper variable name scope modifier" do
+
+    riml = <<Riml
+class Mock
+  defm expects(method_name)
+    add(self.expected_calls, method_name)
+    def s:mocked_{method_name}(*args) dict " testing that `method_name` has proper 'a:' scope modifier
+      " get methodname ...
+      self.method_called(methodname, args)
+    end
+    self[method_name] = function("s:mocked_\#{method_name}")
+  end
+end
+Riml
+
+    expected = <<Viml
+function! s:MockConstructor()
+  let mockObj = {}
+  let mockObj.expects = function('<SNR>' . s:SID() . '_s:Mock_expects')
+  return mockObj
+endfunction
+function! <SID>s:Mock_expects(method_name) dict
+  call add(self.expected_calls, a:method_name)
+  function! s:mocked_{a:method_name}(...) dict
+    call self.method_called(methodname, a:000)
+  endfunction
+  let self[a:method_name] = function(\"s:mocked_\" . a:method_name)
+endfunction
+Viml
+
+    assert_equal expected, compile(riml)
+  end
+
   test "curly-braces function call" do
     riml = <<Riml
 n:param = 2
