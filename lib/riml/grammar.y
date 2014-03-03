@@ -509,9 +509,14 @@ rule
   Catch:
     /* nothing */                              { result = nil }
   | CATCH Block                                { result = [ make_node(val) { |v| Riml::CatchNode.new(nil, v[1]) } ] }
-  | CATCH Regexp Block                         { result = [ make_node(val) { |v| Riml::CatchNode.new(v[1], v[2]) } ] }
+  | CATCH Catchable Block                      { result = [ make_node(val) { |v| Riml::CatchNode.new(v[1], v[2]) } ] }
   | Catch CATCH Block                          { result = val[0] << make_node(val) { |v| Riml::CatchNode.new(nil, v[2]) } }
-  | Catch CATCH Regexp Block                   { result = val[0] << make_node(val) { |v| Riml::CatchNode.new(v[2], v[3]) } }
+  | Catch CATCH Catchable Block                { result = val[0] << make_node(val) { |v| Riml::CatchNode.new(v[2], v[3]) } }
+  ;
+
+  Catchable:
+    Regexp                                      { result = val[0] }
+  | String                                      { result = val[0] }
   ;
 
   # [expressions]

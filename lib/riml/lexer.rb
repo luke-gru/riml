@@ -171,6 +171,7 @@ module Riml
       # integer or float (decimal)
       elsif decimal = @s.scan(/\A[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/)
         @token_buf << [:NUMBER, decimal]
+      # TODO: unicode numbers (\u)
       elsif interpolation = @s.scan(ANCHORED_INTERPOLATION_REGEX)
         # "hey there, #{name}" = "hey there, " . name
         parts = interpolation[1...-1].split(INTERPOLATION_SPLIT_REGEX)
@@ -217,7 +218,7 @@ module Riml
       # operators of more than 1 char
       elsif operator = @s.scan(OPERATOR_REGEX)
         @token_buf << [operator, operator]
-      elsif regexp = @s.scan(%r{\A/.*?[^\\]/})
+      elsif regexp = lex_regexp
         @token_buf << [:REGEXP, regexp]
       # whitespaces
       elsif @s.scan(/\A[ \t\f]+/)
@@ -263,6 +264,11 @@ module Riml
       def lex_string_double
         @s.scan(STRING_DOUBLE_NEGATIVE_LOOKBEHIND_REGEX) && @s[1]
       end
+
+      REGEXP_NEGATIVE_LOOKBEHIND_REGEX = Regexp.new('\A/.*(?<!\\\\)/')
+      def lex_regexp
+        @s.scan(REGEXP_NEGATIVE_LOOKBEHIND_REGEX)
+      end
     # we don't have negative lookbehind in regexp engine
     else
       def lex_string_double
@@ -279,6 +285,25 @@ module Riml
             return str
           end
         end
+        # no match, return pos to beginning
+        @s.pos = pos
+        nil
+      end
+
+      def lex_regexp
+        str = ''
+        regex = %r(/.*/)
+        pos = @s.pos
+        while match = @s.scan(regex)
+          str << match
+          if match[-1, 1] == '\\'
+            str << '\\'
+            regex = %r(.*/)
+          else
+            return str
+          end
+        end
+        # no match, return pos to beginning
         @s.pos = pos
         nil
       end

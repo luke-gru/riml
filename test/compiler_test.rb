@@ -1326,6 +1326,34 @@ Viml
     assert_equal expected, compile(riml)
   end
 
+  test "catch with empty regexp" do
+    riml = <<Riml
+try
+catch //
+end
+Riml
+    expected = <<Viml
+try
+catch //
+endtry
+Viml
+    assert_equal expected, compile(riml)
+  end
+
+  test "catch with string pattern" do
+    riml = <<Riml
+try
+catch 'Error'
+end
+Riml
+    expected = <<Viml
+try
+catch 'Error'
+endtry
+Viml
+    assert_equal expected, compile(riml)
+  end
+
   test "ex-literals (lines starting with ':') don't get translated at all except for deleted ':' at beg. of line" do
     riml     = <<Riml
 :autocmd BufEnter * quit!
