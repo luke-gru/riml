@@ -1,5 +1,3 @@
-[![Build Status](https://secure.travis-ci.org/luke-gru/riml.png?branch=master)](https://travis-ci.org/luke-gru/riml)
-
 Riml, a relaxed VimL
 ====================
 
@@ -23,11 +21,11 @@ If you don't specify a scope modifier (or 'namespace' in Vimspeak), it's script 
 by default in the global scope. Within a function, variables without scope modifiers are plain
 old local variables.
 
-###globally
+### globally
 
     a = 3                         let s:a = 3
 
-###locally (within function or for loop)
+### locally (within function or for loop)
 
     def exampleFunc(msg)          function! s:exampleFunc(msg)
       a = 3                         let a = 3
@@ -44,7 +42,7 @@ our own local variable called 'msg'. In that case, we'd have to refer to the arg
 as 'a:msg' explicitly. Shadowing variables in Riml is considered bad practice, as it's
 much easier to just come up with unique variable names across a scope.
 
-###Assignment as Expression
+### Assignment as Expression
 
     let a = b = c = 0                   let s:c = 0
                                         let s:b = s:c
@@ -53,12 +51,12 @@ much easier to just come up with unique variable names across a scope.
 The 'let' is optional in Riml for all assignments. Without it, the results are
 the same.
 
-###Multiple Assignment Statement
+### Multiple Assignment Statement
 
     a = 0, b = 1                        let s:a = 0
                                         let s:b = 1
 
-###Checking for existence
+### Checking for existence
 
     unless callcount?                     if !exists("s:callcount")
       callcount = 0                        let s:callcount = 0
@@ -80,7 +78,7 @@ now be used as statement modifiers:
 Here, the compiled output is the same as the previous example's. Both 'if' and
 'unless' can be used this way.
 
-###True and False
+### True and False
 
     a = true                                      let s:a = 1
     b = false                                     let s:b = 0
@@ -99,7 +97,7 @@ The only operators that don't add a '#' even though the forms exist are the
 cousin 'is#', and the same is true of 'isnot'.
 
 
-###=== Operator
+### === Operator
 
 Oh no, not another of __those__ operators! Well, this one is pretty sweet
 actually. In VimL, automatic type conversion can be a pain. For example:
@@ -146,7 +144,7 @@ these differences are explained in the section 'Incompatibilities with VimL'.
 When defining a function with no parameters and no keywords (such as 'dict' or 'abort'),
 the parens after the function name are optional.
 
-###Default Parameters
+### Default Parameters
 
     def fillSearchPat(pat = getDefaultSearchPat())        function! s:fillSearchPat(...)
       @/ = pat                                              let __splat_var_cpy = a:000
@@ -167,7 +165,7 @@ Splats parameters and splat arguments will be explained in the next section.
 We can now call the function 'fillSearchPat' without any arguments and it will use the default
 parameter.
 
-###Splat Parameters
+### Splat Parameters
 
 A splat parameter is a formal parameter to a function starting with a '\*'. It must be the last
 parameter given to a function.
@@ -179,7 +177,7 @@ parameter given to a function.
 
     => ["hello", "world"]
 
-###Splat Arguments
+### Splat Arguments
 
 Splat arguments are splats used in a function call context. With the function `my_echo` defined in the
 previous section, here's an example at work:
@@ -210,7 +208,7 @@ parameter and passing it on to another function.
 Classes
 -------
 
-###Basic Class
+### Basic Class
 
                                                        function! s:SID()
                                                          if exists('s:SID_VALUE')
@@ -263,7 +261,7 @@ every Riml file that has a class with a member function will have this code in t
 compiled output.
 
 
-###Class Inheritance
+### Class Inheritance
 
     class Translation                                  function! s:TranslationConstructor(input)
       def initialize(input)                              let translationObj = {}
@@ -312,7 +310,7 @@ global, this is not a problem. Simply:
     end
 
 
-###Using 'super'
+### Using 'super'
 
     class Car                                             function! s:CarConstructor(make, model, color)
       def initialize(make, model, color)                    let carObj = {}
@@ -399,7 +397,7 @@ The same can be achieved by:
 Paths can either be relative or absolute. The sourced files that are compiled
 will end up in the same directory in which they were found.
 
-###riml\_include
+### riml\_include
 
 Sometimes it's useful to have many files in development, but to include a file's contents
 into another file during the build process. This is much like the C preprocessor's #include
@@ -446,7 +444,7 @@ construct would be a nightmare. In practice, however, when I've transformed plai
 old VimL plugins to be Riml-compatible, only a couple of ':' needed to be placed
 in strategic locations for it to be valid Riml. This is explained below.
 
-###Ex-literals
+### Ex-literals
 
 Fortunately, there are some pretty simple rules to follow to get valid Riml.
 
@@ -486,7 +484,7 @@ Since there's no string after the '+=', it makes it very hard.
 So when the compiler can't parse a file correctly, prepend those lines with
 ':' and all should be well.
 
-###Abbreviations
+### Abbreviations
 
 In VimL, there are abbreviations for everything; even "keywords" like 'function' can be
 abbreviated. In Riml, abbreviations are not allowed. This makes Riml much easier to read
