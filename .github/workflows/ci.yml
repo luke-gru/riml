@@ -5,21 +5,25 @@ on:
   push:
     branches: [ master ]
 
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        ruby-version: ['3.3', '3.0', '2.7', '2.3']
+
     steps:
-      - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y vim
+      - uses: actions/checkout@v4
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
+      - name: Set up Ruby ${{ matrix.ruby-version }}
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
-          bundler-cache: true
+          ruby-version: ${{ matrix.ruby-version }}
+
+      - name: Install dependencies
+        run: bundle install
 
       - name: Run tests
         run: bundle exec rake test
