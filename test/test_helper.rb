@@ -3,14 +3,15 @@ if RUBY_VERSION < '1.9'
 end
 gem 'minitest'
 require 'minitest/autorun'
-require 'mocha/setup' # TODO: use minitest/mock instead
+require 'mocha/minitest' # TODO: use minitest/mock instead
 require 'pathname'
+require 'debug'
 
 $VERBOSE = 1
 require File.expand_path('../../lib/riml', __FILE__)
 
 module Riml
-  class TestCase < MiniTest::Test
+  class TestCase < Minitest::Test
 
     def teardown
       Riml.clear_caches
@@ -128,7 +129,7 @@ EOS
 end
 
 Riml::FileRollback.guard
-Riml::FileRollback.trap(:INT, :QUIT, :KILL) do
+Riml::FileRollback.trap(:INT, :QUIT) do
   STDERR.print("rolling back file changes...\n")
   exit 1
 end
@@ -138,7 +139,7 @@ all_files_before = Dir.glob('**/*')
 #require 'ruby-prof'
 RubyProf.start if defined?(RubyProf)
 
-MiniTest.after_run do
+Minitest.after_run do
   all_files_after = Dir.glob('**/*')
   if all_files_after != all_files_before
     STDERR.puts "WARNING: test suite added/removed file(s). Diff: " \

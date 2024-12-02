@@ -112,7 +112,7 @@ module Riml
       filenames.each do |fname|
         expanded = File.expand_path(fname)
         readable = true
-        if File.exists?(expanded) && (readable = File.readable?(expanded))
+        if File.exist?(expanded) && (readable = File.readable?(expanded))
           list << fname
         elsif not readable
           abort "File #{expanded.inspect} is not readable."
@@ -140,7 +140,7 @@ module Riml
         if options.stdio
           puts Riml.compile($stdin.read, compile_options)
         elsif options.compile_files.any?
-          FileRollback.trap(:INT, :QUIT, :KILL) { print("\n"); exit 1 }
+          FileRollback.trap(:INT, :QUIT) { print("\n"); exit 1 }
           Riml.compile_files(*(options.compile_files + [compile_files_options]))
         elsif options.check_syntax_files.any?
           files = options.check_syntax_files.uniq

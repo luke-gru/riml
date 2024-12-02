@@ -6,13 +6,13 @@ Gem::Specification.new do |s|
   s.version     = Riml::VERSION.join('.')
   s.summary     = 'Riml is a language that compiles into VimL'
   s.description = <<-desc
-  Riml is a subset of VimL with some added features, and it compiles to plain
-  Vim script. Some of the added features include classes, string interpolation,
+  Riml is ruby-like version of VimL with some added features, and it compiles to plain
+  Vimscript. Some of the added features include classes, string interpolation,
   heredocs, default case-sensitive string comparison and default arguments in
-  functions. Give it a try!
+  functions.
   desc
 
-  s.required_ruby_version  = '>= 1.8.7'
+  s.required_ruby_version  = '>= 2.0.0'
   s.license = 'MIT'
 
   s.author = 'Luke Gruber'
@@ -24,9 +24,11 @@ Gem::Specification.new do |s|
   s.files = Dir['README.md', 'LICENSE', 'version.rb', 'lib/**/*', 'Rakefile',
                 'CONTRIBUTING', 'CHANGELOG' 'Gemfile']
 
-  s.add_development_dependency('racc', '1.4.9')
-  s.add_development_dependency('rake', '~> 10.1.0')
-  s.add_development_dependency('bundler', '~> 1.3')
-  s.add_development_dependency('minitest', '>= 5.0.8')
-  s.add_development_dependency('mocha', '~> 0.14.0')
+  s.add_development_dependency('racc')
+  s.add_development_dependency('rake')
+  s.add_development_dependency('bundler')
+  s.add_development_dependency('minitest')
+  s.add_development_dependency('mocha')
+  s.add_development_dependency('ostruct')
+  s.add_development_dependency('debug')
 end
