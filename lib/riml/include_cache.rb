@@ -4,13 +4,13 @@ module Riml
     def initialize
       @cache = {}
       @m = Mutex.new
-      # Only Ruby 2.0+ has Mutex#owned? method
+      # TODO: Ruby 2.0+ has Mutex#owned? method
       @owns_lock = nil
     end
 
     # `fetch` can be called recursively in the `yield`ed block, so must
     # make sure not to try to lock the Mutex if it's already locked by the
-    # current thread, as this would result in an error.
+    # current thread.
     def fetch(included_filename)
       if source = @cache[included_filename]
         return source

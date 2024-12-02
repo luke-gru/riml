@@ -1084,5 +1084,4 @@ module Riml
       [call_node]
     end
   end
-# this guard condition is necessary for Ruby 1.8.7
-end unless defined?(Riml) && defined?(Riml::Nodes)
+end

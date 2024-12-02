@@ -229,7 +229,7 @@ module Riml
           watch_for_class_pickup do
             rewritten_ast = Riml.rewritten_ast_cache.fetch(file) do
               riml_src = File.read(fullpath)
-              Parser.new.tap { |p| p.options = @options }.
+              Parser.new.tap { |p| p.options = @options.dup }.
                 parse(riml_src, self, file, action == 'include')
             end
           end

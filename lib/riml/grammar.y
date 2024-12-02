@@ -4,13 +4,13 @@ token IF ELSE ELSEIF THEN UNLESS END
 token WHILE UNTIL BREAK CONTINUE
 token TRY CATCH FINALLY
 token FOR IN
-token DEF DEF_BANG SPLAT_PARAM SPLAT_ARG CALL BUILTIN_COMMAND # such as echo "hi"
+token DEF DEF_BANG SPLAT_PARAM SPLAT_ARG CALL BUILTIN_COMMAND
 token CLASS NEW DEFM DEFM_BANG SUPER
 token RIML_FILE_COMMAND RIML_CLASS_COMMAND
 token RETURN
 token NEWLINE
 token NUMBER
-token STRING_D STRING_S # single- and double-quoted
+token STRING_D STRING_S
 token EX_LITERAL
 token REGEXP
 token TRUE FALSE
@@ -164,8 +164,7 @@ rule
   ;
 
   # {'key': 'value', 'key2': 'value2'}
-  # Save as [['key', 'value'], ['key2', 'value2']] because ruby-1.8.7 offers
-  # no guarantee for key-value pair ordering.
+  # Save as [['key', 'value'], ['key2', 'value2']]
   DictionaryLiteral:
     '{' DictItems '}'                     { result = val[1] }
   | '{' DictItems ',' '}'                 { result = val[1] }

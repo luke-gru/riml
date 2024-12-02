@@ -395,5 +395,5 @@ module Riml
       @s.pos = old_pos
     end
 
-  end unless defined?(Riml::Lexer)
+  end
 end

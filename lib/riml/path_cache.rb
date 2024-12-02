@@ -43,7 +43,7 @@ module Riml
     # returns array of strings (directory names in path)
     def normalize_path(path)
       if path.is_a?(String)
-        path.split(':')
+        path.split(':') # FIXME: what if directory has ':' in it?
       elsif path.respond_to?(:each)
         path
       else

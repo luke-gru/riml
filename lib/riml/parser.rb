@@ -13,7 +13,7 @@ require 'racc/parser.rb'
 module Riml
   class Parser < Racc::Parser
 
-module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 571)
+module_eval(<<'...end grammar.y/module_eval...', 'grammar.y', 570)
   # This code will be put as-is in the parser class
 
   attr_accessor :ast_rewriter
@@ -2729,1302 +2729,1302 @@ module_eval(<<'.,.,', 'grammar.y', 162)
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 169)
+module_eval(<<'.,.,', 'grammar.y', 168)
   def _reduce_73(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 170)
+module_eval(<<'.,.,', 'grammar.y', 169)
   def _reduce_74(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 175)
+module_eval(<<'.,.,', 'grammar.y', 174)
   def _reduce_75(val, _values, result)
      result = []
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 176)
+module_eval(<<'.,.,', 'grammar.y', 175)
   def _reduce_76(val, _values, result)
      result = val
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 177)
+module_eval(<<'.,.,', 'grammar.y', 176)
   def _reduce_77(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 182)
+module_eval(<<'.,.,', 'grammar.y', 181)
   def _reduce_78(val, _values, result)
      result = [val[0], val[2]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 186)
+module_eval(<<'.,.,', 'grammar.y', 185)
   def _reduce_79(val, _values, result)
      result = make_node(val) { |v| Riml::DictGetDotNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 187)
+module_eval(<<'.,.,', 'grammar.y', 186)
   def _reduce_80(val, _values, result)
      result = make_node(val) { |v| Riml::DictGetDotNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 188)
+module_eval(<<'.,.,', 'grammar.y', 187)
   def _reduce_81(val, _values, result)
      result = make_node(val) { |v| Riml::DictGetDotNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 189)
+module_eval(<<'.,.,', 'grammar.y', 188)
   def _reduce_82(val, _values, result)
      result = make_node(val) { |v| Riml::DictGetDotNode.new(Riml::WrapInParensNode.new(v[1]), v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 193)
+module_eval(<<'.,.,', 'grammar.y', 192)
   def _reduce_83(val, _values, result)
      result = make_node(val) { |v| Riml::ListOrDictGetNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 194)
+module_eval(<<'.,.,', 'grammar.y', 193)
   def _reduce_84(val, _values, result)
      result = make_node(val) { |v| Riml::ListOrDictGetNode.new(Riml::WrapInParensNode.new(v[1]), v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 198)
+module_eval(<<'.,.,', 'grammar.y', 197)
   def _reduce_85(val, _values, result)
      result = make_node(val) { |v| Riml::ListOrDictGetNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 202)
+module_eval(<<'.,.,', 'grammar.y', 201)
   def _reduce_86(val, _values, result)
      result = [val[1]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 203)
+module_eval(<<'.,.,', 'grammar.y', 202)
   def _reduce_87(val, _values, result)
      result = [val[1]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 204)
+module_eval(<<'.,.,', 'grammar.y', 203)
   def _reduce_88(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 205)
+module_eval(<<'.,.,', 'grammar.y', 204)
   def _reduce_89(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 209)
+module_eval(<<'.,.,', 'grammar.y', 208)
   def _reduce_90(val, _values, result)
      result = make_node(val) { |v| Riml::SublistNode.new([v[0], Riml::LiteralNode.new(' : '), v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 210)
+module_eval(<<'.,.,', 'grammar.y', 209)
   def _reduce_91(val, _values, result)
      result = make_node(val) { |v| Riml::SublistNode.new([v[0], Riml::LiteralNode.new(' :')]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 211)
+module_eval(<<'.,.,', 'grammar.y', 210)
   def _reduce_92(val, _values, result)
      result = make_node(val) { |v| Riml::SublistNode.new([Riml::LiteralNode.new(': '), v[1]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 212)
+module_eval(<<'.,.,', 'grammar.y', 211)
   def _reduce_93(val, _values, result)
      result = make_node(val) { |_| Riml::SublistNode.new([Riml::LiteralNode.new(':')]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 216)
+module_eval(<<'.,.,', 'grammar.y', 215)
   def _reduce_94(val, _values, result)
      result = [val[0]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 217)
+module_eval(<<'.,.,', 'grammar.y', 216)
   def _reduce_95(val, _values, result)
      result = val[0] << val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 221)
+module_eval(<<'.,.,', 'grammar.y', 220)
   def _reduce_96(val, _values, result)
      result = [val[1]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 222)
+module_eval(<<'.,.,', 'grammar.y', 221)
   def _reduce_97(val, _values, result)
      result = val[0] << val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 226)
+module_eval(<<'.,.,', 'grammar.y', 225)
   def _reduce_98(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(v[0], v[1], v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 227)
+module_eval(<<'.,.,', 'grammar.y', 226)
   def _reduce_99(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(nil, v[0], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 228)
+module_eval(<<'.,.,', 'grammar.y', 227)
   def _reduce_100(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(nil, v[0], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 229)
+module_eval(<<'.,.,', 'grammar.y', 228)
   def _reduce_101(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(nil, v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 230)
+module_eval(<<'.,.,', 'grammar.y', 229)
   def _reduce_102(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(nil, v[0], []) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 231)
+module_eval(<<'.,.,', 'grammar.y', 230)
   def _reduce_103(val, _values, result)
      result = make_node(val) { |v| Riml::ExplicitCallNode.new(nil, nil, v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 235)
+module_eval(<<'.,.,', 'grammar.y', 234)
   def _reduce_104(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(v[0], v[1], v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 236)
+module_eval(<<'.,.,', 'grammar.y', 235)
   def _reduce_105(val, _values, result)
      result = make_node(val) { |v| Riml::CallNode.new(v[0], v[1], []) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 240)
+module_eval(<<'.,.,', 'grammar.y', 239)
   def _reduce_106(val, _values, result)
      result = make_node(val) { |v| Riml::RimlFileCommandNode.new(nil, v[0], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 241)
+module_eval(<<'.,.,', 'grammar.y', 240)
   def _reduce_107(val, _values, result)
      result = make_node(val) { |v| Riml::RimlFileCommandNode.new(nil, v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 245)
+module_eval(<<'.,.,', 'grammar.y', 244)
   def _reduce_108(val, _values, result)
      result = make_node(val) { |v| Riml::RimlClassCommandNode.new(nil, v[0], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 246)
+module_eval(<<'.,.,', 'grammar.y', 245)
   def _reduce_109(val, _values, result)
      result = make_node(val) { |v| Riml::RimlClassCommandNode.new(nil, v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 250)
+module_eval(<<'.,.,', 'grammar.y', 249)
   def _reduce_110(val, _values, result)
      result = ["#{val[0]}#{val[1]}"]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 251)
+module_eval(<<'.,.,', 'grammar.y', 250)
   def _reduce_111(val, _values, result)
      result = val
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 252)
+module_eval(<<'.,.,', 'grammar.y', 251)
   def _reduce_112(val, _values, result)
      result = val[0].concat ["#{val[2]}#{val[3]}"]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 256)
+module_eval(<<'.,.,', 'grammar.y', 255)
   def _reduce_113(val, _values, result)
      result = make_node(val) { |v| Riml::ExplicitCallNode.new(v[1], v[2], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 257)
+module_eval(<<'.,.,', 'grammar.y', 256)
   def _reduce_114(val, _values, result)
      result = make_node(val) { |v| Riml::ExplicitCallNode.new(nil, v[1], v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 261)
+module_eval(<<'.,.,', 'grammar.y', 260)
   def _reduce_115(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 262)
+module_eval(<<'.,.,', 'grammar.y', 261)
   def _reduce_116(val, _values, result)
      result = nil
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 267)
+module_eval(<<'.,.,', 'grammar.y', 266)
   def _reduce_117(val, _values, result)
      result = [ nil, val[0] ]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 268)
+module_eval(<<'.,.,', 'grammar.y', 267)
   def _reduce_118(val, _values, result)
      result = [ make_node(val) { |v| Riml::SIDNode.new(v[1]) }, val[3] ]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 272)
+module_eval(<<'.,.,', 'grammar.y', 271)
   def _reduce_119(val, _values, result)
      result = []
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 273)
+module_eval(<<'.,.,', 'grammar.y', 272)
   def _reduce_120(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 277)
+module_eval(<<'.,.,', 'grammar.y', 276)
   def _reduce_121(val, _values, result)
      result = []
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 278)
+module_eval(<<'.,.,', 'grammar.y', 277)
   def _reduce_122(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 282)
+module_eval(<<'.,.,', 'grammar.y', 281)
   def _reduce_123(val, _values, result)
      result = val
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 283)
+module_eval(<<'.,.,', 'grammar.y', 282)
   def _reduce_124(val, _values, result)
      result = [ make_node(val) { |v| Riml::SplatNode.new(v[1]) } ]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 284)
+module_eval(<<'.,.,', 'grammar.y', 283)
   def _reduce_125(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 285)
+module_eval(<<'.,.,', 'grammar.y', 284)
   def _reduce_126(val, _values, result)
      result = val[0] << make_node(val) { |v| Riml::SplatNode.new(v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 289)
+module_eval(<<'.,.,', 'grammar.y', 288)
   def _reduce_127(val, _values, result)
      result = val
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 290)
+module_eval(<<'.,.,', 'grammar.y', 289)
   def _reduce_128(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 294)
+module_eval(<<'.,.,', 'grammar.y', 293)
   def _reduce_129(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 295)
+module_eval(<<'.,.,', 'grammar.y', 294)
   def _reduce_130(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 297)
+module_eval(<<'.,.,', 'grammar.y', 296)
   def _reduce_131(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 298)
+module_eval(<<'.,.,', 'grammar.y', 297)
   def _reduce_132(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 299)
+module_eval(<<'.,.,', 'grammar.y', 298)
   def _reduce_133(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 302)
+module_eval(<<'.,.,', 'grammar.y', 301)
   def _reduce_134(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 304)
+module_eval(<<'.,.,', 'grammar.y', 303)
   def _reduce_135(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 305)
+module_eval(<<'.,.,', 'grammar.y', 304)
   def _reduce_136(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 306)
+module_eval(<<'.,.,', 'grammar.y', 305)
   def _reduce_137(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 308)
+module_eval(<<'.,.,', 'grammar.y', 307)
   def _reduce_138(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 309)
+module_eval(<<'.,.,', 'grammar.y', 308)
   def _reduce_139(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 310)
+module_eval(<<'.,.,', 'grammar.y', 309)
   def _reduce_140(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 312)
+module_eval(<<'.,.,', 'grammar.y', 311)
   def _reduce_141(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 313)
+module_eval(<<'.,.,', 'grammar.y', 312)
   def _reduce_142(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 314)
+module_eval(<<'.,.,', 'grammar.y', 313)
   def _reduce_143(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 316)
+module_eval(<<'.,.,', 'grammar.y', 315)
   def _reduce_144(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 317)
+module_eval(<<'.,.,', 'grammar.y', 316)
   def _reduce_145(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 318)
+module_eval(<<'.,.,', 'grammar.y', 317)
   def _reduce_146(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 320)
+module_eval(<<'.,.,', 'grammar.y', 319)
   def _reduce_147(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 321)
+module_eval(<<'.,.,', 'grammar.y', 320)
   def _reduce_148(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 322)
+module_eval(<<'.,.,', 'grammar.y', 321)
   def _reduce_149(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 324)
+module_eval(<<'.,.,', 'grammar.y', 323)
   def _reduce_150(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 325)
+module_eval(<<'.,.,', 'grammar.y', 324)
   def _reduce_151(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 326)
+module_eval(<<'.,.,', 'grammar.y', 325)
   def _reduce_152(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 328)
+module_eval(<<'.,.,', 'grammar.y', 327)
   def _reduce_153(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 329)
+module_eval(<<'.,.,', 'grammar.y', 328)
   def _reduce_154(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 330)
+module_eval(<<'.,.,', 'grammar.y', 329)
   def _reduce_155(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 332)
+module_eval(<<'.,.,', 'grammar.y', 331)
   def _reduce_156(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 333)
+module_eval(<<'.,.,', 'grammar.y', 332)
   def _reduce_157(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 334)
+module_eval(<<'.,.,', 'grammar.y', 333)
   def _reduce_158(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 335)
+module_eval(<<'.,.,', 'grammar.y', 334)
   def _reduce_159(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 336)
+module_eval(<<'.,.,', 'grammar.y', 335)
   def _reduce_160(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 337)
+module_eval(<<'.,.,', 'grammar.y', 336)
   def _reduce_161(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 339)
+module_eval(<<'.,.,', 'grammar.y', 338)
   def _reduce_162(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 340)
+module_eval(<<'.,.,', 'grammar.y', 339)
   def _reduce_163(val, _values, result)
      result = make_node(val) { |v| Riml::BinaryOperatorNode.new(v[1], [v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 344)
+module_eval(<<'.,.,', 'grammar.y', 343)
   def _reduce_164(val, _values, result)
      result = make_node(val) { |v| Riml::UnaryOperatorNode.new(val[0], [val[1]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 345)
+module_eval(<<'.,.,', 'grammar.y', 344)
   def _reduce_165(val, _values, result)
      result = make_node(val) { |v| Riml::UnaryOperatorNode.new(val[0], [val[1]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 346)
+module_eval(<<'.,.,', 'grammar.y', 345)
   def _reduce_166(val, _values, result)
      result = make_node(val) { |v| Riml::UnaryOperatorNode.new(val[0], [val[1]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 351)
+module_eval(<<'.,.,', 'grammar.y', 350)
   def _reduce_167(val, _values, result)
      result = make_node(val) { |v| Riml::AssignNode.new(v[1][0], v[1][1], v[1][2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 352)
+module_eval(<<'.,.,', 'grammar.y', 351)
   def _reduce_168(val, _values, result)
      result = make_node(val) { |v| Riml::AssignNode.new(v[0][0], v[0][1], v[0][2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 356)
+module_eval(<<'.,.,', 'grammar.y', 355)
   def _reduce_169(val, _values, result)
      result = make_node(val) { |v| Riml::MultiAssignNode.new([v[0], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 357)
+module_eval(<<'.,.,', 'grammar.y', 356)
   def _reduce_170(val, _values, result)
      val[0].assigns << val[2]; result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 362)
+module_eval(<<'.,.,', 'grammar.y', 361)
   def _reduce_171(val, _values, result)
      result = [val[1], val[0], val[2]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 363)
+module_eval(<<'.,.,', 'grammar.y', 362)
   def _reduce_172(val, _values, result)
      result = [val[1], val[0], val[2]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 364)
+module_eval(<<'.,.,', 'grammar.y', 363)
   def _reduce_173(val, _values, result)
      result = [val[1], val[0], val[2]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 365)
+module_eval(<<'.,.,', 'grammar.y', 364)
   def _reduce_174(val, _values, result)
      result = [val[1], val[0], val[2]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 369)
+module_eval(<<'.,.,', 'grammar.y', 368)
   def _reduce_175(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 370)
+module_eval(<<'.,.,', 'grammar.y', 369)
   def _reduce_176(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 371)
+module_eval(<<'.,.,', 'grammar.y', 370)
   def _reduce_177(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 372)
+module_eval(<<'.,.,', 'grammar.y', 371)
   def _reduce_178(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 373)
+module_eval(<<'.,.,', 'grammar.y', 372)
   def _reduce_179(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 378)
+module_eval(<<'.,.,', 'grammar.y', 377)
   def _reduce_180(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 379)
+module_eval(<<'.,.,', 'grammar.y', 378)
   def _reduce_181(val, _values, result)
      result = make_node(val) { |v| Riml::GetSpecialVariableNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 380)
+module_eval(<<'.,.,', 'grammar.y', 379)
   def _reduce_182(val, _values, result)
      result = make_node(val) { |v| Riml::GetVariableByScopeAndDictNameNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 384)
+module_eval(<<'.,.,', 'grammar.y', 383)
   def _reduce_183(val, _values, result)
      result = make_node(val) { |v| Riml::GetVariableNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 388)
+module_eval(<<'.,.,', 'grammar.y', 387)
   def _reduce_184(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 389)
+module_eval(<<'.,.,', 'grammar.y', 388)
   def _reduce_185(val, _values, result)
      result = make_node(val) { |v| Riml::GetCurlyBraceNameNode.new(v[0], v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 393)
+module_eval(<<'.,.,', 'grammar.y', 392)
   def _reduce_186(val, _values, result)
      result = make_node(val) { |v| Riml::UnletVariableNode.new('!', [ v[1] ]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 394)
+module_eval(<<'.,.,', 'grammar.y', 393)
   def _reduce_187(val, _values, result)
      result = make_node(val) { |v| Riml::UnletVariableNode.new('!', [ v[1] ]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 395)
+module_eval(<<'.,.,', 'grammar.y', 394)
   def _reduce_188(val, _values, result)
      result = val[0] << val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 399)
+module_eval(<<'.,.,', 'grammar.y', 398)
   def _reduce_189(val, _values, result)
      result = make_node(val) { |v| Riml::CurlyBraceVariable.new([ v[0] ]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 400)
+module_eval(<<'.,.,', 'grammar.y', 399)
   def _reduce_190(val, _values, result)
      result = make_node(val) { |v| Riml::CurlyBraceVariable.new([ Riml::CurlyBracePart.new(v[0]), v[1] ]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 401)
+module_eval(<<'.,.,', 'grammar.y', 400)
   def _reduce_191(val, _values, result)
      result = val[0] << make_node(val) { |v| Riml::CurlyBracePart.new(v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 402)
+module_eval(<<'.,.,', 'grammar.y', 401)
   def _reduce_192(val, _values, result)
      result = val[0] << val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 406)
+module_eval(<<'.,.,', 'grammar.y', 405)
   def _reduce_193(val, _values, result)
      result = make_node(val) { |v| Riml::CurlyBracePart.new(v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 407)
+module_eval(<<'.,.,', 'grammar.y', 406)
   def _reduce_194(val, _values, result)
      result = make_node(val) { |v| Riml::CurlyBracePart.new([v[1], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 408)
+module_eval(<<'.,.,', 'grammar.y', 407)
   def _reduce_195(val, _values, result)
      result = make_node(val) { |v| Riml::CurlyBracePart.new([v[1], v[2]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 414)
+module_eval(<<'.,.,', 'grammar.y', 413)
   def _reduce_196(val, _values, result)
      result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], [], v[3], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 415)
+module_eval(<<'.,.,', 'grammar.y', 414)
   def _reduce_197(val, _values, result)
      result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], v[4], v[6], v[7]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 416)
+module_eval(<<'.,.,', 'grammar.y', 415)
   def _reduce_198(val, _values, result)
      result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], [v[4]], v[6], v[7]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 417)
+module_eval(<<'.,.,', 'grammar.y', 416)
   def _reduce_199(val, _values, result)
      result = make_node(val) { |v| Riml.const_get(val[0]).new('!', v[1][0], v[1][1], v[2], v[4] << v[6], v[8], v[9]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 421)
+module_eval(<<'.,.,', 'grammar.y', 420)
   def _reduce_200(val, _values, result)
      result = "DefNode"
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 422)
+module_eval(<<'.,.,', 'grammar.y', 421)
   def _reduce_201(val, _values, result)
      result = "DefNode"
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 423)
+module_eval(<<'.,.,', 'grammar.y', 422)
   def _reduce_202(val, _values, result)
      result = "DefMethodNode"
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 428)
+module_eval(<<'.,.,', 'grammar.y', 427)
   def _reduce_203(val, _values, result)
      result = make_node(val) { |v| Riml::GetCurlyBraceNameNode.new('', v[0]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 429)
+module_eval(<<'.,.,', 'grammar.y', 428)
   def _reduce_204(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 434)
+module_eval(<<'.,.,', 'grammar.y', 433)
   def _reduce_205(val, _values, result)
      result = [val[0]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 435)
+module_eval(<<'.,.,', 'grammar.y', 434)
   def _reduce_206(val, _values, result)
      result = val[0] << val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 436)
+module_eval(<<'.,.,', 'grammar.y', 435)
   def _reduce_207(val, _values, result)
      result = nil
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 440)
+module_eval(<<'.,.,', 'grammar.y', 439)
   def _reduce_208(val, _values, result)
      result = []
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 441)
+module_eval(<<'.,.,', 'grammar.y', 440)
   def _reduce_209(val, _values, result)
      result = val
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 442)
+module_eval(<<'.,.,', 'grammar.y', 441)
   def _reduce_210(val, _values, result)
      result = val
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 443)
+module_eval(<<'.,.,', 'grammar.y', 442)
   def _reduce_211(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 444)
+module_eval(<<'.,.,', 'grammar.y', 443)
   def _reduce_212(val, _values, result)
      result = val[0] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 448)
+module_eval(<<'.,.,', 'grammar.y', 447)
   def _reduce_213(val, _values, result)
      result = make_node(val) { |v| Riml::DefaultParamNode.new(v[0], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 452)
+module_eval(<<'.,.,', 'grammar.y', 451)
   def _reduce_214(val, _values, result)
      result = make_node(val) { |v| Riml::ReturnNode.new(v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 453)
+module_eval(<<'.,.,', 'grammar.y', 452)
   def _reduce_215(val, _values, result)
      result = make_node(val) { |v| Riml::IfNode.new(v[3], Nodes.new([ReturnNode.new(v[1])])) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 454)
+module_eval(<<'.,.,', 'grammar.y', 453)
   def _reduce_216(val, _values, result)
      result = make_node(val) { |v| Riml::UnlessNode.new(v[3], Nodes.new([ReturnNode.new(v[1])])) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 458)
+module_eval(<<'.,.,', 'grammar.y', 457)
   def _reduce_217(val, _values, result)
      result = nil
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 459)
+module_eval(<<'.,.,', 'grammar.y', 458)
   def _reduce_218(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 463)
+module_eval(<<'.,.,', 'grammar.y', 462)
   def _reduce_219(val, _values, result)
      result = make_node(val) { |_| Riml::FinishNode.new }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 468)
+module_eval(<<'.,.,', 'grammar.y', 467)
   def _reduce_220(val, _values, result)
      result = make_node(val) { |v| Riml::IfNode.new(v[1], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 469)
+module_eval(<<'.,.,', 'grammar.y', 468)
   def _reduce_221(val, _values, result)
      result = make_node(val) { |v| Riml::IfNode.new(v[1], Riml::Nodes.new([v[3]])) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 470)
+module_eval(<<'.,.,', 'grammar.y', 469)
   def _reduce_222(val, _values, result)
      result = make_node(val) { |v| Riml::IfNode.new(v[2], Riml::Nodes.new([v[0]])) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 474)
+module_eval(<<'.,.,', 'grammar.y', 473)
   def _reduce_223(val, _values, result)
      result = make_node(val) { |v| Riml::UnlessNode.new(v[1], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 475)
+module_eval(<<'.,.,', 'grammar.y', 474)
   def _reduce_224(val, _values, result)
      result = make_node(val) { |v| Riml::UnlessNode.new(v[1], Riml::Nodes.new([v[3]])) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 476)
+module_eval(<<'.,.,', 'grammar.y', 475)
   def _reduce_225(val, _values, result)
      result = make_node(val) { |v| Riml::UnlessNode.new(v[2], Riml::Nodes.new([v[0]])) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 480)
+module_eval(<<'.,.,', 'grammar.y', 479)
   def _reduce_226(val, _values, result)
      result = make_node(val) { |v| Riml::TernaryOperatorNode.new([v[0], v[2], v[4]]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 484)
+module_eval(<<'.,.,', 'grammar.y', 483)
   def _reduce_227(val, _values, result)
      result = make_node(val) { |v| Riml::WhileNode.new(v[1], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 488)
+module_eval(<<'.,.,', 'grammar.y', 487)
   def _reduce_228(val, _values, result)
      result = make_node(val) { |_| Riml::BreakNode.new }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 489)
+module_eval(<<'.,.,', 'grammar.y', 488)
   def _reduce_229(val, _values, result)
      result = make_node(val) { |_| Riml::ContinueNode.new }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 493)
+module_eval(<<'.,.,', 'grammar.y', 492)
   def _reduce_230(val, _values, result)
      result = make_node(val) { |v| Riml::UntilNode.new(v[1], v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 497)
+module_eval(<<'.,.,', 'grammar.y', 496)
   def _reduce_231(val, _values, result)
      result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 498)
+module_eval(<<'.,.,', 'grammar.y', 497)
   def _reduce_232(val, _values, result)
      result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 499)
+module_eval(<<'.,.,', 'grammar.y', 498)
   def _reduce_233(val, _values, result)
      result = make_node(val) { |v| Riml::ForNode.new(v[1], v[3], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 503)
+module_eval(<<'.,.,', 'grammar.y', 502)
   def _reduce_234(val, _values, result)
      result = make_node(val) { |v| Riml::TryNode.new(v[1], nil, nil) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 504)
+module_eval(<<'.,.,', 'grammar.y', 503)
   def _reduce_235(val, _values, result)
      result = make_node(val) { |v| Riml::TryNode.new(v[1], v[2], nil) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 505)
+module_eval(<<'.,.,', 'grammar.y', 504)
   def _reduce_236(val, _values, result)
      result = make_node(val) { |v| Riml::TryNode.new(v[1], v[2], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 509)
+module_eval(<<'.,.,', 'grammar.y', 508)
   def _reduce_237(val, _values, result)
      result = nil
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 510)
+module_eval(<<'.,.,', 'grammar.y', 509)
   def _reduce_238(val, _values, result)
      result = [ make_node(val) { |v| Riml::CatchNode.new(nil, v[1]) } ]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 511)
+module_eval(<<'.,.,', 'grammar.y', 510)
   def _reduce_239(val, _values, result)
      result = [ make_node(val) { |v| Riml::CatchNode.new(v[1], v[2]) } ]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 512)
+module_eval(<<'.,.,', 'grammar.y', 511)
   def _reduce_240(val, _values, result)
      result = val[0] << make_node(val) { |v| Riml::CatchNode.new(nil, v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 513)
+module_eval(<<'.,.,', 'grammar.y', 512)
   def _reduce_241(val, _values, result)
      result = val[0] << make_node(val) { |v| Riml::CatchNode.new(v[2], v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 517)
+module_eval(<<'.,.,', 'grammar.y', 516)
   def _reduce_242(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 518)
+module_eval(<<'.,.,', 'grammar.y', 517)
   def _reduce_243(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 525)
+module_eval(<<'.,.,', 'grammar.y', 524)
   def _reduce_244(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 526)
+module_eval(<<'.,.,', 'grammar.y', 525)
   def _reduce_245(val, _values, result)
      result = make_node(val) { |_| Riml::Nodes.new([]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 530)
+module_eval(<<'.,.,', 'grammar.y', 529)
   def _reduce_246(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 531)
+module_eval(<<'.,.,', 'grammar.y', 530)
   def _reduce_247(val, _values, result)
      result = val[1] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 532)
+module_eval(<<'.,.,', 'grammar.y', 531)
   def _reduce_248(val, _values, result)
      result = val[1] << val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 533)
+module_eval(<<'.,.,', 'grammar.y', 532)
   def _reduce_249(val, _values, result)
      result = val[1] << val[2] << val[3]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 537)
+module_eval(<<'.,.,', 'grammar.y', 536)
   def _reduce_250(val, _values, result)
      result = make_node(val) { |v| Riml::ElseNode.new(v[2]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 541)
+module_eval(<<'.,.,', 'grammar.y', 540)
   def _reduce_251(val, _values, result)
      result = make_node(val) { |v| Riml::Nodes.new([Riml::ElseifNode.new(v[1], v[3])]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 542)
+module_eval(<<'.,.,', 'grammar.y', 541)
   def _reduce_252(val, _values, result)
      result = val[0] << make_node(val) { |v| Riml::ElseifNode.new(v[2], v[4]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 546)
+module_eval(<<'.,.,', 'grammar.y', 545)
   def _reduce_253(val, _values, result)
      result = make_node(val) { |v| Riml::ClassDefinitionNode.new(v[1], v[2], nil, v[3]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 547)
+module_eval(<<'.,.,', 'grammar.y', 546)
   def _reduce_254(val, _values, result)
      result = make_node(val) { |v| Riml::ClassDefinitionNode.new(v[1], v[2], (v[4] || ClassDefinitionNode::DEFAULT_SCOPE_MODIFIER) + v[5], v[6]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 551)
+module_eval(<<'.,.,', 'grammar.y', 550)
   def _reduce_255(val, _values, result)
      result = make_node(val) { |v| Riml::ObjectInstantiationNode.new(v[1]) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 555)
+module_eval(<<'.,.,', 'grammar.y', 554)
   def _reduce_256(val, _values, result)
      result = make_node(val) { |v| Riml::SuperNode.new(v[2], true) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 556)
+module_eval(<<'.,.,', 'grammar.y', 555)
   def _reduce_257(val, _values, result)
      result = make_node(val) { |_| Riml::SuperNode.new([], false) }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'grammar.y', 560)
+module_eval(<<'.,.,', 'grammar.y', 559)
   def _reduce_258(val, _values, result)
      result = make_node(val) { |v| Riml::ExLiteralNode.new(v[0]) }
     result

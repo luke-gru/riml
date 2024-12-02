@@ -14,7 +14,7 @@ Riml-only constructs, and mainly it rewrites Riml-only AST nodes into
 VimL-compatible AST nodes. For example, one of the ways a ClassNode is
 rewritten here is by removing it and adding 'function' nodes to create
 the constructor and other functions that represent the class. Once this is
-done, onto the compiler!
+done, onto the compiler.
 
 4. The compiler, implemented using the Visitor pattern, visits the nodes in a
 bottom-up fashion after drilling down to the leaf nodes from the root. Nodes
@@ -30,4 +30,4 @@ comments in the source code. If you don't know where all the affected areas
 might be, don't hesitate to ask.
 
 For pure documentation-related changes, please put '[ci skip]' somewhere in the
-commit message so that Travis-ci skips the build.
+commit message so that Github Actions skips the build.

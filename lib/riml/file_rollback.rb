@@ -51,6 +51,8 @@ module Riml
       end
     end
 
+    private
+
     def self.clear
       @m.synchronize do
         @previous_file_states.clear
@@ -67,8 +69,6 @@ module Riml
         @files_created.clear
       end
     end
-
-    private
 
     def self.rollback_file!(file_path)
       if !@previous_file_states.key?(file_path)
